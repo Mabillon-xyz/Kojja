@@ -31,18 +31,18 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
-  const isProtected = path.startsWith('/proposal-tool')
+  const isAuthPage = path === '/login' || path === '/signup'
 
-  if (!user && isProtected) {
+  if (!user && !isAuthPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirectTo', path)
     return NextResponse.redirect(url)
   }
 
-  if (user && (path === '/login' || path === '/signup')) {
+  if (user && isAuthPage) {
     const url = request.nextUrl.clone()
-    url.pathname = '/proposal-tool'
+    url.pathname = '/'
     return NextResponse.redirect(url)
   }
 

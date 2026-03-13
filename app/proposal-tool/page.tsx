@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ProposalTable from '@/components/dashboard/ProposalTable'
@@ -51,12 +50,11 @@ const STATUS_DOT: Record<string, string> = {
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const { data: proposals } = await supabase
     .from('proposals')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', user!.id)
     .order('created_at', { ascending: false })
 
   // Auto-expire on read

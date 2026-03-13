@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+  const redirectTo = searchParams.get('redirectTo') || '/'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -75,6 +75,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
+    <div className="h-full flex items-center justify-center p-8">
     <div className="w-full max-w-sm">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
@@ -91,6 +92,7 @@ export default function LoginPage() {
           Sign up
         </Link>
       </p>
+    </div>
     </div>
   )
 }

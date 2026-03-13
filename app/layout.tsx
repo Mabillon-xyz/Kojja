@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import ConditionalSidebar from "@/components/ConditionalSidebar";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -19,7 +19,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geist.className} antialiased`}>
         <div className="flex h-screen bg-white">
-          <Sidebar />
+          <ConditionalSidebar />
           <main className="flex-1 overflow-auto">
             {children}
           </main>
