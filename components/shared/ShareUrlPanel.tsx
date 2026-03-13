@@ -32,9 +32,9 @@ export default function ShareUrlPanel({ url, proposalId, currentStatus }: ShareU
   }
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-4 flex items-center gap-3">
-      <div className="flex-1">
-        <p className="text-xs font-medium text-neutral-500 mb-1.5">Client link</p>
+    <div className="bg-white rounded-xl border border-neutral-200 p-4 flex items-end gap-3">
+      <div className="flex-1 space-y-1.5">
+        <p className="text-xs font-medium text-neutral-500">Client link</p>
         <Input
           value={url}
           readOnly
@@ -42,7 +42,7 @@ export default function ShareUrlPanel({ url, proposalId, currentStatus }: ShareU
           onClick={(e) => (e.target as HTMLInputElement).select()}
         />
       </div>
-      <Button onClick={handleCopy} className="shrink-0 mt-5">
+      <Button onClick={handleCopy} className="shrink-0">
         {copied ? 'Copied!' : 'Copy link'}
       </Button>
     </div>

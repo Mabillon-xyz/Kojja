@@ -1,4 +1,4 @@
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ProposalDocument from '@/components/proposal-template/ProposalDocument'
@@ -17,13 +17,12 @@ export default async function ProposalPreviewPage({
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const { data } = await supabase
     .from('proposals')
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', user!.id)
     .single()
 
   if (!data) notFound()
@@ -33,18 +32,23 @@ export default async function ProposalPreviewPage({
   const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL}/p/${proposal.slug}`
 
   return (
-    <div>
+    <div className="px-8 py-8">
       {/* Top bar */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <Link href="/proposal-tool" className="text-sm text-neutral-400 hover:text-neutral-700">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/proposal-tool"
+            className="text-sm text-neutral-400 hover:text-neutral-700 transition-colors"
+          >
             ← Proposals
           </Link>
           <span className="text-neutral-200">/</span>
-          <span className="text-sm font-medium">{proposal.title}</span>
+          <span className="text-sm font-medium text-neutral-900 truncate max-w-xs">
+            {proposal.title}
+          </span>
           <ProposalStatusBadge status={proposal.status} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <ExportPdfButton proposalTitle={proposal.title} />
           <SendByEmailButton proposalId={id} clientEmail={proposal.client_email} />
           {canEdit && (
@@ -59,7 +63,7 @@ export default async function ProposalPreviewPage({
       <ShareUrlPanel url={publicUrl} proposalId={id} currentStatus={proposal.status} />
 
       {/* Proposal preview */}
-      <div className="mt-8 bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+      <div className="mt-6 bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
         <ProposalDocument proposal={proposal} mode="preview" />
       </div>
     </div>
