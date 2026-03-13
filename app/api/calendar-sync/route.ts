@@ -1,117 +1,153 @@
 import { NextResponse } from "next/server";
-import { google } from "googleapis";
-import type { calendar_v3 } from "googleapis";
+import { Composio } from "@composio/core";
 
 const EDENRED_CAL_ID = "vto228d2ulbg8h03q713i3bl5c7acq4a@import.calendar.google.com";
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
+const USER_ID = "default";
+const SYNC_MARKER_PREFIX = "[edenred-sync:";
 
-async function fetchAllEvents(
-  calendar: calendar_v3.Calendar,
+let composioClient: Composio | null = null;
+
+function getComposio(): Composio {
+  if (!composioClient) {
+    composioClient = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+  }
+  return composioClient;
+}
+
+type CalEvent = {
+  iCalUID?: string;
+  summary?: string;
+  description?: string;
+  start?: { dateTime?: string; date?: string; timeZone?: string };
+  end?: { dateTime?: string; date?: string };
+  location?: string;
+  status?: string;
+};
+
+async function listEvents(
   calendarId: string,
   timeMin: string,
   timeMax: string
-): Promise<calendar_v3.Schema$Event[]> {
-  const events: calendar_v3.Schema$Event[] = [];
-  let pageToken: string | undefined;
-
-  while (true) {
-    const response = await calendar.events.list({
+): Promise<CalEvent[]> {
+  const result = await getComposio().tools.execute("GOOGLECALENDAR_EVENTS_LIST", {
+    userId: USER_ID,
+    arguments: {
       calendarId,
       timeMin,
       timeMax,
       singleEvents: true,
       orderBy: "startTime",
-      maxResults: 250,
-      pageToken,
-    });
-    const items = response.data.items ?? [];
-    events.push(...items);
-    pageToken = response.data.nextPageToken ?? undefined;
-    if (!pageToken) break;
+      maxResults: 500,
+    },
+  });
+
+  if (!result.successful) {
+    throw new Error((result.error as string) ?? "Failed to list events");
   }
 
-  return events;
+  return ((result.data as { items?: CalEvent[] })?.items ?? []);
+}
+
+function extractSyncedUid(description?: string): string | null {
+  if (!description) return null;
+  const match = description.match(/\[edenred-sync:([^\]]+)\]/);
+  return match ? match[1] : null;
+}
+
+function getDurationHours(
+  start: { dateTime?: string },
+  end: { dateTime?: string }
+): number {
+  if (!start.dateTime || !end.dateTime) return 1;
+  const ms = new Date(end.dateTime).getTime() - new Date(start.dateTime).getTime();
+  return Math.max(0.25, ms / (1000 * 60 * 60));
 }
 
 export async function POST() {
-  const tokenRaw = process.env.GOOGLE_TOKEN_PERSONAL;
-  if (!tokenRaw) {
-    return NextResponse.json({ error: "GOOGLE_TOKEN_PERSONAL not configured" }, { status: 500 });
+  if (!process.env.COMPOSIO_API_KEY) {
+    return NextResponse.json({ error: "COMPOSIO_API_KEY not configured" }, { status: 500 });
   }
-
-  let tokenData: Record<string, any>;
-  try {
-    tokenData = JSON.parse(tokenRaw);
-  } catch {
-    return NextResponse.json({ error: "Invalid GOOGLE_TOKEN_PERSONAL JSON" }, { status: 500 });
-  }
-
-  const auth = new google.auth.OAuth2(tokenData.client_id, tokenData.client_secret);
-  auth.setCredentials({
-    access_token: tokenData.token,
-    refresh_token: tokenData.refresh_token,
-    scope: Array.isArray(tokenData.scopes) ? tokenData.scopes.join(" ") : tokenData.scopes,
-  });
-
-  const calendar = google.calendar({ version: "v3", auth });
 
   const now = new Date();
   const threeWeeks = new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000);
   const timeMin = now.toISOString();
   const timeMax = threeWeeks.toISOString();
 
-  const allEdenred = await fetchAllEvents(calendar, EDENRED_CAL_ID, timeMin, timeMax);
-  const edenredEvents = allEdenred.filter((e) => e.status !== "cancelled");
+  try {
+    const [allEdenred, personalEvents] = await Promise.all([
+      listEvents(EDENRED_CAL_ID, timeMin, timeMax),
+      listEvents(PERSONAL_CAL_ID, timeMin, timeMax),
+    ]);
 
-  const personalEvents = await fetchAllEvents(calendar, PERSONAL_CAL_ID, timeMin, timeMax);
-  const syncedUids = new Set(
-    personalEvents
-      .map((e) => e.extendedProperties?.private?.["edenred_icaluid"])
-      .filter(Boolean)
-  );
+    const edenredEvents = allEdenred.filter((e) => e.status !== "cancelled");
 
-  let created = 0;
-  let skipped = 0;
-  const createdTitles: string[] = [];
-  const errors: string[] = [];
+    const syncedUids = new Set(
+      personalEvents.map((e) => extractSyncedUid(e.description)).filter(Boolean)
+    );
 
-  for (const event of edenredEvents) {
-    const uid = event.iCalUID ?? "";
-    if (syncedUids.has(uid)) {
-      skipped++;
-      continue;
+    let created = 0;
+    let skipped = 0;
+    const createdTitles: string[] = [];
+    const errors: string[] = [];
+
+    for (const event of edenredEvents) {
+      const uid = event.iCalUID ?? "";
+
+      if (syncedUids.has(uid)) {
+        skipped++;
+        continue;
+      }
+
+      // Skip all-day events (no dateTime)
+      if (!event.start?.dateTime) {
+        skipped++;
+        continue;
+      }
+
+      const marker = `${SYNC_MARKER_PREFIX}${uid}]`;
+      const description = event.description
+        ? `${marker}\n\n${event.description}`
+        : marker;
+
+      const durationHours = getDurationHours(event.start, event.end ?? {});
+
+      try {
+        const result = await getComposio().tools.execute("GOOGLECALENDAR_CREATE_EVENT", {
+          userId: USER_ID,
+          arguments: {
+            summary: event.summary ?? "(EdenRed event)",
+            start_datetime: event.start.dateTime,
+            timezone: event.start.timeZone ?? "Europe/Paris",
+            event_duration_hour: durationHours,
+            calendar_id: PERSONAL_CAL_ID,
+            description,
+            ...(event.location ? { location: event.location } : {}),
+          },
+        });
+
+        if (!result.successful) {
+          errors.push(`${event.summary}: ${result.error}`);
+        } else {
+          createdTitles.push(event.summary ?? "?");
+          created++;
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`${event.summary ?? "?"}: ${msg}`);
+      }
     }
 
-    const newEvent: calendar_v3.Schema$Event = {
-      summary: event.summary ?? "(EdenRed event)",
-      start: event.start ?? undefined,
-      end: event.end ?? undefined,
-      description: event.description ?? undefined,
-      location: event.location ?? undefined,
-      extendedProperties: {
-        private: {
-          synced_from_edenred: "true",
-          edenred_icaluid: uid,
-        },
-      },
-    };
-
-    try {
-      await calendar.events.insert({ calendarId: PERSONAL_CAL_ID, requestBody: newEvent });
-      createdTitles.push(event.summary ?? "?");
-      created++;
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      errors.push(`${event.summary}: ${msg}`);
-    }
+    return NextResponse.json({
+      created,
+      skipped,
+      total: edenredEvents.length,
+      createdTitles,
+      errors,
+      syncedUntil: threeWeeks.toISOString(),
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
-
-  return NextResponse.json({
-    created,
-    skipped,
-    total: edenredEvents.length,
-    createdTitles,
-    errors,
-    syncedUntil: threeWeeks.toISOString(),
-  });
 }
