@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { DocSection } from '@/lib/docs-content'
+import { DocSection } from '@/lib/read-docs'
 import { cn } from '@/lib/utils'
 
 function renderMarkdown(md: string): string {
