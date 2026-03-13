@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import ProposalDocument from '@/components/proposal-template/ProposalDocument'
 import { Button } from '@/components/ui/button'
@@ -29,7 +30,12 @@ export default async function ProposalPreviewPage({
   const proposal = data as Proposal
 
   const canEdit = proposal.status === 'draft' || proposal.status === 'sent'
-  const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL}/p/${proposal.slug}`
+
+  const headersList = await headers()
+  const host = headersList.get('host') ?? 'localhost:3000'
+  const proto = headersList.get('x-forwarded-proto') ?? 'http'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${proto}://${host}`
+  const publicUrl = `${baseUrl}/p/${proposal.slug}`
 
   return (
     <div className="px-8 py-8">
