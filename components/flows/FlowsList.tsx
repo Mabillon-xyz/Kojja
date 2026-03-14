@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { ChevronDown, ExternalLink } from "lucide-react";
 
 type Lead = {
@@ -66,10 +66,9 @@ export default function FlowsList({ events }: { events: WebhookEvent[] }) {
                 const leads = ev.payload?.leads ?? [];
 
                 return (
-                  <>
+                  <Fragment key={ev.id}>
                     {/* Summary row */}
                     <tr
-                      key={ev.id}
                       onClick={() => setExpanded(isOpen ? null : ev.id)}
                       className={`border-b border-gray-50 cursor-pointer transition-colors ${isOpen ? "bg-gray-50" : "hover:bg-gray-50/50"}`}
                     >
@@ -132,7 +131,7 @@ export default function FlowsList({ events }: { events: WebhookEvent[] }) {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })
             )}
