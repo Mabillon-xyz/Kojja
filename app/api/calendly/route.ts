@@ -32,8 +32,10 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    if (!result.successful)
+    if (!result.successful) {
+      console.error("[calendly] Composio error:", JSON.stringify(result, null, 2));
       return NextResponse.json({ error: result.error ?? "Failed to list events", detail: result }, { status: 500 });
+    }
 
     const items = (result.data as { items?: unknown[] })?.items ?? [];
     return NextResponse.json({ items });
