@@ -7,13 +7,16 @@ export default async function DocPage({
   params,
   searchParams,
 }: {
-  params: { id: string }
-  searchParams: { edit?: string }
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ edit?: string }>
 }) {
-  const [doc, docs] = await Promise.all([readDoc(params.id), readDocs()])
+  const { id } = await params
+  const { edit } = await searchParams
+
+  const [doc, docs] = await Promise.all([readDoc(id), readDocs()])
   if (!doc) notFound()
 
-  const idx = docs.findIndex((d) => d.id === params.id)
+  const idx = docs.findIndex((d) => d.id === id)
   const prev = idx > 0 ? docs[idx - 1] : null
   const next = idx < docs.length - 1 ? docs[idx + 1] : null
 
@@ -39,7 +42,7 @@ export default async function DocPage({
           initialContent={doc.content}
           lastUpdated={doc.lastUpdated}
           isSystem={doc.isSystem}
-          startInEdit={searchParams.edit === '1'}
+          startInEdit={edit === '1'}
           prev={prev ? { id: prev.id, title: prev.title, emoji: prev.emoji } : null}
           next={next ? { id: next.id, title: next.title, emoji: next.emoji } : null}
         />
