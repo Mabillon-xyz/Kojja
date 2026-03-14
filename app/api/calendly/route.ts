@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!result.successful)
-      return NextResponse.json({ error: result.error ?? "Failed to list events" }, { status: 500 });
+      return NextResponse.json({ error: result.error ?? "Failed to list events", detail: result }, { status: 500 });
 
     const items = (result.data as { items?: unknown[] })?.items ?? [];
     return NextResponse.json({ items });
