@@ -63,7 +63,7 @@ export default function FlowsList({ events }: { events: WebhookEvent[] }) {
                 const isOpen = expanded === ev.id;
                 const client = (ev.payload?.client as string) ?? "—";
                 const campaign = ev.payload?.leads?.[0]?.campaignName ?? ev.workflow ?? "—";
-                const leads = ev.payload?.leads ?? [];
+                const leads = Array.isArray(ev.payload?.leads) ? (ev.payload.leads as Lead[]) : [];
 
                 return (
                   <Fragment key={ev.id}>
