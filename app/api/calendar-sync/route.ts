@@ -3,7 +3,7 @@ import { Composio } from "@composio/core";
 
 const EDENRED_CAL_ID = "vto228d2ulbg8h03q713i3bl5c7acq4a@import.calendar.google.com";
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
-const USER_ID = "default";
+const CONNECTED_ACCOUNT_ID = "ca_mID0TMZ8tteR";
 const SYNC_MARKER_PREFIX = "[edenred-sync:";
 
 let composioClient: Composio | null = null;
@@ -31,7 +31,7 @@ async function listEvents(
   timeMax: string
 ): Promise<CalEvent[]> {
   const result = await getComposio().tools.execute("GOOGLECALENDAR_EVENTS_LIST", {
-    userId: USER_ID,
+    connectedAccountId: CONNECTED_ACCOUNT_ID,
     version: "20260312_00",
     arguments: {
       calendarId,
@@ -115,7 +115,7 @@ export async function POST() {
 
       try {
         const result = await getComposio().tools.execute("GOOGLECALENDAR_CREATE_EVENT", {
-          userId: USER_ID,
+          connectedAccountId: CONNECTED_ACCOUNT_ID,
           version: "20260312_00",
           arguments: {
             summary: event.summary ?? "(EdenRed event)",

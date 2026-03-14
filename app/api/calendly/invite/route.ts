@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
 
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
-const USER_ID = "default";
+const CONNECTED_ACCOUNT_ID = "ca_mID0TMZ8tteR";
 
 let composioClient: Composio | null = null;
 function getComposio() {
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await getComposio().tools.execute("GOOGLECALENDAR_CREATE_EVENT", {
-      userId: USER_ID,
+      connectedAccountId: CONNECTED_ACCOUNT_ID,
       version: "20260312_00",
       arguments: {
         summary: `Discovery Call — ${name}`,
