@@ -32,7 +32,7 @@ async function listEvents(
 ): Promise<CalEvent[]> {
   const result = await getComposio().tools.execute("GOOGLECALENDAR_EVENTS_LIST", {
     userId: USER_ID,
-    dangerouslySkipVersionCheck: true,
+    version: "20260312_00",
     arguments: {
       calendarId,
       timeMin,
@@ -116,7 +116,7 @@ export async function POST() {
       try {
         const result = await getComposio().tools.execute("GOOGLECALENDAR_CREATE_EVENT", {
           userId: USER_ID,
-          dangerouslySkipVersionCheck: true,
+          version: "20260312_00",
           arguments: {
             summary: event.summary ?? "(EdenRed event)",
             start_datetime: event.start.dateTime,

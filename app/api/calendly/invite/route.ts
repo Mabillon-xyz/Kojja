@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await getComposio().tools.execute("GOOGLECALENDAR_CREATE_EVENT", {
       userId: USER_ID,
-      dangerouslySkipVersionCheck: true,
+      version: "20260312_00",
       arguments: {
         summary: `Discovery Call — ${name}`,
         description: `30-minute discovery call with ${name} (${email}).`,

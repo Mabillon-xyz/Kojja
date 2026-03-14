@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   try {
     const result = await getComposio().tools.execute("GOOGLECALENDAR_EVENTS_LIST", {
       userId: USER_ID,
-      dangerouslySkipVersionCheck: true,
+      version: "20260312_00",
       arguments: {
         calendarId: PERSONAL_CAL_ID,
         timeMin,
