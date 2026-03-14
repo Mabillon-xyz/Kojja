@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
 
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
-const CONNECTED_ACCOUNT_ID = "ca_mID0TMZ8tteR";
+const CONNECTED_ACCOUNT_ID = "f88faf67-55a6-42d2-94c7-888907ac5226";
 
 let composioClient: Composio | null = null;
 function getComposio() {

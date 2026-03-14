@@ -3,7 +3,7 @@ import { Composio } from "@composio/core";
 
 const EDENRED_CAL_ID = "vto228d2ulbg8h03q713i3bl5c7acq4a@import.calendar.google.com";
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
-const CONNECTED_ACCOUNT_ID = "ca_mID0TMZ8tteR";
+const CONNECTED_ACCOUNT_ID = "f88faf67-55a6-42d2-94c7-888907ac5226";
 const SYNC_MARKER_PREFIX = "[edenred-sync:";
 
 let composioClient: Composio | null = null;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const COMPOSIO_API = "https://backend.composio.dev/api/v2";
-const CONNECTED_ACCOUNT_ID = "ca_mID0TMZ8tteR";
+const CONNECTED_ACCOUNT_ID = "f88faf67-55a6-42d2-94c7-888907ac5226";
 
 export async function GET() {
   const apiKey = process.env.COMPOSIO_API_KEY;
