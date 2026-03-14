@@ -6,7 +6,7 @@ const USER_ID = "default";
 
 let composioClient: Composio | null = null;
 function getComposio() {
-  if (!composioClient) composioClient = new Composio({ apiKey: process.env.COMPOSIO_API_KEY!, toolkitVersions: { googlecalendar: "latest" } });
+  if (!composioClient) composioClient = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
   return composioClient;
 }
 
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   try {
     const result = await getComposio().tools.execute("GOOGLECALENDAR_EVENTS_LIST", {
       userId: USER_ID,
+      dangerouslySkipVersionCheck: true,
       arguments: {
         calendarId: PERSONAL_CAL_ID,
         timeMin,

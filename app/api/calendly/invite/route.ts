@@ -6,7 +6,7 @@ const USER_ID = "default";
 
 let composioClient: Composio | null = null;
 function getComposio() {
-  if (!composioClient) composioClient = new Composio({ apiKey: process.env.COMPOSIO_API_KEY!, toolkitVersions: { googlecalendar: "latest" } });
+  if (!composioClient) composioClient = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
   return composioClient;
 }
 
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await getComposio().tools.execute("GOOGLECALENDAR_CREATE_EVENT", {
       userId: USER_ID,
+      dangerouslySkipVersionCheck: true,
       arguments: {
         summary: `Discovery Call — ${name}`,
         description: `30-minute discovery call with ${name} (${email}).`,
