@@ -6,7 +6,7 @@ const USER_ID = "default";
 
 let composioClient: Composio | null = null;
 function getComposio() {
-  if (!composioClient) composioClient = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+  if (!composioClient) composioClient = new Composio({ apiKey: process.env.COMPOSIO_API_KEY!, toolkitVersions: { googlecalendar: "latest" } });
   return composioClient;
 }
 
