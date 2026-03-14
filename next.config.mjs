@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  basePath: '/koja2',
+}
 
-export default nextConfig;
+export default nextConfig

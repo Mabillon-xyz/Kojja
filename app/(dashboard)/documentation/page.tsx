@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { readDocs } from '@/lib/read-docs'
 import { createDocument } from '@/app/actions/documents'
 
-export default function DocumentationPage() {
-  const docs = readDocs('koja2')
+export default async function DocumentationPage() {
+  const docs = await readDocs()
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -47,21 +47,27 @@ export default function DocumentationPage() {
               i < docs.length - 1 ? 'border-b border-neutral-100' : ''
             }`}
           >
-            {/* Icon */}
             <div className="w-10 flex items-center">
-              <div className="w-8 h-8 rounded bg-blue-50 border border-blue-100 flex items-center justify-center text-base">
+              <div className={`w-8 h-8 rounded flex items-center justify-center text-base border ${
+                doc.isSystem
+                  ? 'bg-blue-50 border-blue-100'
+                  : 'bg-amber-50 border-amber-100'
+              }`}>
                 {doc.emoji}
               </div>
             </div>
 
-            {/* Title */}
-            <div>
+            <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-neutral-900 group-hover:text-black">
                 {doc.title}
               </span>
+              {doc.isSystem && (
+                <span className="text-xs text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
+                  stratégie
+                </span>
+              )}
             </div>
 
-            {/* Date */}
             <div className="text-right">
               <span className="text-xs text-neutral-400">{doc.lastUpdated}</span>
             </div>

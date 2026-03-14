@@ -48,6 +48,7 @@ interface Props {
   initialEmoji: string
   initialContent: string
   lastUpdated: string
+  isSystem: boolean
   startInEdit: boolean
   prev: NavDoc | null
   next: NavDoc | null
@@ -57,7 +58,7 @@ interface Props {
 
 export default function DocEditor({
   id, initialTitle, initialEmoji, initialContent,
-  lastUpdated, startInEdit, prev, next,
+  lastUpdated, isSystem, startInEdit, prev, next,
 }: Props) {
   const [editing, setEditing] = useState(startInEdit)
   const [title, setTitle] = useState(initialTitle)
@@ -118,12 +119,14 @@ export default function DocEditor({
             </>
           ) : (
             <>
-              <button
-                onClick={handleDelete}
-                className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
-              >
-                Supprimer
-              </button>
+              {!isSystem && (
+                <button
+                  onClick={handleDelete}
+                  className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  Supprimer
+                </button>
+              )}
               <button
                 onClick={() => setEditing(true)}
                 className="text-sm bg-neutral-900 text-white px-4 py-1.5 rounded-lg hover:bg-neutral-700 transition-colors"

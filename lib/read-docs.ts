@@ -1,5 +1,4 @@
-import fs from 'fs'
-import path from 'path'
+import { createClient } from '@/lib/supabase/server'
 
 export interface DocSection {
   id: string
@@ -7,43 +6,47 @@ export interface DocSection {
   emoji: string
   lastUpdated: string
   content: string
-  filename: string
+  isSystem: boolean
+  sortOrder: number
 }
 
-function parseFrontmatter(raw: string): { meta: Record<string, string>; content: string } {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
-  if (!match) return { meta: {}, content: raw }
+export async function readDocs(): Promise<DocSection[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('documents')
+    .select('id, title, emoji, content, last_updated, is_system, sort_order')
+    .order('sort_order', { ascending: true })
 
-  const meta: Record<string, string> = {}
-  for (const line of match[1].split('\n')) {
-    const colonIdx = line.indexOf(': ')
-    if (colonIdx !== -1) {
-      const key = line.slice(0, colonIdx).trim()
-      const value = line.slice(colonIdx + 2).trim()
-      meta[key] = value
-    }
+  if (error) throw new Error(`readDocs: ${error.message}`)
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    emoji: row.emoji,
+    content: row.content,
+    lastUpdated: row.last_updated,
+    isSystem: row.is_system,
+    sortOrder: row.sort_order,
+  }))
+}
+
+export async function readDoc(id: string): Promise<DocSection | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('documents')
+    .select('id, title, emoji, content, last_updated, is_system, sort_order')
+    .eq('id', id)
+    .single()
+
+  if (error) return null
+
+  return {
+    id: data.id,
+    title: data.title,
+    emoji: data.emoji,
+    content: data.content,
+    lastUpdated: data.last_updated,
+    isSystem: data.is_system,
+    sortOrder: data.sort_order,
   }
-
-  return { meta, content: match[2].trimStart() }
-}
-
-export function readDocs(dir = 'koja2'): DocSection[] {
-  const docsDir = path.join(process.cwd(), 'content', dir)
-  const files = fs
-    .readdirSync(docsDir)
-    .filter((f) => f.endsWith('.md'))
-    .sort()
-
-  return files.map((filename) => {
-    const raw = fs.readFileSync(path.join(docsDir, filename), 'utf-8')
-    const { meta, content } = parseFrontmatter(raw)
-    return {
-      id: meta.id ?? filename.replace('.md', ''),
-      title: meta.title ?? filename,
-      emoji: meta.emoji ?? '📄',
-      lastUpdated: meta.lastUpdated ?? '',
-      content,
-      filename,
-    }
-  })
 }

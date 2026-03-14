@@ -1,10 +1,7 @@
 'use server'
-import fs from 'fs'
-import path from 'path'
+import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-
-const DOCS_DIR = path.join(process.cwd(), 'content', 'koja2')
 
 function slugify(str: string): string {
   return str
@@ -20,59 +17,66 @@ function nowFr(): string {
   return new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 }
 
-function findFile(id: string): string | null {
-  const files = fs.readdirSync(DOCS_DIR).filter((f) => f.endsWith('.md'))
-  for (const file of files) {
-    const raw = fs.readFileSync(path.join(DOCS_DIR, file), 'utf-8')
-    const m = raw.match(/^id:\s*(.+)$/m)
-    if (m && m[1].trim() === id) return file
-  }
-  return null
-}
-
 export async function createDocument(formData: FormData) {
   const title = (formData.get('title') as string)?.trim() || 'Sans titre'
   const emoji = (formData.get('emoji') as string)?.trim() || '📄'
+  const supabase = await createClient()
 
-  const files = fs.readdirSync(DOCS_DIR).filter((f) => f.endsWith('.md'))
-  const nextNum = files.length + 1
   const baseSlug = slugify(title) || `note-${Date.now()}`
 
-  // Ensure unique id
-  const existingIds = files.map((f) => {
-    const raw = fs.readFileSync(path.join(DOCS_DIR, f), 'utf-8')
-    const m = raw.match(/^id:\s*(.+)$/m)
-    return m ? m[1].trim() : ''
-  })
-  let id = baseSlug
-  let suffix = 2
-  while (existingIds.includes(id)) {
-    id = `${baseSlug}-${suffix++}`
-  }
+  // Get next sort_order and ensure unique id
+  const { data: existing } = await supabase
+    .from('documents')
+    .select('id, sort_order')
+    .order('sort_order', { ascending: false })
+    .limit(1)
 
-  const filename = `${String(nextNum).padStart(2, '0')}-${id}.md`
-  const content = `---\nid: ${id}\ntitle: ${title}\nemoji: ${emoji}\nlastUpdated: ${nowFr()}\n---\n\n`
-  fs.writeFileSync(path.join(DOCS_DIR, filename), content)
+  const nextOrder = (existing?.[0]?.sort_order ?? 0) + 1
+
+  const { data: idCheck } = await supabase
+    .from('documents')
+    .select('id')
+    .eq('id', baseSlug)
+    .maybeSingle()
+
+  const id = idCheck ? `${baseSlug}-${Date.now()}` : baseSlug
+
+  await supabase.from('documents').insert({
+    id,
+    title,
+    emoji,
+    content: '',
+    last_updated: nowFr(),
+    sort_order: nextOrder,
+    is_system: false,
+  })
 
   revalidatePath('/documentation')
   redirect(`/documentation/${id}?edit=1`)
 }
 
 export async function updateDocument(id: string, title: string, emoji: string, content: string) {
-  const file = findFile(id)
-  if (!file) throw new Error(`Document introuvable : ${id}`)
+  const supabase = await createClient()
 
-  const frontmatter = `---\nid: ${id}\ntitle: ${title}\nemoji: ${emoji}\nlastUpdated: ${nowFr()}\n---\n\n`
-  fs.writeFileSync(path.join(DOCS_DIR, file), frontmatter + content)
+  const { error } = await supabase
+    .from('documents')
+    .update({
+      title,
+      emoji,
+      content,
+      last_updated: nowFr(),
+    })
+    .eq('id', id)
+
+  if (error) throw new Error(`updateDocument: ${error.message}`)
 
   revalidatePath('/documentation')
   revalidatePath(`/documentation/${id}`)
 }
 
 export async function deleteDocument(id: string) {
-  const file = findFile(id)
-  if (!file) return
-  fs.unlinkSync(path.join(DOCS_DIR, file))
+  const supabase = await createClient()
+  await supabase.from('documents').delete().eq('id', id)
   revalidatePath('/documentation')
   redirect('/documentation')
 }

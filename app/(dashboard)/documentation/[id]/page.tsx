@@ -1,17 +1,19 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { readDocs } from '@/lib/read-docs'
+import { readDocs, readDoc } from '@/lib/read-docs'
 import DocEditor from '@/components/documentation/DocEditor'
 
-export default function DocPage({
+export default async function DocPage({
   params,
   searchParams,
 }: {
   params: { id: string }
   searchParams: { edit?: string }
 }) {
-  const docs = readDocs('koja2')
-  const doc = docs.find((d) => d.id === params.id)
+  const [doc, docs] = await Promise.all([
+    readDoc(params.id),
+    readDocs(),
+  ])
   if (!doc) notFound()
 
   const idx = docs.findIndex((d) => d.id === params.id)
@@ -41,6 +43,7 @@ export default function DocPage({
           initialEmoji={doc.emoji}
           initialContent={doc.content}
           lastUpdated={doc.lastUpdated}
+          isSystem={doc.isSystem}
           startInEdit={startInEdit}
           prev={prev ? { id: prev.id, title: prev.title, emoji: prev.emoji } : null}
           next={next ? { id: next.id, title: next.title, emoji: next.emoji } : null}
