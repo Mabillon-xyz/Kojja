@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, RefreshCw, Video, Calendar, X, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Video, Calendar, X, Save, RotateCw } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────
 type CalEvent = {
@@ -85,6 +85,27 @@ export default function CalendarSyncPage() {
   const [sending, setSending] = useState(false);
   const [sendMsg, setSendMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [invites, setInvites] = useState<Invite[]>([]);
+
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function triggerSync() {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const r = await fetch("/api/calendar-sync", { method: "POST" });
+      const data = await r.json();
+      if (!r.ok) {
+        setSyncMsg({ ok: false, text: data.error ?? "Sync failed" });
+      } else {
+        setSyncMsg({ ok: true, text: `${data.created} added, ${data.skipped} already synced` });
+        fetchEvents();
+      }
+    } catch (e: unknown) {
+      setSyncMsg({ ok: false, text: e instanceof Error ? e.message : "Network error" });
+    }
+    setSyncing(false);
+  }
 
   // Persist notes + invites in localStorage
   useEffect(() => {
@@ -231,9 +252,19 @@ export default function CalendarSyncPage() {
               Lead calls
             </span>
           </div>
-          <button onClick={fetchEvents} disabled={loading} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors disabled:opacity-40">
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-          </button>
+          <div className="flex items-center gap-2">
+            {syncMsg && (
+              <span className={`text-xs ${syncMsg.ok ? "text-green-600" : "text-red-500"}`}>{syncMsg.text}</span>
+            )}
+            <button onClick={triggerSync} disabled={syncing}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg transition-colors">
+              <RotateCw size={12} className={syncing ? "animate-spin" : ""} />
+              {syncing ? "Syncing…" : "EdenRed sync"}
+            </button>
+            <button onClick={fetchEvents} disabled={loading} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors disabled:opacity-40">
+              <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
         </div>
       </div>
 
