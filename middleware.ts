@@ -32,8 +32,9 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname
   const isAuthPage = path === '/login' || path === '/signup'
+  const isPublicPage = path === '/book'
 
-  if (!user && !isAuthPage) {
+  if (!user && !isAuthPage && !isPublicPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirectTo', path)
