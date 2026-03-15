@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const nav = [
   {
-    label: "Calendly",
+    label: "Calendar",
     href: "/calendar-sync",
     icon: (
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
