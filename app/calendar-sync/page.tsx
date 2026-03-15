@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  ChevronLeft, ChevronRight, RefreshCw,
+  ChevronLeft, ChevronRight, RefreshCw, Video, Save,
   RotateCw, Copy, Check, Clock, Globe, Plus, Trash2, Zap, Mail,
   ChevronDown, ChevronUp, Power,
 } from "lucide-react";
