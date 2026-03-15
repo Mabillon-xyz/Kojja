@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  ChevronLeft, ChevronRight, RefreshCw, Video, Calendar, X, Save,
+  ChevronLeft, ChevronRight, RefreshCw,
   RotateCw, Copy, Check, Clock, Globe, Plus, Trash2, Zap, Mail,
   ChevronDown, ChevronUp, Power,
 } from "lucide-react";
@@ -21,17 +21,6 @@ type CalEvent = {
   conferenceData?: { entryPoints?: { uri: string; entryPointType: string }[] };
   location?: string;
   htmlLink?: string;
-};
-
-type Invite = {
-  id: string;
-  name: string;
-  email: string;
-  date: string;
-  time: string;
-  meetLink: string | null;
-  calLink: string | null;
-  createdAt: number;
 };
 
 type Tab = "calendar" | "scheduling" | "availability" | "automations";
@@ -85,18 +74,6 @@ function isLeadEvent(ev: CalEvent): boolean {
     (a) => !a.self && a.email.toLowerCase() !== MY_EMAIL && !a.email.includes("resource.calendar")
   );
   return hasExternal || LEAD_KW.some((kw) => title.includes(kw));
-}
-
-function getMeetLink(ev: CalEvent): string | null {
-  return (
-    ev.hangoutLink ??
-    ev.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ??
-    null
-  );
-}
-
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 // ── Availability editor subcomponent ────────────────────────────
@@ -796,15 +773,6 @@ export default function CalendarSyncPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [selected, setSelected] = useState<CalEvent | null>(null);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [savingNote, setSavingNote] = useState(false);
-
-  const [invForm, setInvForm] = useState({ name: "", email: "", date: todayStr(), time: "10:00" });
-  const [sending, setSending] = useState(false);
-  const [sendMsg, setSendMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [invites, setInvites] = useState<Invite[]>([]);
-
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -825,23 +793,6 @@ export default function CalendarSyncPage() {
     }
     setSyncing(false);
   }
-
-  useEffect(() => {
-    const n = localStorage.getItem("cal_notes");
-    if (n) setNotes(JSON.parse(n));
-    const inv = localStorage.getItem("cal_invites");
-    if (inv) setInvites(JSON.parse(inv));
-  }, []);
-
-  const saveNotes = (updated: Record<string, string>) => {
-    setNotes(updated);
-    localStorage.setItem("cal_notes", JSON.stringify(updated));
-  };
-
-  const saveInvites = (updated: Invite[]) => {
-    setInvites(updated);
-    localStorage.setItem("cal_invites", JSON.stringify(updated));
-  };
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
@@ -896,42 +847,6 @@ export default function CalendarSyncPage() {
     const top    = Math.max(0, (startH - HOUR_START) * SLOT_H);
     const height = Math.max(18, (endH - startH) * SLOT_H - 2);
     return { top, height };
-  }
-
-  async function sendInvite() {
-    if (!invForm.name || !invForm.email || !invForm.date || !invForm.time) {
-      setSendMsg({ ok: false, text: "Please fill in all fields." });
-      return;
-    }
-    setSending(true);
-    setSendMsg(null);
-    try {
-      const r = await fetch("/api/calendly/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(invForm),
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error ?? "Failed to create invite");
-
-      const newInvite: Invite = {
-        id: data.eventId ?? crypto.randomUUID(),
-        name: invForm.name,
-        email: invForm.email,
-        date: invForm.date,
-        time: invForm.time,
-        meetLink: data.meetLink ?? null,
-        calLink: data.calLink ?? null,
-        createdAt: Date.now(),
-      };
-      saveInvites([newInvite, ...invites]);
-      setSendMsg({ ok: true, text: `Invite sent to ${invForm.name}!` });
-      setInvForm({ name: "", email: "", date: todayStr(), time: "10:00" });
-      fetchEvents();
-    } catch (e: unknown) {
-      setSendMsg({ ok: false, text: e instanceof Error ? e.message : String(e) });
-    }
-    setSending(false);
   }
 
   const weekLabel = `${fmt(days[0], { day: "numeric", month: "short" })} – ${fmt(days[6], { day: "numeric", month: "short", year: "numeric" })}`;
@@ -1003,9 +918,8 @@ export default function CalendarSyncPage() {
 
         {/* ── Calendar tab ── */}
         {tab === "calendar" && (
-          <div className="flex gap-4 p-3 md:p-5 min-h-full items-start">
-            <div className="flex-1 min-w-0">
-              {error && (
+          <div className="p-3 md:p-5">
+            {error && (
                 <div className="mb-4 px-4 py-3 bg-red-900/30 border border-red-500/40 text-red-300 text-sm rounded-xl">{error}</div>
               )}
 
@@ -1045,16 +959,14 @@ export default function CalendarSyncPage() {
                         {dayEvents(d).map((ev) => {
                           const { top, height } = eventStyle(ev);
                           const lead = isLeadEvent(ev);
-                          const isSelected = selected?.id === ev.id;
                           return (
-                            <button
+                            <div
                               key={ev.id}
-                              onClick={() => setSelected(ev.id === selected?.id ? null : ev)}
                               style={{ position: "absolute", left: 2, right: 2, top, height, zIndex: 1 }}
-                              className={`rounded-md px-1.5 py-0.5 text-left overflow-hidden text-[10px] font-medium leading-tight transition-all border-l-2 ${
+                              className={`rounded-md px-1.5 py-0.5 overflow-hidden text-[10px] font-medium leading-tight border-l-2 ${
                                 lead
-                                  ? `bg-red-900/30 text-red-300 border-red-500 ${isSelected ? "ring-1 ring-red-400" : ""}`
-                                  : `bg-blue-900/30 text-blue-300 border-blue-400 ${isSelected ? "ring-1 ring-blue-400" : ""}`
+                                  ? "bg-red-900/30 text-red-300 border-red-500"
+                                  : "bg-blue-900/30 text-blue-300 border-blue-400"
                               }`}
                             >
                               <span className="block truncate">{ev.summary ?? "(no title)"}</span>
@@ -1063,7 +975,7 @@ export default function CalendarSyncPage() {
                                   {new Date(ev.start.dateTime!).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                                 </span>
                               )}
-                            </button>
+                            </div>
                           );
                         })}
                       </div>
@@ -1072,188 +984,6 @@ export default function CalendarSyncPage() {
                 </div>
                 </div>{/* end overflow-x-auto */}
               </div>
-
-              {/* Send invite section */}
-              <div className="mt-5 grid grid-cols-1 lg:grid-cols-5 gap-4">
-                <div className="lg:col-span-2 bg-[#252525] rounded-2xl border border-[#383838] shadow-sm p-5">
-                  <h2 className="text-sm font-semibold text-[#d4d4d4] mb-1">📞 Send a call invite</h2>
-                  <p className="text-xs text-[#666] mb-4">30-min Google Meet · sent to the lead</p>
-                  <div className="space-y-3 mb-4">
-                    <div>
-                      <label className="block text-xs font-medium text-[#9b9b9b] mb-1">Lead name</label>
-                      <input value={invForm.name} onChange={(e) => setInvForm({ ...invForm, name: e.target.value })}
-                        placeholder="Jean Dupont"
-                        className="w-full border border-[#383838] rounded-lg px-3 py-2 text-sm bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]/30" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-[#9b9b9b] mb-1">Lead email</label>
-                      <input type="email" value={invForm.email} onChange={(e) => setInvForm({ ...invForm, email: e.target.value })}
-                        placeholder="jean@entreprise.fr"
-                        className="w-full border border-[#383838] rounded-lg px-3 py-2 text-sm bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]/30" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-xs font-medium text-[#9b9b9b] mb-1">Date</label>
-                        <input type="date" value={invForm.date} onChange={(e) => setInvForm({ ...invForm, date: e.target.value })}
-                          className="w-full border border-[#383838] rounded-lg px-3 py-2 text-sm bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-[#9b9b9b] mb-1">Time</label>
-                        <input type="time" value={invForm.time} onChange={(e) => setInvForm({ ...invForm, time: e.target.value })}
-                          className="w-full border border-[#383838] rounded-lg px-3 py-2 text-sm bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]" />
-                      </div>
-                    </div>
-                  </div>
-                  <button onClick={sendInvite} disabled={sending}
-                    className="w-full py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-2">
-                    <Video size={14} />
-                    {sending ? "Creating…" : "Send 30-min Meet invite"}
-                  </button>
-                  {sendMsg && (
-                    <p className={`mt-2 text-xs text-center ${sendMsg.ok ? "text-green-400" : "text-red-400"}`}>{sendMsg.text}</p>
-                  )}
-                </div>
-
-                <div className="lg:col-span-3 bg-[#252525] rounded-2xl border border-[#383838] shadow-sm overflow-hidden">
-                  <div className="px-5 py-4 border-b border-[#383838] flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-[#d4d4d4]">📨 Sent invites</h2>
-                    <span className="text-xs text-[#666]">{invites.length} invite{invites.length !== 1 ? "s" : ""}</span>
-                  </div>
-                  {invites.length === 0 ? (
-                    <div className="py-10 text-center text-xs text-[#666]">No invites sent yet.</div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b border-[#383838] bg-[#2f2f2f]">
-                            <th className="px-4 py-2.5 text-left font-medium text-[#888]">Lead</th>
-                            <th className="px-4 py-2.5 text-left font-medium text-[#888]">Date</th>
-                            <th className="px-4 py-2.5 text-left font-medium text-[#888]">Meet</th>
-                            <th className="px-4 py-2.5 text-left font-medium text-[#888]">Status</th>
-                            <th className="px-4 py-2.5" />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {invites.map((inv) => {
-                            const dt = new Date(`${inv.date}T${inv.time}`);
-                            const past = dt < new Date();
-                            return (
-                              <tr key={inv.id} className="border-b border-[#383838] hover:bg-[#2f2f2f]">
-                                <td className="px-4 py-2.5">
-                                  <div className="font-medium text-[#d4d4d4]">{inv.name}</div>
-                                  <div className="text-[#666]">{inv.email}</div>
-                                </td>
-                                <td className="px-4 py-2.5 text-[#9b9b9b] whitespace-nowrap">
-                                  {fmt(dt, { day: "numeric", month: "short" })} {inv.time}
-                                </td>
-                                <td className="px-4 py-2.5">
-                                  {inv.meetLink ? (
-                                    <a href={inv.meetLink} target="_blank" rel="noreferrer"
-                                      className="flex items-center gap-1 text-blue-400 hover:underline">
-                                      <Video size={12} /> Join
-                                    </a>
-                                  ) : inv.calLink ? (
-                                    <a href={inv.calLink} target="_blank" rel="noreferrer"
-                                      className="flex items-center gap-1 text-[#666] hover:text-blue-400">
-                                      <Calendar size={12} /> Calendar
-                                    </a>
-                                  ) : (
-                                    <span className="text-[#555]">—</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-2.5">
-                                  <span className={`px-2 py-0.5 rounded-full font-medium ${past ? "bg-[#383838] text-[#888]" : "bg-green-900/40 text-green-400"}`}>
-                                    {past ? "Past" : "Upcoming"}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-2.5">
-                                  <button onClick={() => saveInvites(invites.filter((i) => i.id !== inv.id))}
-                                    className="text-[#555] hover:text-red-500 transition-colors">
-                                    <X size={14} />
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Event detail panel — hidden on mobile */}
-            <div className="hidden md:block w-64 flex-shrink-0 sticky top-0">
-              <div className="bg-[#252525] rounded-2xl border border-[#383838] shadow-sm p-4">
-                <h3 className="text-xs font-semibold text-[#888] uppercase tracking-wide mb-3">🔍 Event detail</h3>
-                {!selected ? (
-                  <p className="text-xs text-[#666] py-8 text-center">Click an event to see details</p>
-                ) : (
-                  <div>
-                    <div className="mb-3">
-                      <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded-full mb-2 ${
-                        isLeadEvent(selected) ? "bg-red-900/40 text-red-400" : "bg-blue-900/40 text-blue-400"
-                      }`}>
-                        {isLeadEvent(selected) ? "Lead call" : "My event"}
-                      </span>
-                      <h4 className="text-sm font-semibold text-[#e6e6e6] leading-snug">{selected.summary ?? "(no title)"}</h4>
-                    </div>
-                    {selected.start.dateTime && (
-                      <p className="text-xs text-[#9b9b9b] mb-1.5">
-                        📅 {fmt(new Date(selected.start.dateTime), { weekday: "long", day: "numeric", month: "long" })}
-                        <br />
-                        {new Date(selected.start.dateTime).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                        {selected.end?.dateTime && ` – ${new Date(selected.end.dateTime).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`}
-                      </p>
-                    )}
-                    {getMeetLink(selected) && (
-                      <a href={getMeetLink(selected)!} target="_blank" rel="noreferrer"
-                        className="flex items-center gap-1.5 text-xs text-blue-400 hover:underline mb-3">
-                        <Video size={12} /> Join Google Meet
-                      </a>
-                    )}
-                    {(selected.attendees ?? []).filter((a) => !a.self).length > 0 && (
-                      <div className="mb-3">
-                        <p className="text-[10px] font-semibold text-[#888] uppercase tracking-wide mb-1.5">Attendees</p>
-                        {selected.attendees!.filter((a) => !a.self).map((a, i) => (
-                          <div key={i} className="flex items-center gap-2 mb-1.5">
-                            <div className="w-6 h-6 rounded-full bg-red-900/40 flex items-center justify-center text-[10px] font-bold text-red-400 flex-shrink-0">
-                              {(a.displayName ?? a.email)[0].toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              {a.displayName && <p className="text-xs font-medium text-[#d4d4d4] truncate">{a.displayName}</p>}
-                              <p className="text-[10px] text-[#666] truncate">{a.email}</p>
-                            </div>
-                            <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                              a.responseStatus === "accepted" ? "bg-green-900/40 text-green-400" :
-                              a.responseStatus === "declined" ? "bg-red-900/40 text-red-400" :
-                              "bg-[#383838] text-[#888]"
-                            }`}>{a.responseStatus ?? "?"}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-[10px] font-semibold text-[#888] uppercase tracking-wide mb-1.5">Notes</p>
-                      <textarea
-                        rows={3}
-                        value={notes[selected.id] ?? ""}
-                        onChange={(e) => saveNotes({ ...notes, [selected.id]: e.target.value })}
-                        placeholder="Add notes about this lead…"
-                        className="w-full border border-[#383838] rounded-lg px-2.5 py-2 text-xs text-[#d4d4d4] bg-[#252525] focus:outline-none focus:border-[#5865f2] resize-none"
-                      />
-                      <button
-                        onClick={() => { setSavingNote(true); setTimeout(() => setSavingNote(false), 800); }}
-                        className="mt-1 flex items-center gap-1 text-xs text-red-400 hover:text-red-300 font-medium"
-                      >
-                        <Save size={11} /> {savingNote ? "Saved!" : "Save note"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         )}
 
