@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import type { AvailabilityConfig, DaySchedule } from "@/lib/availability-types";
 
-export type DaySchedule = { start: string; end: string }[];
-export type AvailabilityConfig = {
-  days: Record<string, DaySchedule>; // key = day-of-week "1"…"7" (1=Mon, 7=Sun)
-};
+export type { AvailabilityConfig, DaySchedule };
 
 export const DEFAULT_AVAILABILITY: AvailabilityConfig = {
   days: {

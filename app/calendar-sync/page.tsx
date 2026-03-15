@@ -6,8 +6,8 @@ import {
   RotateCw, Copy, Check, Clock, Globe, Plus, Trash2, Zap, Mail,
   ChevronDown, ChevronUp, Power,
 } from "lucide-react";
-import type { AvailabilityConfig, DaySchedule } from "@/app/api/settings/availability/route";
-import type { AutomationStep, Automation } from "@/lib/automations";
+import type { AvailabilityConfig, DaySchedule } from "@/lib/availability-types";
+import type { AutomationStep, Automation } from "@/lib/automation-types";
 
 // ── Types ──────────────────────────────────────────────────────
 type CalEvent = {

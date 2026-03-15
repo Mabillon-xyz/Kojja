@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
-import { DEFAULT_AVAILABILITY, type AvailabilityConfig } from "@/app/api/settings/availability/route";
+import { DEFAULT_AVAILABILITY } from "@/app/api/settings/availability/route";
+import type { AvailabilityConfig } from "@/lib/availability-types";
 import { createServiceClient } from "@/lib/supabase/server";
 
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";

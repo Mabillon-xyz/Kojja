@@ -1,27 +1,12 @@
 import { Resend } from "resend";
 import { createServiceClient } from "@/lib/supabase/server";
+import type { AutomationStep, Automation } from "@/lib/automation-types";
+
+// Re-export so existing imports from this file still work
+export type { AutomationStep, Automation };
 
 const ORGANIZER_EMAIL = "clement.guiraudpro@gmail.com";
 const ORGANIZER_NAME = "Clément Guiraud";
-
-export type AutomationStep = {
-  id: string;
-  type: "send_email";
-  when: "immediately" | "delay_after_booking" | "before_event";
-  delay_minutes: number;
-  recipient: "lead" | "organizer" | "both";
-  subject: string;
-  body: string; // plain text with {{name}} {{date}} {{time}} {{meetLink}} vars
-};
-
-export type Automation = {
-  id: string;
-  name: string;
-  enabled: boolean;
-  trigger: string;
-  steps: AutomationStep[];
-  created_at: string;
-};
 
 export type BookingContext = {
   name: string;
@@ -58,11 +43,9 @@ export function interpolate(str: string, ctx: BookingContext): string {
 export function buildEmailHtml(body: string, ctx: BookingContext): string {
   const interpolated = interpolate(body, ctx);
 
-  // Convert plain text to HTML paragraphs, handling the Meet link as a button
   const lines = interpolated.split("\n").map((line) => {
     const trimmed = line.trim();
     if (!trimmed) return "";
-    // If line contains a Meet URL, render it as a button
     const meetUrlMatch = trimmed.match(/(https:\/\/meet\.google\.com\/[^\s]+)/);
     if (meetUrlMatch) {
       const url = meetUrlMatch[1];
@@ -125,23 +108,19 @@ export async function triggerAutomations(ctx: BookingContext): Promise<void> {
       const bodyHtml = buildEmailHtml(step.body, ctx);
 
       if (step.when === "immediately") {
-        // Send right now
         for (const to of recipients) {
           try {
             await resend.emails.send({ from, to, subject, html: bodyHtml });
           } catch { /* best effort */ }
         }
       } else {
-        // Queue in scheduled_emails
         let sendAt: Date;
         if (step.when === "delay_after_booking") {
           sendAt = new Date(bookingTime.getTime() + step.delay_minutes * 60 * 1000);
         } else {
-          // before_event
           sendAt = new Date(eventStart.getTime() - step.delay_minutes * 60 * 1000);
         }
 
-        // Don't schedule emails in the past
         if (sendAt <= bookingTime) continue;
 
         for (const to of recipients) {
