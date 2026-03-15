@@ -17,11 +17,11 @@ function StatCard({
   accent?: boolean
 }) {
   return (
-    <div className={`rounded-xl border p-5 ${accent ? 'bg-neutral-900 border-neutral-900' : 'bg-white border-neutral-200'}`}>
+    <div className={`rounded-xl border p-5 ${accent ? 'bg-[#5865f2] border-[#5865f2]' : 'bg-[#252525] border-[#383838]'}`}>
       <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-3">
         {label}
       </p>
-      <p className={`text-3xl font-bold tracking-tight ${accent ? 'text-white' : 'text-neutral-900'}`}>
+      <p className={`text-3xl font-bold tracking-tight ${accent ? 'text-white' : 'text-[#e6e6e6]'}`}>
         {value}
       </p>
       {sub && (
@@ -100,8 +100,8 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-2xl font-semibold tracking-tight">📝 Proposals</h1>
+          <p className="text-sm text-[#9b9b9b] mt-1">
             {all.length} proposal{all.length !== 1 ? 's' : ''} total
           </p>
         </div>
@@ -138,9 +138,9 @@ export default async function DashboardPage() {
       {/* Status breakdown + Recent activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Breakdown */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-5">
-            By status
+        <div className="bg-[#252525] rounded-xl border border-[#383838] p-5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#9b9b9b] mb-5">
+            📊 By status
           </p>
           <div className="space-y-3.5">
             {[
@@ -153,16 +153,16 @@ export default async function DashboardPage() {
               <div key={label} className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-                  <span className="text-sm text-neutral-700">{label}</span>
+                  <span className="text-sm text-[#c0c0c0]">{label}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-24 bg-neutral-100 rounded-full h-1.5 overflow-hidden">
+                  <div className="w-24 bg-[#383838] rounded-full h-1.5 overflow-hidden">
                     <div
                       className={`h-full rounded-full ${dot}`}
                       style={{ width: all.length > 0 ? `${(count / all.length) * 100}%` : '0%' }}
                     />
                   </div>
-                  <span className="text-sm font-medium text-neutral-900 w-4 text-right">{count}</span>
+                  <span className="text-sm font-medium text-[#e6e6e6] w-4 text-right">{count}</span>
                 </div>
               </div>
             ))}
@@ -170,12 +170,12 @@ export default async function DashboardPage() {
         </div>
 
         {/* Recent activity */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-neutral-200 p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-4">
-            Recent activity
+        <div className="lg:col-span-2 bg-[#252525] rounded-xl border border-[#383838] p-5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#9b9b9b] mb-4">
+            🕐 Recent activity
           </p>
           {recent.length === 0 ? (
-            <p className="text-sm text-neutral-400 py-8 text-center">
+            <p className="text-sm text-[#666] py-8 text-center">
               No proposals yet — create your first one.
             </p>
           ) : (
@@ -183,21 +183,21 @@ export default async function DashboardPage() {
               {recent.map((p, i) => (
                 <div
                   key={p.id}
-                  className={`flex items-start gap-3 py-3 ${i < recent.length - 1 ? 'border-b border-neutral-100' : ''}`}
+                  className={`flex items-start gap-3 py-3 ${i < recent.length - 1 ? 'border-b border-[#383838]' : ''}`}
                 >
                   <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${STATUS_DOT[p.status]}`} />
                   <div className="flex-1 min-w-0">
                     <Link
                       href={`/proposal-tool/${p.id}`}
-                      className="text-sm font-medium text-neutral-900 hover:underline truncate block"
+                      className="text-sm font-medium text-[#e6e6e6] hover:underline truncate block"
                     >
                       {p.title}
                     </Link>
-                    <p className="text-xs text-neutral-400 mt-0.5">
+                    <p className="text-xs text-[#666] mt-0.5">
                       {STATUS_VERB[p.status]} · {p.client_company}
                     </p>
                   </div>
-                  <span className="text-sm font-medium text-neutral-700 shrink-0">
+                  <span className="text-sm font-medium text-[#c0c0c0] shrink-0">
                     {formatCurrency(Number(p.price), p.currency)}
                   </span>
                 </div>
@@ -209,8 +209,8 @@ export default async function DashboardPage() {
 
       {/* All proposals table */}
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-4">
-          All proposals
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#9b9b9b] mb-4">
+          📋 All proposals
         </p>
         <ProposalTable proposals={all} />
       </div>

@@ -187,8 +187,8 @@ function AvailabilityTab() {
   return (
     <div className="max-w-xl">
       <div className="mb-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-0.5">Heures de disponibilité</h2>
-        <p className="text-xs text-gray-400">Définissez vos créneaux disponibles pour les appels de découverte.</p>
+        <h2 className="text-sm font-semibold text-[#e6e6e6] mb-0.5">🗓 Heures de disponibilité</h2>
+        <p className="text-xs text-[#666]">Définissez vos créneaux disponibles pour les appels de découverte.</p>
       </div>
 
       <div className="space-y-3">
@@ -199,7 +199,7 @@ function AvailabilityTab() {
             <div
               key={day}
               className={`rounded-xl border px-4 py-3 transition-colors ${
-                active ? "border-gray-200 bg-white" : "border-gray-100 bg-gray-50"
+                active ? "border-[#383838] bg-[#252525]" : "border-[#252525] bg-[#2f2f2f]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -208,7 +208,7 @@ function AvailabilityTab() {
                   <button
                     onClick={() => toggleDay(day)}
                     className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
-                      active ? "bg-blue-600" : "bg-gray-200"
+                      active ? "bg-blue-600" : "bg-[#383838]"
                     }`}
                   >
                     <span
@@ -217,7 +217,7 @@ function AvailabilityTab() {
                       }`}
                     />
                   </button>
-                  <span className={`text-sm font-medium w-24 ${active ? "text-gray-800" : "text-gray-400"}`}>
+                  <span className={`text-sm font-medium w-24 ${active ? "text-[#d4d4d4]" : "text-[#666]"}`}>
                     {DAY_LABELS[day]}
                   </span>
                 </div>
@@ -225,7 +225,7 @@ function AvailabilityTab() {
                 {active && (
                   <button
                     onClick={() => addSlot(day)}
-                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 font-medium"
                   >
                     <Plus size={12} /> Ajouter
                   </button>
@@ -240,19 +240,19 @@ function AvailabilityTab() {
                         type="time"
                         value={slot.start}
                         onChange={(e) => updateSlot(day, idx, "start", e.target.value)}
-                        className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                        className="border border-[#383838] rounded-lg px-2.5 py-1.5 text-sm text-[#c0c0c0] bg-[#252525] focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]/30"
                       />
-                      <span className="text-xs text-gray-400">–</span>
+                      <span className="text-xs text-[#666]">–</span>
                       <input
                         type="time"
                         value={slot.end}
                         onChange={(e) => updateSlot(day, idx, "end", e.target.value)}
-                        className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                        className="border border-[#383838] rounded-lg px-2.5 py-1.5 text-sm text-[#c0c0c0] bg-[#252525] focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]/30"
                       />
                       {slots.length > 1 && (
                         <button
                           onClick={() => removeSlot(day, idx)}
-                          className="text-gray-300 hover:text-red-500 transition-colors"
+                          className="text-[#555] hover:text-red-500 transition-colors"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -263,7 +263,7 @@ function AvailabilityTab() {
               )}
 
               {!active && (
-                <p className="pl-12 mt-1 text-xs text-gray-400">Indisponible</p>
+                <p className="pl-12 mt-1 text-xs text-[#555]">Indisponible</p>
               )}
             </div>
           );
@@ -296,30 +296,30 @@ function SchedulingTab() {
   return (
     <div className="max-w-sm">
       <div className="mb-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-0.5">Lien de réservation</h2>
-        <p className="text-xs text-gray-400">Partagez ce lien avec vos leads pour qu&apos;ils réservent un créneau.</p>
+        <h2 className="text-sm font-semibold text-[#e6e6e6] mb-0.5">🔗 Lien de réservation</h2>
+        <p className="text-xs text-[#666]">Partagez ce lien avec vos leads pour qu&apos;ils réservent un créneau.</p>
       </div>
 
       {/* Event card — Calendly style */}
-      <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
-        <div className="p-5 border-b border-gray-100">
+      <div className="border border-[#383838] rounded-2xl overflow-hidden bg-[#252525] shadow-sm">
+        <div className="p-5 border-b border-[#383838]">
           <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm mb-3 select-none">
             CG
           </div>
-          <p className="text-xs text-gray-400 mb-0.5">Clément Guiraud</p>
-          <h3 className="text-base font-semibold text-gray-900">Discovery Call</h3>
+          <p className="text-xs text-[#666] mb-0.5">Clément Guiraud</p>
+          <h3 className="text-base font-semibold text-[#e6e6e6]">Discovery Call</h3>
         </div>
         <div className="p-5 space-y-2.5">
-          <div className="flex items-center gap-2.5 text-sm text-gray-500">
-            <Clock size={14} className="text-gray-400 flex-shrink-0" />
+          <div className="flex items-center gap-2.5 text-sm text-[#9b9b9b]">
+            <Clock size={14} className="text-[#666] flex-shrink-0" />
             <span>30 minutes</span>
           </div>
-          <div className="flex items-center gap-2.5 text-sm text-gray-500">
-            <Video size={14} className="text-gray-400 flex-shrink-0" />
+          <div className="flex items-center gap-2.5 text-sm text-[#9b9b9b]">
+            <Video size={14} className="text-[#666] flex-shrink-0" />
             <span>Google Meet</span>
           </div>
-          <div className="flex items-center gap-2.5 text-sm text-gray-500">
-            <Globe size={14} className="text-gray-400 flex-shrink-0" />
+          <div className="flex items-center gap-2.5 text-sm text-[#9b9b9b]">
+            <Globe size={14} className="text-[#666] flex-shrink-0" />
             <span>Europe/Paris</span>
           </div>
         </div>
@@ -327,14 +327,14 @@ function SchedulingTab() {
 
       {/* Copy link row */}
       <div className="mt-5 flex items-center gap-2">
-        <div className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-500 truncate select-all font-mono">
+        <div className="flex-1 px-3 py-2.5 bg-[#2f2f2f] border border-[#383838] rounded-xl text-xs text-[#9b9b9b] truncate select-all font-mono">
           {BOOK_URL}
         </div>
         <button
           onClick={copyLink}
           className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all flex-shrink-0 ${
             copied
-              ? "bg-green-100 text-green-700"
+              ? "bg-green-900/40 text-green-400"
               : "bg-blue-600 hover:bg-blue-700 text-white"
           }`}
         >
@@ -347,7 +347,7 @@ function SchedulingTab() {
         href={BOOK_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-3 block text-center text-xs text-blue-600 hover:underline"
+        className="mt-3 block text-center text-xs text-blue-400 hover:underline"
       >
         Ouvrir la page de réservation →
       </a>
@@ -552,8 +552,8 @@ function AutomationsTab() {
     <div className="max-w-2xl">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-sm font-semibold text-gray-900 mb-0.5">Séquences d&apos;emails</h2>
-          <p className="text-xs text-gray-400">Déclenché automatiquement quand un call est réservé.</p>
+          <h2 className="text-sm font-semibold text-[#e6e6e6] mb-0.5">✉️ Séquences d&apos;emails</h2>
+          <p className="text-xs text-[#666]">Déclenché automatiquement quand un call est réservé.</p>
         </div>
       </div>
 
@@ -564,14 +564,14 @@ function AutomationsTab() {
             const isEditing = expandedId === auto.id && editDraft?.id === auto.id;
             const draft = isEditing ? editDraft! : auto;
             return (
-              <div key={auto.id} className="border border-gray-200 rounded-xl bg-white overflow-hidden">
+              <div key={auto.id} className="border border-[#383838] rounded-xl bg-[#252525] overflow-hidden">
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-4 py-3">
                   {/* Enable toggle */}
                   <button
                     onClick={() => toggleEnabled(auto)}
                     className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
-                      auto.enabled ? "bg-blue-600" : "bg-gray-200"
+                      auto.enabled ? "bg-blue-600" : "bg-[#383838]"
                     }`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${auto.enabled ? "translate-x-4" : "translate-x-0.5"}`} />
@@ -579,12 +579,12 @@ function AutomationsTab() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-900 truncate">{auto.name}</span>
-                      <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1">
+                      <span className="text-sm font-semibold text-[#e6e6e6] truncate">{auto.name}</span>
+                      <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-900/40 text-blue-400 flex items-center gap-1">
                         <Zap size={9} /> Call réservé
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-[#666] mt-0.5">
                       {auto.steps.length} email{auto.steps.length > 1 ? "s" : ""} ·{" "}
                       {auto.steps.map((s) => stepWhenLabel(s)).join(" → ")}
                     </p>
@@ -596,13 +596,13 @@ function AutomationsTab() {
                         if (isEditing) { setExpandedId(null); setEditDraft(null); }
                         else startEdit(auto);
                       }}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-xs font-medium"
+                      className="p-1.5 rounded-lg text-[#666] hover:text-[#e6e6e6] hover:bg-[#383838] transition-colors text-xs font-medium"
                     >
                       {isEditing ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
                     <button
                       onClick={() => deleteAutomation(auto.id)}
-                      className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      className="p-1.5 rounded-lg text-[#555] hover:text-red-500 hover:bg-red-900/20 transition-colors"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -611,32 +611,32 @@ function AutomationsTab() {
 
                 {/* Inline editor */}
                 {isEditing && (
-                  <div className="border-t border-gray-100 bg-gray-50 px-4 pt-4 pb-5">
+                  <div className="border-t border-[#383838] bg-[#2f2f2f] px-4 pt-4 pb-5">
                     {/* Name */}
                     <div className="mb-4">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Nom</label>
+                      <label className="block text-xs font-medium text-[#9b9b9b] mb-1">Nom</label>
                       <input
                         value={draft.name}
                         onChange={(e) => setEditDraft({ ...draft, name: e.target.value })}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-400"
+                        className="w-full border border-[#383838] rounded-lg px-3 py-2 text-sm bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]"
                       />
                     </div>
 
                     {/* Steps */}
                     <div className="space-y-4 mb-4">
                       {draft.steps.map((step, idx) => (
-                        <div key={step.id} className="bg-white border border-gray-200 rounded-xl p-4">
+                        <div key={step.id} className="bg-[#252525] border border-[#383838] rounded-xl p-4">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
-                              <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                              <div className="w-5 h-5 rounded-full bg-blue-900/40 flex items-center justify-center text-[10px] font-bold text-blue-400">
                                 {idx + 1}
                               </div>
-                              <span className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                              <span className="text-xs font-semibold text-[#c0c0c0] flex items-center gap-1">
                                 <Mail size={11} /> Email
                               </span>
                             </div>
                             {draft.steps.length > 1 && (
-                              <button onClick={() => removeDraftStep(idx)} className="text-gray-300 hover:text-red-500 transition-colors">
+                              <button onClick={() => removeDraftStep(idx)} className="text-[#555] hover:text-red-500 transition-colors">
                                 <Trash2 size={12} />
                               </button>
                             )}
@@ -645,7 +645,7 @@ function AutomationsTab() {
                           <div className="grid grid-cols-2 gap-3 mb-3">
                             {/* When */}
                             <div>
-                              <label className="block text-[10px] font-medium text-gray-500 mb-1">Quand</label>
+                              <label className="block text-[10px] font-medium text-[#888] mb-1">Quand</label>
                               <select
                                 value={step.when === "immediately" ? "immediately" : `${step.when}:${step.delay_minutes}`}
                                 onChange={(e) => {
@@ -659,7 +659,7 @@ function AutomationsTab() {
                                     updateDraftStep(idx, "delay_minutes", parseInt(mins));
                                   }
                                 }}
-                                className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:border-blue-400"
+                                className="w-full border border-[#383838] rounded-lg px-2.5 py-1.5 text-xs bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]"
                               >
                                 <option value="immediately">Immédiatement</option>
                                 <option value="before_event:60">1h avant le call</option>
@@ -673,11 +673,11 @@ function AutomationsTab() {
 
                             {/* Recipient */}
                             <div>
-                              <label className="block text-[10px] font-medium text-gray-500 mb-1">Destinataire</label>
+                              <label className="block text-[10px] font-medium text-[#888] mb-1">Destinataire</label>
                               <select
                                 value={step.recipient}
                                 onChange={(e) => updateDraftStep(idx, "recipient", e.target.value)}
-                                className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:border-blue-400"
+                                className="w-full border border-[#383838] rounded-lg px-2.5 py-1.5 text-xs bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]"
                               >
                                 <option value="both">Lead + Moi</option>
                                 <option value="lead">Lead uniquement</option>
@@ -688,24 +688,24 @@ function AutomationsTab() {
 
                           {/* Subject */}
                           <div className="mb-2">
-                            <label className="block text-[10px] font-medium text-gray-500 mb-1">Objet</label>
+                            <label className="block text-[10px] font-medium text-[#888] mb-1">Objet</label>
                             <input
                               value={step.subject}
                               onChange={(e) => updateDraftStep(idx, "subject", e.target.value)}
-                              className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:border-blue-400"
+                              className="w-full border border-[#383838] rounded-lg px-2.5 py-1.5 text-xs bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]"
                             />
                           </div>
 
                           {/* Body */}
                           <div>
-                            <label className="block text-[10px] font-medium text-gray-500 mb-1">Corps</label>
+                            <label className="block text-[10px] font-medium text-[#888] mb-1">Corps</label>
                             <textarea
                               rows={4}
                               value={step.body}
                               onChange={(e) => updateDraftStep(idx, "body", e.target.value)}
-                              className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:border-blue-400 resize-y"
+                              className="w-full border border-[#383838] rounded-lg px-2.5 py-1.5 text-xs bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2] resize-y"
                             />
-                            <p className="mt-1 text-[10px] text-gray-400">Variables : {"{{name}} {{date}} {{time}} {{meetLink}}"}</p>
+                            <p className="mt-1 text-[10px] text-[#555]">Variables : {"{{name}} {{date}} {{time}} {{meetLink}}"}</p>
                           </div>
                         </div>
                       ))}
@@ -714,7 +714,7 @@ function AutomationsTab() {
                     {/* Add step */}
                     <button
                       onClick={addDraftStep}
-                      className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium mb-4"
+                      className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-medium mb-4"
                     >
                       <Plus size={12} /> Ajouter une étape
                     </button>
@@ -730,7 +730,7 @@ function AutomationsTab() {
                       </button>
                       <button
                         onClick={() => { setExpandedId(null); setEditDraft(null); }}
-                        className="px-4 py-2 text-xs text-gray-500 hover:text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                        className="px-4 py-2 text-xs text-[#9b9b9b] hover:text-[#e6e6e6] font-medium rounded-lg hover:bg-[#383838] transition-colors"
                       >
                         Annuler
                       </button>
@@ -745,7 +745,7 @@ function AutomationsTab() {
 
       {/* Templates section */}
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+        <p className="text-xs font-semibold text-[#888] uppercase tracking-wide mb-3">
           {automations.length === 0 ? "Démarrer avec un modèle" : "Ajouter depuis un modèle"}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -754,18 +754,18 @@ function AutomationsTab() {
               key={tpl.name}
               onClick={() => createFromTemplate(tpl)}
               disabled={creating}
-              className="text-left border border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:bg-blue-50/50 transition-all group disabled:opacity-50"
+              className="text-left border border-[#383838] rounded-xl p-4 hover:border-blue-500 hover:bg-blue-900/20 transition-all group disabled:opacity-50"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Zap size={12} className="text-blue-600" />
+                <div className="w-6 h-6 rounded-lg bg-blue-900/40 flex items-center justify-center">
+                  <Zap size={12} className="text-blue-400" />
                 </div>
-                <span className="text-xs font-semibold text-gray-800 group-hover:text-blue-700">{tpl.name}</span>
+                <span className="text-xs font-semibold text-[#d4d4d4] group-hover:text-blue-400">{tpl.name}</span>
               </div>
-              <p className="text-[11px] text-gray-400 leading-relaxed">{tpl.description}</p>
+              <p className="text-[11px] text-[#666] leading-relaxed">{tpl.description}</p>
               <div className="mt-2 flex flex-wrap gap-1">
                 {tpl.steps.map((s, i) => (
-                  <span key={i} className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 bg-[#383838] text-[#888] rounded-full">
                     {s.when === "immediately" ? "Immédiat" : s.when === "before_event" ? `-${s.delay_minutes / 60}h` : `+${s.delay_minutes / 60}h`}
                   </span>
                 ))}
@@ -776,9 +776,9 @@ function AutomationsTab() {
       </div>
 
       {/* Info box */}
-      <div className="mt-6 flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+      <div className="mt-6 flex items-start gap-2.5 bg-amber-900/20 border border-amber-700/40 rounded-xl px-4 py-3">
         <Power size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-700 leading-relaxed">
+        <p className="text-xs text-amber-400 leading-relaxed">
           Les emails sont envoyés via <strong>Resend</strong> depuis <strong>{ORGANIZER_EMAIL_DISPLAY}</strong>.
           Les rappels planifiés sont traités toutes les 5 minutes par le cron Vercel.
         </p>
@@ -939,15 +939,15 @@ export default function CalendarSyncPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* ── Header with tabs ── */}
-      <div className="flex flex-col border-b border-gray-100 flex-shrink-0 bg-white">
+      <div className="flex flex-col border-b border-[#383838] flex-shrink-0 bg-[#191919]">
         {/* Tabs row */}
         <div className="flex items-center overflow-x-auto scrollbar-none">
           {(["calendar", "scheduling", "availability", "automations"] as Tab[]).map((t) => {
             const labels: Record<Tab, string> = {
               calendar: "Calendrier",
-              scheduling: "Scheduling",
-              availability: "Disponibilités",
-              automations: "Automations",
+              scheduling: "🔗 Lien de réservation",
+              availability: "🗓 Heures de disponibilité",
+              automations: "✉️ Séquences d'emails",
             };
             return (
               <button
@@ -955,8 +955,8 @@ export default function CalendarSyncPage() {
                 onClick={() => setTab(t)}
                 className={`flex-shrink-0 px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
                   tab === t
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                    ? "border-blue-500 text-blue-400"
+                    : "border-transparent text-[#9b9b9b] hover:text-[#e6e6e6]"
                 }`}
               >
                 {labels[t]}
@@ -969,28 +969,28 @@ export default function CalendarSyncPage() {
         {tab === "calendar" && (
           <div className="flex flex-wrap items-center gap-2 px-4 pb-2 pt-1">
             <div className="flex items-center gap-1.5">
-              <button onClick={prevWeek} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors">
+              <button onClick={prevWeek} className="p-1.5 rounded-lg hover:bg-[#383838] text-[#9b9b9b] hover:text-[#e6e6e6] transition-colors">
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-sm font-semibold text-gray-800 text-center whitespace-nowrap">{weekLabel}</span>
-              <button onClick={nextWeek} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors">
+              <span className="text-sm font-semibold text-[#d4d4d4] text-center whitespace-nowrap">{weekLabel}</span>
+              <button onClick={nextWeek} className="p-1.5 rounded-lg hover:bg-[#383838] text-[#9b9b9b] hover:text-[#e6e6e6] transition-colors">
                 <ChevronRight size={16} />
               </button>
-              <button onClick={goToday} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors">
+              <button onClick={goToday} className="px-3 py-1.5 text-xs font-medium bg-[#383838] hover:bg-[#2f2f2f] text-[#9b9b9b] rounded-lg transition-colors">
                 Today
               </button>
             </div>
             <div className="flex items-center gap-2 ml-auto">
               {syncMsg && (
-                <span className={`text-xs hidden sm:inline ${syncMsg.ok ? "text-green-600" : "text-red-500"}`}>{syncMsg.text}</span>
+                <span className={`text-xs hidden sm:inline ${syncMsg.ok ? "text-green-400" : "text-red-400"}`}>{syncMsg.text}</span>
               )}
               <button onClick={triggerSync} disabled={syncing}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg transition-colors">
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#383838] hover:bg-[#2f2f2f] disabled:opacity-50 text-[#e6e6e6] rounded-lg transition-colors">
                 <RotateCw size={12} className={syncing ? "animate-spin" : ""} />
                 <span className="hidden sm:inline">{syncing ? "Syncing…" : "EdenRed sync"}</span>
                 {!syncing && <span className="sm:hidden">Sync</span>}
               </button>
-              <button onClick={fetchEvents} disabled={loading} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors disabled:opacity-40">
+              <button onClick={fetchEvents} disabled={loading} className="p-1.5 rounded-lg hover:bg-[#383838] text-[#666] hover:text-[#e6e6e6] transition-colors disabled:opacity-40">
                 <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
               </button>
             </div>
@@ -1006,20 +1006,20 @@ export default function CalendarSyncPage() {
           <div className="flex gap-4 p-3 md:p-5 min-h-full items-start">
             <div className="flex-1 min-w-0">
               {error && (
-                <div className="mb-4 px-4 py-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl">{error}</div>
+                <div className="mb-4 px-4 py-3 bg-red-900/30 border border-red-500/40 text-red-300 text-sm rounded-xl">{error}</div>
               )}
 
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="bg-[#252525] rounded-2xl border border-[#383838] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                 {/* Day headers */}
-                <div className="grid border-b border-gray-100" style={{ gridTemplateColumns: "52px repeat(7, minmax(80px, 1fr))" }}>
+                <div className="grid border-b border-[#383838]" style={{ gridTemplateColumns: "52px repeat(7, minmax(80px, 1fr))" }}>
                   <div />
                   {days.map((d, i) => {
                     const isToday = d.getTime() === todayDate.getTime();
                     return (
-                      <div key={i} className="py-2.5 text-center border-l border-gray-50">
-                        <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{DAYS_SHORT[i]}</div>
-                        <div className={`mx-auto mt-0.5 w-7 h-7 flex items-center justify-center text-base font-bold rounded-full ${isToday ? "bg-red-600 text-white" : "text-gray-700"}`}>
+                      <div key={i} className="py-2.5 text-center border-l border-[#2f2f2f]">
+                        <div className="text-[10px] font-medium text-[#666] uppercase tracking-wide">{DAYS_SHORT[i]}</div>
+                        <div className={`mx-auto mt-0.5 w-7 h-7 flex items-center justify-center text-base font-bold rounded-full ${isToday ? "bg-red-600 text-white" : "text-[#c0c0c0]"}`}>
                           {d.getDate()}
                         </div>
                       </div>
@@ -1032,15 +1032,15 @@ export default function CalendarSyncPage() {
                   <div className="grid" style={{ gridTemplateColumns: "52px repeat(7, minmax(80px, 1fr))" }}>
                     <div className="relative" style={{ height: totalPx }}>
                       {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
-                        <div key={i} style={{ position: "absolute", top: i * SLOT_H, right: 6, fontSize: 10, color: "#d1d5db", paddingTop: 2 }}>
+                        <div key={i} style={{ position: "absolute", top: i * SLOT_H, right: 6, fontSize: 10, color: "#555", paddingTop: 2 }}>
                           {HOUR_START + i}:00
                         </div>
                       ))}
                     </div>
                     {days.map((d, di) => (
-                      <div key={di} className="relative border-l border-gray-50" style={{ height: totalPx }}>
+                      <div key={di} className="relative border-l border-[#2f2f2f]" style={{ height: totalPx }}>
                         {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
-                          <div key={i} style={{ position: "absolute", top: i * SLOT_H, left: 0, right: 0, borderTop: "1px solid #f9fafb", pointerEvents: "none" }} />
+                          <div key={i} style={{ position: "absolute", top: i * SLOT_H, left: 0, right: 0, borderTop: "1px solid #2f2f2f", pointerEvents: "none" }} />
                         ))}
                         {dayEvents(d).map((ev) => {
                           const { top, height } = eventStyle(ev);
@@ -1053,8 +1053,8 @@ export default function CalendarSyncPage() {
                               style={{ position: "absolute", left: 2, right: 2, top, height, zIndex: 1 }}
                               className={`rounded-md px-1.5 py-0.5 text-left overflow-hidden text-[10px] font-medium leading-tight transition-all border-l-2 ${
                                 lead
-                                  ? `bg-red-50 text-red-800 border-red-500 ${isSelected ? "ring-1 ring-red-400" : ""}`
-                                  : `bg-blue-50 text-blue-800 border-blue-400 ${isSelected ? "ring-1 ring-blue-400" : ""}`
+                                  ? `bg-red-900/30 text-red-300 border-red-500 ${isSelected ? "ring-1 ring-red-400" : ""}`
+                                  : `bg-blue-900/30 text-blue-300 border-blue-400 ${isSelected ? "ring-1 ring-blue-400" : ""}`
                               }`}
                             >
                               <span className="block truncate">{ev.summary ?? "(no title)"}</span>
@@ -1075,32 +1075,32 @@ export default function CalendarSyncPage() {
 
               {/* Send invite section */}
               <div className="mt-5 grid grid-cols-1 lg:grid-cols-5 gap-4">
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <h2 className="text-sm font-semibold text-gray-800 mb-1">Send a call invite</h2>
-                  <p className="text-xs text-gray-400 mb-4">30-min Google Meet · sent to the lead</p>
+                <div className="lg:col-span-2 bg-[#252525] rounded-2xl border border-[#383838] shadow-sm p-5">
+                  <h2 className="text-sm font-semibold text-[#d4d4d4] mb-1">📞 Send a call invite</h2>
+                  <p className="text-xs text-[#666] mb-4">30-min Google Meet · sent to the lead</p>
                   <div className="space-y-3 mb-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Lead name</label>
+                      <label className="block text-xs font-medium text-[#9b9b9b] mb-1">Lead name</label>
                       <input value={invForm.name} onChange={(e) => setInvForm({ ...invForm, name: e.target.value })}
                         placeholder="Jean Dupont"
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100" />
+                        className="w-full border border-[#383838] rounded-lg px-3 py-2 text-sm bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]/30" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Lead email</label>
+                      <label className="block text-xs font-medium text-[#9b9b9b] mb-1">Lead email</label>
                       <input type="email" value={invForm.email} onChange={(e) => setInvForm({ ...invForm, email: e.target.value })}
                         placeholder="jean@entreprise.fr"
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100" />
+                        className="w-full border border-[#383838] rounded-lg px-3 py-2 text-sm bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]/30" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                        <label className="block text-xs font-medium text-[#9b9b9b] mb-1">Date</label>
                         <input type="date" value={invForm.date} onChange={(e) => setInvForm({ ...invForm, date: e.target.value })}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-400" />
+                          className="w-full border border-[#383838] rounded-lg px-3 py-2 text-sm bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Time</label>
+                        <label className="block text-xs font-medium text-[#9b9b9b] mb-1">Time</label>
                         <input type="time" value={invForm.time} onChange={(e) => setInvForm({ ...invForm, time: e.target.value })}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-400" />
+                          className="w-full border border-[#383838] rounded-lg px-3 py-2 text-sm bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]" />
                       </div>
                     </div>
                   </div>
@@ -1110,26 +1110,26 @@ export default function CalendarSyncPage() {
                     {sending ? "Creating…" : "Send 30-min Meet invite"}
                   </button>
                   {sendMsg && (
-                    <p className={`mt-2 text-xs text-center ${sendMsg.ok ? "text-green-600" : "text-red-600"}`}>{sendMsg.text}</p>
+                    <p className={`mt-2 text-xs text-center ${sendMsg.ok ? "text-green-400" : "text-red-400"}`}>{sendMsg.text}</p>
                   )}
                 </div>
 
-                <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-gray-800">Sent invites</h2>
-                    <span className="text-xs text-gray-400">{invites.length} invite{invites.length !== 1 ? "s" : ""}</span>
+                <div className="lg:col-span-3 bg-[#252525] rounded-2xl border border-[#383838] shadow-sm overflow-hidden">
+                  <div className="px-5 py-4 border-b border-[#383838] flex items-center justify-between">
+                    <h2 className="text-sm font-semibold text-[#d4d4d4]">📨 Sent invites</h2>
+                    <span className="text-xs text-[#666]">{invites.length} invite{invites.length !== 1 ? "s" : ""}</span>
                   </div>
                   {invites.length === 0 ? (
-                    <div className="py-10 text-center text-xs text-gray-400">No invites sent yet.</div>
+                    <div className="py-10 text-center text-xs text-[#666]">No invites sent yet.</div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
-                          <tr className="border-b border-gray-100 bg-gray-50">
-                            <th className="px-4 py-2.5 text-left font-medium text-gray-500">Lead</th>
-                            <th className="px-4 py-2.5 text-left font-medium text-gray-500">Date</th>
-                            <th className="px-4 py-2.5 text-left font-medium text-gray-500">Meet</th>
-                            <th className="px-4 py-2.5 text-left font-medium text-gray-500">Status</th>
+                          <tr className="border-b border-[#383838] bg-[#2f2f2f]">
+                            <th className="px-4 py-2.5 text-left font-medium text-[#888]">Lead</th>
+                            <th className="px-4 py-2.5 text-left font-medium text-[#888]">Date</th>
+                            <th className="px-4 py-2.5 text-left font-medium text-[#888]">Meet</th>
+                            <th className="px-4 py-2.5 text-left font-medium text-[#888]">Status</th>
                             <th className="px-4 py-2.5" />
                           </tr>
                         </thead>
@@ -1138,37 +1138,37 @@ export default function CalendarSyncPage() {
                             const dt = new Date(`${inv.date}T${inv.time}`);
                             const past = dt < new Date();
                             return (
-                              <tr key={inv.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                              <tr key={inv.id} className="border-b border-[#383838] hover:bg-[#2f2f2f]">
                                 <td className="px-4 py-2.5">
-                                  <div className="font-medium text-gray-800">{inv.name}</div>
-                                  <div className="text-gray-400">{inv.email}</div>
+                                  <div className="font-medium text-[#d4d4d4]">{inv.name}</div>
+                                  <div className="text-[#666]">{inv.email}</div>
                                 </td>
-                                <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">
+                                <td className="px-4 py-2.5 text-[#9b9b9b] whitespace-nowrap">
                                   {fmt(dt, { day: "numeric", month: "short" })} {inv.time}
                                 </td>
                                 <td className="px-4 py-2.5">
                                   {inv.meetLink ? (
                                     <a href={inv.meetLink} target="_blank" rel="noreferrer"
-                                      className="flex items-center gap-1 text-blue-600 hover:underline">
+                                      className="flex items-center gap-1 text-blue-400 hover:underline">
                                       <Video size={12} /> Join
                                     </a>
                                   ) : inv.calLink ? (
                                     <a href={inv.calLink} target="_blank" rel="noreferrer"
-                                      className="flex items-center gap-1 text-gray-400 hover:text-blue-600">
+                                      className="flex items-center gap-1 text-[#666] hover:text-blue-400">
                                       <Calendar size={12} /> Calendar
                                     </a>
                                   ) : (
-                                    <span className="text-gray-300">—</span>
+                                    <span className="text-[#555]">—</span>
                                   )}
                                 </td>
                                 <td className="px-4 py-2.5">
-                                  <span className={`px-2 py-0.5 rounded-full font-medium ${past ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}`}>
+                                  <span className={`px-2 py-0.5 rounded-full font-medium ${past ? "bg-[#383838] text-[#888]" : "bg-green-900/40 text-green-400"}`}>
                                     {past ? "Past" : "Upcoming"}
                                   </span>
                                 </td>
                                 <td className="px-4 py-2.5">
                                   <button onClick={() => saveInvites(invites.filter((i) => i.id !== inv.id))}
-                                    className="text-gray-300 hover:text-red-500 transition-colors">
+                                    className="text-[#555] hover:text-red-500 transition-colors">
                                     <X size={14} />
                                   </button>
                                 </td>
@@ -1185,22 +1185,22 @@ export default function CalendarSyncPage() {
 
             {/* Event detail panel — hidden on mobile */}
             <div className="hidden md:block w-64 flex-shrink-0 sticky top-0">
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Event detail</h3>
+              <div className="bg-[#252525] rounded-2xl border border-[#383838] shadow-sm p-4">
+                <h3 className="text-xs font-semibold text-[#888] uppercase tracking-wide mb-3">🔍 Event detail</h3>
                 {!selected ? (
-                  <p className="text-xs text-gray-400 py-8 text-center">Click an event to see details</p>
+                  <p className="text-xs text-[#666] py-8 text-center">Click an event to see details</p>
                 ) : (
                   <div>
                     <div className="mb-3">
                       <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded-full mb-2 ${
-                        isLeadEvent(selected) ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
+                        isLeadEvent(selected) ? "bg-red-900/40 text-red-400" : "bg-blue-900/40 text-blue-400"
                       }`}>
                         {isLeadEvent(selected) ? "Lead call" : "My event"}
                       </span>
-                      <h4 className="text-sm font-semibold text-gray-900 leading-snug">{selected.summary ?? "(no title)"}</h4>
+                      <h4 className="text-sm font-semibold text-[#e6e6e6] leading-snug">{selected.summary ?? "(no title)"}</h4>
                     </div>
                     {selected.start.dateTime && (
-                      <p className="text-xs text-gray-500 mb-1.5">
+                      <p className="text-xs text-[#9b9b9b] mb-1.5">
                         📅 {fmt(new Date(selected.start.dateTime), { weekday: "long", day: "numeric", month: "long" })}
                         <br />
                         {new Date(selected.start.dateTime).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
@@ -1209,43 +1209,43 @@ export default function CalendarSyncPage() {
                     )}
                     {getMeetLink(selected) && (
                       <a href={getMeetLink(selected)!} target="_blank" rel="noreferrer"
-                        className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline mb-3">
+                        className="flex items-center gap-1.5 text-xs text-blue-400 hover:underline mb-3">
                         <Video size={12} /> Join Google Meet
                       </a>
                     )}
                     {(selected.attendees ?? []).filter((a) => !a.self).length > 0 && (
                       <div className="mb-3">
-                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Attendees</p>
+                        <p className="text-[10px] font-semibold text-[#888] uppercase tracking-wide mb-1.5">Attendees</p>
                         {selected.attendees!.filter((a) => !a.self).map((a, i) => (
                           <div key={i} className="flex items-center gap-2 mb-1.5">
-                            <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-[10px] font-bold text-red-600 flex-shrink-0">
+                            <div className="w-6 h-6 rounded-full bg-red-900/40 flex items-center justify-center text-[10px] font-bold text-red-400 flex-shrink-0">
                               {(a.displayName ?? a.email)[0].toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              {a.displayName && <p className="text-xs font-medium text-gray-800 truncate">{a.displayName}</p>}
-                              <p className="text-[10px] text-gray-400 truncate">{a.email}</p>
+                              {a.displayName && <p className="text-xs font-medium text-[#d4d4d4] truncate">{a.displayName}</p>}
+                              <p className="text-[10px] text-[#666] truncate">{a.email}</p>
                             </div>
                             <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                              a.responseStatus === "accepted" ? "bg-green-100 text-green-700" :
-                              a.responseStatus === "declined" ? "bg-red-100 text-red-600" :
-                              "bg-gray-100 text-gray-500"
+                              a.responseStatus === "accepted" ? "bg-green-900/40 text-green-400" :
+                              a.responseStatus === "declined" ? "bg-red-900/40 text-red-400" :
+                              "bg-[#383838] text-[#888]"
                             }`}>{a.responseStatus ?? "?"}</span>
                           </div>
                         ))}
                       </div>
                     )}
                     <div>
-                      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Notes</p>
+                      <p className="text-[10px] font-semibold text-[#888] uppercase tracking-wide mb-1.5">Notes</p>
                       <textarea
                         rows={3}
                         value={notes[selected.id] ?? ""}
                         onChange={(e) => saveNotes({ ...notes, [selected.id]: e.target.value })}
                         placeholder="Add notes about this lead…"
-                        className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-xs text-gray-800 focus:outline-none focus:border-red-400 resize-none"
+                        className="w-full border border-[#383838] rounded-lg px-2.5 py-2 text-xs text-[#d4d4d4] bg-[#252525] focus:outline-none focus:border-[#5865f2] resize-none"
                       />
                       <button
                         onClick={() => { setSavingNote(true); setTimeout(() => setSavingNote(false), 800); }}
-                        className="mt-1 flex items-center gap-1 text-xs text-red-600 hover:text-red-700 font-medium"
+                        className="mt-1 flex items-center gap-1 text-xs text-red-400 hover:text-red-300 font-medium"
                       >
                         <Save size={11} /> {savingNote ? "Saved!" : "Save note"}
                       </button>
