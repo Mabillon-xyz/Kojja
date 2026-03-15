@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   ChevronLeft, ChevronRight, RefreshCw, Video, Calendar, X, Save,
-  RotateCw, Copy, Check, Clock, Globe, Plus, Trash2,
+  RotateCw, Copy, Check, Clock, Globe, Plus, Trash2, Zap, Mail,
+  ChevronDown, ChevronUp, Power,
 } from "lucide-react";
 import type { AvailabilityConfig, DaySchedule } from "@/app/api/settings/availability/route";
+import type { AutomationStep, Automation } from "@/lib/automations";
 
 // ── Types ──────────────────────────────────────────────────────
 type CalEvent = {
@@ -32,7 +34,7 @@ type Invite = {
   createdAt: number;
 };
 
-type Tab = "calendar" | "scheduling" | "availability";
+type Tab = "calendar" | "scheduling" | "availability" | "automations";
 
 // ── Constants ──────────────────────────────────────────────────
 const MY_EMAIL = "clement.guiraudpro@gmail.com";
@@ -353,6 +355,438 @@ function SchedulingTab() {
   );
 }
 
+// ── Automation templates ─────────────────────────────────────────
+const ORGANIZER_EMAIL_DISPLAY = "clement.guiraudpro@gmail.com";
+
+const TEMPLATES: { name: string; description: string; steps: Omit<AutomationStep, "id">[] }[] = [
+  {
+    name: "Confirmation seule",
+    description: "Un email immédiat pour confirmer le call.",
+    steps: [
+      {
+        type: "send_email",
+        when: "immediately",
+        delay_minutes: 0,
+        recipient: "both",
+        subject: "✓ Call confirmé — {{date}} à {{time}}",
+        body: "Bonjour {{name}},\n\nVotre discovery call de 30 minutes avec Clément Guiraud est confirmé.\n\n📅 {{date}} à {{time}} (heure de Paris)\n🎥 Rejoindre le Meet : {{meetLink}}\n\nÀ très vite,\nClément",
+      },
+    ],
+  },
+  {
+    name: "Confirmation + Rappel 24h",
+    description: "Confirmation immédiate, puis rappel la veille.",
+    steps: [
+      {
+        type: "send_email",
+        when: "immediately",
+        delay_minutes: 0,
+        recipient: "both",
+        subject: "✓ Call confirmé — {{date}} à {{time}}",
+        body: "Bonjour {{name}},\n\nVotre discovery call de 30 minutes avec Clément Guiraud est confirmé.\n\n📅 {{date}} à {{time}} (heure de Paris)\n🎥 Rejoindre le Meet : {{meetLink}}\n\nÀ très vite,\nClément",
+      },
+      {
+        type: "send_email",
+        when: "before_event",
+        delay_minutes: 1440,
+        recipient: "lead",
+        subject: "Rappel : votre call demain à {{time}}",
+        body: "Bonjour {{name}},\n\nUn petit rappel — votre discovery call de 30 minutes avec Clément est demain.\n\n📅 {{date}} à {{time}} (heure de Paris)\n🎥 Rejoindre le Meet : {{meetLink}}\n\nÀ demain !\nClément",
+      },
+    ],
+  },
+  {
+    name: "Séquence complète",
+    description: "Confirmation + rappel 24h + rappel 1h avant.",
+    steps: [
+      {
+        type: "send_email",
+        when: "immediately",
+        delay_minutes: 0,
+        recipient: "both",
+        subject: "✓ Call confirmé — {{date}} à {{time}}",
+        body: "Bonjour {{name}},\n\nVotre discovery call de 30 minutes avec Clément Guiraud est confirmé.\n\n📅 {{date}} à {{time}} (heure de Paris)\n🎥 Rejoindre le Meet : {{meetLink}}\n\nÀ très vite,\nClément",
+      },
+      {
+        type: "send_email",
+        when: "before_event",
+        delay_minutes: 1440,
+        recipient: "lead",
+        subject: "Rappel : votre call demain à {{time}}",
+        body: "Bonjour {{name}},\n\nUn petit rappel — votre discovery call de 30 minutes avec Clément est demain.\n\n📅 {{date}} à {{time}} (heure de Paris)\n🎥 Rejoindre le Meet : {{meetLink}}\n\nÀ demain !\nClément",
+      },
+      {
+        type: "send_email",
+        when: "before_event",
+        delay_minutes: 60,
+        recipient: "lead",
+        subject: "Dans 1 heure : votre call à {{time}} 🎥",
+        body: "Bonjour {{name}},\n\nVotre call avec Clément commence dans 1 heure !\n\n🎥 Rejoindre le Meet : {{meetLink}}\n\nÀ tout de suite,\nClément",
+      },
+    ],
+  },
+];
+
+function newStepId() {
+  return Math.random().toString(36).slice(2);
+}
+
+function stepWhenLabel(step: AutomationStep): string {
+  if (step.when === "immediately") return "Immédiatement";
+  if (step.when === "delay_after_booking") {
+    const h = step.delay_minutes / 60;
+    return h >= 1 ? `${h}h après la réservation` : `${step.delay_minutes}min après la réservation`;
+  }
+  // before_event
+  if (step.delay_minutes >= 1440) return `${step.delay_minutes / 1440}j avant le call`;
+  return `${step.delay_minutes / 60}h avant le call`;
+}
+
+function recipientLabel(r: AutomationStep["recipient"]): string {
+  return r === "lead" ? "Lead" : r === "organizer" ? "Moi" : "Lead + Moi";
+}
+
+// ── Automations tab ──────────────────────────────────────────────
+function AutomationsTab() {
+  const [automations, setAutomations] = useState<Automation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Automation | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/automations")
+      .then((r) => r.json())
+      .then((data) => { setAutomations(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  async function toggleEnabled(automation: Automation) {
+    const updated = { ...automation, enabled: !automation.enabled };
+    setAutomations((prev) => prev.map((a) => (a.id === automation.id ? updated : a)));
+    await fetch(`/api/automations/${automation.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: updated.enabled }),
+    });
+  }
+
+  async function deleteAutomation(id: string) {
+    if (!confirm("Supprimer cette automation ?")) return;
+    setAutomations((prev) => prev.filter((a) => a.id !== id));
+    await fetch(`/api/automations/${id}`, { method: "DELETE" });
+  }
+
+  async function saveEdit() {
+    if (!editDraft) return;
+    setSaving(true);
+    const r = await fetch(`/api/automations/${editDraft.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: editDraft.name, steps: editDraft.steps }),
+    });
+    const data = await r.json();
+    setAutomations((prev) => prev.map((a) => (a.id === editDraft.id ? data : a)));
+    setEditDraft(null);
+    setExpandedId(null);
+    setSaving(false);
+  }
+
+  async function createFromTemplate(tpl: typeof TEMPLATES[0]) {
+    setCreating(true);
+    const r = await fetch("/api/automations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: tpl.name,
+        enabled: true,
+        steps: tpl.steps.map((s) => ({ ...s, id: newStepId() })),
+      }),
+    });
+    const data = await r.json();
+    setAutomations((prev) => [...prev, data]);
+    setCreating(false);
+  }
+
+  function startEdit(automation: Automation) {
+    setEditDraft(JSON.parse(JSON.stringify(automation)));
+    setExpandedId(automation.id);
+  }
+
+  function updateDraftStep(idx: number, field: keyof AutomationStep, value: string | number) {
+    if (!editDraft) return;
+    const steps = [...editDraft.steps];
+    steps[idx] = { ...steps[idx], [field]: value } as AutomationStep;
+    setEditDraft({ ...editDraft, steps });
+  }
+
+  function addDraftStep() {
+    if (!editDraft) return;
+    const newStep: AutomationStep = {
+      id: newStepId(),
+      type: "send_email",
+      when: "before_event",
+      delay_minutes: 1440,
+      recipient: "lead",
+      subject: "Rappel : votre call {{date}}",
+      body: "Bonjour {{name}},\n\nRappel de votre call à {{time}}.\n\n🎥 {{meetLink}}\n\nClément",
+    };
+    setEditDraft({ ...editDraft, steps: [...editDraft.steps, newStep] });
+  }
+
+  function removeDraftStep(idx: number) {
+    if (!editDraft || editDraft.steps.length <= 1) return;
+    setEditDraft({ ...editDraft, steps: editDraft.steps.filter((_, i) => i !== idx) });
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl">
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900 mb-0.5">Séquences d&apos;emails</h2>
+          <p className="text-xs text-gray-400">Déclenché automatiquement quand un call est réservé.</p>
+        </div>
+      </div>
+
+      {/* Automation list */}
+      {automations.length > 0 && (
+        <div className="space-y-3 mb-8">
+          {automations.map((auto) => {
+            const isEditing = expandedId === auto.id && editDraft?.id === auto.id;
+            const draft = isEditing ? editDraft! : auto;
+            return (
+              <div key={auto.id} className="border border-gray-200 rounded-xl bg-white overflow-hidden">
+                {/* Card header */}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  {/* Enable toggle */}
+                  <button
+                    onClick={() => toggleEnabled(auto)}
+                    className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
+                      auto.enabled ? "bg-blue-600" : "bg-gray-200"
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${auto.enabled ? "translate-x-4" : "translate-x-0.5"}`} />
+                  </button>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-900 truncate">{auto.name}</span>
+                      <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1">
+                        <Zap size={9} /> Call réservé
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {auto.steps.length} email{auto.steps.length > 1 ? "s" : ""} ·{" "}
+                      {auto.steps.map((s) => stepWhenLabel(s)).join(" → ")}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        if (isEditing) { setExpandedId(null); setEditDraft(null); }
+                        else startEdit(auto);
+                      }}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-xs font-medium"
+                    >
+                      {isEditing ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+                    <button
+                      onClick={() => deleteAutomation(auto.id)}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inline editor */}
+                {isEditing && (
+                  <div className="border-t border-gray-100 bg-gray-50 px-4 pt-4 pb-5">
+                    {/* Name */}
+                    <div className="mb-4">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Nom</label>
+                      <input
+                        value={draft.name}
+                        onChange={(e) => setEditDraft({ ...draft, name: e.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-400"
+                      />
+                    </div>
+
+                    {/* Steps */}
+                    <div className="space-y-4 mb-4">
+                      {draft.steps.map((step, idx) => (
+                        <div key={step.id} className="bg-white border border-gray-200 rounded-xl p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                {idx + 1}
+                              </div>
+                              <span className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                                <Mail size={11} /> Email
+                              </span>
+                            </div>
+                            {draft.steps.length > 1 && (
+                              <button onClick={() => removeDraftStep(idx)} className="text-gray-300 hover:text-red-500 transition-colors">
+                                <Trash2 size={12} />
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            {/* When */}
+                            <div>
+                              <label className="block text-[10px] font-medium text-gray-500 mb-1">Quand</label>
+                              <select
+                                value={step.when === "immediately" ? "immediately" : `${step.when}:${step.delay_minutes}`}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "immediately") {
+                                    updateDraftStep(idx, "when", "immediately");
+                                    updateDraftStep(idx, "delay_minutes", 0);
+                                  } else {
+                                    const [when, mins] = val.split(":");
+                                    updateDraftStep(idx, "when", when);
+                                    updateDraftStep(idx, "delay_minutes", parseInt(mins));
+                                  }
+                                }}
+                                className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:border-blue-400"
+                              >
+                                <option value="immediately">Immédiatement</option>
+                                <option value="before_event:60">1h avant le call</option>
+                                <option value="before_event:180">3h avant le call</option>
+                                <option value="before_event:1440">24h avant le call</option>
+                                <option value="before_event:2880">48h avant le call</option>
+                                <option value="delay_after_booking:60">1h après la réservation</option>
+                                <option value="delay_after_booking:1440">24h après la réservation</option>
+                              </select>
+                            </div>
+
+                            {/* Recipient */}
+                            <div>
+                              <label className="block text-[10px] font-medium text-gray-500 mb-1">Destinataire</label>
+                              <select
+                                value={step.recipient}
+                                onChange={(e) => updateDraftStep(idx, "recipient", e.target.value)}
+                                className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:border-blue-400"
+                              >
+                                <option value="both">Lead + Moi</option>
+                                <option value="lead">Lead uniquement</option>
+                                <option value="organizer">Moi uniquement</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Subject */}
+                          <div className="mb-2">
+                            <label className="block text-[10px] font-medium text-gray-500 mb-1">Objet</label>
+                            <input
+                              value={step.subject}
+                              onChange={(e) => updateDraftStep(idx, "subject", e.target.value)}
+                              className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:border-blue-400"
+                            />
+                          </div>
+
+                          {/* Body */}
+                          <div>
+                            <label className="block text-[10px] font-medium text-gray-500 mb-1">Corps</label>
+                            <textarea
+                              rows={4}
+                              value={step.body}
+                              onChange={(e) => updateDraftStep(idx, "body", e.target.value)}
+                              className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:border-blue-400 resize-y"
+                            />
+                            <p className="mt-1 text-[10px] text-gray-400">Variables : {"{{name}} {{date}} {{time}} {{meetLink}}"}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Add step */}
+                    <button
+                      onClick={addDraftStep}
+                      className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium mb-4"
+                    >
+                      <Plus size={12} /> Ajouter une étape
+                    </button>
+
+                    {/* Save / Cancel */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={saveEdit}
+                        disabled={saving}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors"
+                      >
+                        <Save size={12} /> {saving ? "Enregistrement…" : "Enregistrer"}
+                      </button>
+                      <button
+                        onClick={() => { setExpandedId(null); setEditDraft(null); }}
+                        className="px-4 py-2 text-xs text-gray-500 hover:text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Templates section */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          {automations.length === 0 ? "Démarrer avec un modèle" : "Ajouter depuis un modèle"}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {TEMPLATES.map((tpl) => (
+            <button
+              key={tpl.name}
+              onClick={() => createFromTemplate(tpl)}
+              disabled={creating}
+              className="text-left border border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:bg-blue-50/50 transition-all group disabled:opacity-50"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Zap size={12} className="text-blue-600" />
+                </div>
+                <span className="text-xs font-semibold text-gray-800 group-hover:text-blue-700">{tpl.name}</span>
+              </div>
+              <p className="text-[11px] text-gray-400 leading-relaxed">{tpl.description}</p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {tpl.steps.map((s, i) => (
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+                    {s.when === "immediately" ? "Immédiat" : s.when === "before_event" ? `-${s.delay_minutes / 60}h` : `+${s.delay_minutes / 60}h`}
+                  </span>
+                ))}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Info box */}
+      <div className="mt-6 flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+        <Power size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-700 leading-relaxed">
+          Les emails sont envoyés via <strong>Resend</strong> depuis <strong>{ORGANIZER_EMAIL_DISPLAY}</strong>.
+          Les rappels planifiés sont traités toutes les 5 minutes par le cron Vercel.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────
 export default function CalendarSyncPage() {
   const [tab, setTab] = useState<Tab>("calendar");
@@ -508,11 +942,12 @@ export default function CalendarSyncPage() {
       <div className="flex items-center justify-between px-6 py-0 border-b border-gray-100 flex-shrink-0 bg-white">
         {/* Tabs */}
         <div className="flex items-center gap-0">
-          {(["calendar", "scheduling", "availability"] as Tab[]).map((t) => {
+          {(["calendar", "scheduling", "availability", "automations"] as Tab[]).map((t) => {
             const labels: Record<Tab, string> = {
               calendar: "Calendrier",
               scheduling: "Scheduling",
               availability: "Disponibilités",
+              automations: "Automations",
             };
             return (
               <button
@@ -840,6 +1275,13 @@ export default function CalendarSyncPage() {
         {tab === "availability" && (
           <div className="p-8">
             <AvailabilityTab />
+          </div>
+        )}
+
+        {/* ── Automations tab ── */}
+        {tab === "automations" && (
+          <div className="p-8">
+            <AutomationsTab />
           </div>
         )}
       </div>

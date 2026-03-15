@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
+import { triggerAutomations } from "@/lib/automations";
 
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
 const USER_ID = "pg-test-de8a1257-28de-42e5-9d1d-edc298569d44";
@@ -53,6 +54,17 @@ export async function POST(req: NextRequest) {
       ev?.hangoutLink ??
       ev?.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ??
       null;
+
+    // Fire automations in background (don't await — don't block response)
+    triggerAutomations({
+      name,
+      email,
+      date,
+      time,
+      meetLink,
+      calLink: ev?.htmlLink ?? null,
+      eventStartIso: startDT.toISOString(),
+    }).catch(() => { /* best effort */ });
 
     return NextResponse.json({
       eventId: ev?.id,
