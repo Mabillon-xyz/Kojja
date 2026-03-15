@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Composio } from "@composio/core";
 
-const EDENRED_CAL_ID = "vto228d2ulbg8h03q713i3bl5c7acq4a@import.calendar.google.com";
+const EDENRED_CAL_ID = "clement.guiraud@edenred.com";
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
 const USER_ID = "pg-test-de8a1257-28de-42e5-9d1d-edc298569d44";
 const SYNC_MARKER_PREFIX = "[edenred-sync:";
