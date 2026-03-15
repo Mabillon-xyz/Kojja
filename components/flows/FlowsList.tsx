@@ -31,7 +31,7 @@ export default function FlowsList({ events }: { events: WebhookEvent[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-gray-900">Flows</h1>
         <p className="mt-0.5 text-sm text-gray-400">
@@ -39,8 +39,8 @@ export default function FlowsList({ events }: { events: WebhookEvent[] }) {
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden overflow-x-auto">
+        <table className="w-full text-sm min-w-[500px]">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide w-8" />

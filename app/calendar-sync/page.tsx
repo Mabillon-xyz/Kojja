@@ -939,9 +939,9 @@ export default function CalendarSyncPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* ── Header with tabs ── */}
-      <div className="flex items-center justify-between px-6 py-0 border-b border-gray-100 flex-shrink-0 bg-white">
-        {/* Tabs */}
-        <div className="flex items-center gap-0">
+      <div className="flex flex-col border-b border-gray-100 flex-shrink-0 bg-white">
+        {/* Tabs row */}
+        <div className="flex items-center overflow-x-auto scrollbar-none">
           {(["calendar", "scheduling", "availability", "automations"] as Tab[]).map((t) => {
             const labels: Record<Tab, string> = {
               calendar: "Calendrier",
@@ -953,7 +953,7 @@ export default function CalendarSyncPage() {
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex-shrink-0 px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
                   tab === t
                     ? "border-blue-600 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
@@ -967,12 +967,12 @@ export default function CalendarSyncPage() {
 
         {/* Calendar-tab controls (only shown on calendar tab) */}
         {tab === "calendar" && (
-          <div className="flex items-center gap-4 py-2">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 px-4 pb-2 pt-1">
+            <div className="flex items-center gap-1.5">
               <button onClick={prevWeek} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors">
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-sm font-semibold text-gray-800 w-48 text-center">{weekLabel}</span>
+              <span className="text-sm font-semibold text-gray-800 text-center whitespace-nowrap">{weekLabel}</span>
               <button onClick={nextWeek} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors">
                 <ChevronRight size={16} />
               </button>
@@ -980,24 +980,15 @@ export default function CalendarSyncPage() {
                 Today
               </button>
             </div>
-            <div className="hidden sm:flex items-center gap-3 text-xs text-gray-500">
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-sm bg-blue-100 border-l-2 border-blue-500 inline-block" />
-                My events
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-sm bg-red-100 border-l-2 border-red-500 inline-block" />
-                Lead calls
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-auto">
               {syncMsg && (
-                <span className={`text-xs ${syncMsg.ok ? "text-green-600" : "text-red-500"}`}>{syncMsg.text}</span>
+                <span className={`text-xs hidden sm:inline ${syncMsg.ok ? "text-green-600" : "text-red-500"}`}>{syncMsg.text}</span>
               )}
               <button onClick={triggerSync} disabled={syncing}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-900 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg transition-colors">
                 <RotateCw size={12} className={syncing ? "animate-spin" : ""} />
-                {syncing ? "Syncing…" : "EdenRed sync"}
+                <span className="hidden sm:inline">{syncing ? "Syncing…" : "EdenRed sync"}</span>
+                {!syncing && <span className="sm:hidden">Sync</span>}
               </button>
               <button onClick={fetchEvents} disabled={loading} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors disabled:opacity-40">
                 <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -1012,15 +1003,16 @@ export default function CalendarSyncPage() {
 
         {/* ── Calendar tab ── */}
         {tab === "calendar" && (
-          <div className="flex gap-4 p-5 min-h-full items-start">
+          <div className="flex gap-4 p-3 md:p-5 min-h-full items-start">
             <div className="flex-1 min-w-0">
               {error && (
                 <div className="mb-4 px-4 py-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl">{error}</div>
               )}
 
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
                 {/* Day headers */}
-                <div className="grid border-b border-gray-100" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
+                <div className="grid border-b border-gray-100" style={{ gridTemplateColumns: "52px repeat(7, minmax(80px, 1fr))" }}>
                   <div />
                   {days.map((d, i) => {
                     const isToday = d.getTime() === todayDate.getTime();
@@ -1037,7 +1029,7 @@ export default function CalendarSyncPage() {
 
                 {/* Time grid */}
                 <div className="overflow-y-auto" style={{ maxHeight: 560 }}>
-                  <div className="grid" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
+                  <div className="grid" style={{ gridTemplateColumns: "52px repeat(7, minmax(80px, 1fr))" }}>
                     <div className="relative" style={{ height: totalPx }}>
                       {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
                         <div key={i} style={{ position: "absolute", top: i * SLOT_H, right: 6, fontSize: 10, color: "#d1d5db", paddingTop: 2 }}>
@@ -1078,6 +1070,7 @@ export default function CalendarSyncPage() {
                     ))}
                   </div>
                 </div>
+                </div>{/* end overflow-x-auto */}
               </div>
 
               {/* Send invite section */}
@@ -1190,8 +1183,8 @@ export default function CalendarSyncPage() {
               </div>
             </div>
 
-            {/* Event detail panel */}
-            <div className="w-64 flex-shrink-0 sticky top-0">
+            {/* Event detail panel — hidden on mobile */}
+            <div className="hidden md:block w-64 flex-shrink-0 sticky top-0">
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Event detail</h3>
                 {!selected ? (

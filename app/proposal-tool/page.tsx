@@ -96,7 +96,7 @@ export default async function DashboardPage() {
     .slice(0, 5)
 
   return (
-    <div className="px-8 py-8 space-y-8">
+    <div className="px-4 py-5 md:px-8 md:py-8 space-y-6 md:space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

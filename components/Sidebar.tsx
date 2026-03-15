@@ -29,7 +29,7 @@ const nav = [
     ),
   },
   {
-    label: "Documentation",
+    label: "Docs",
     href: "/koja2",
     icon: (
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -52,32 +52,51 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 h-screen border-r border-gray-100 flex flex-col bg-white">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-100">
-        <span className="text-sm font-semibold text-gray-900 tracking-tight">Dashboard</span>
-      </div>
+    <>
+      {/* ── Desktop sidebar ── */}
+      <aside className="hidden md:flex w-56 h-screen border-r border-gray-100 flex-col bg-white flex-shrink-0">
+        <div className="px-5 py-5 border-b border-gray-100">
+          <span className="text-sm font-semibold text-gray-900 tracking-tight">Dashboard</span>
+        </div>
+        <nav className="flex-1 px-3 py-4 space-y-0.5">
+          {nav.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
+                  active
+                    ? "bg-gray-100 text-gray-900 font-medium"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                {item.icon}
+                {item.label === "Proposal Tool" ? "Proposals" : item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      {/* ── Mobile bottom nav ── */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 flex items-center justify-around px-1 pt-1 pb-5">
         {nav.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
-                active
-                  ? "bg-gray-100 text-gray-900 font-medium"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+              className={`flex flex-col items-center gap-0.5 py-1.5 px-4 rounded-xl transition-colors ${
+                active ? "text-gray-900" : "text-gray-400"
               }`}
             >
-              {item.icon}
-              {item.label}
+              <span className={active ? "opacity-100" : "opacity-60"}>{item.icon}</span>
+              <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           );
         })}
       </nav>
-    </aside>
+    </>
   );
 }

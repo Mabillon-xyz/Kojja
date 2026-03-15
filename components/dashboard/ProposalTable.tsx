@@ -57,15 +57,15 @@ export default function ProposalTable({ proposals }: ProposalTableProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-      <Table>
+    <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden overflow-x-auto">
+      <Table className="min-w-[560px]">
         <TableHeader>
           <TableRow className="bg-neutral-50/50">
             <TableHead className="font-medium text-neutral-600">Proposal</TableHead>
-            <TableHead className="font-medium text-neutral-600">Client</TableHead>
+            <TableHead className="font-medium text-neutral-600 hidden sm:table-cell">Client</TableHead>
             <TableHead className="font-medium text-neutral-600">Status</TableHead>
             <TableHead className="font-medium text-neutral-600">Value</TableHead>
-            <TableHead className="font-medium text-neutral-600">Expires</TableHead>
+            <TableHead className="font-medium text-neutral-600 hidden md:table-cell">Expires</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -83,7 +83,7 @@ export default function ProposalTable({ proposals }: ProposalTableProps) {
                   </Link>
                   <p className="text-xs text-neutral-400 mt-0.5">{formatDate(proposal.created_at)}</p>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   <p className="text-sm">{proposal.client_name}</p>
                   <p className="text-xs text-neutral-400">{proposal.client_company}</p>
                 </TableCell>
@@ -93,7 +93,7 @@ export default function ProposalTable({ proposals }: ProposalTableProps) {
                 <TableCell className="text-sm font-medium">
                   {formatCurrency(proposal.price, proposal.currency)}
                 </TableCell>
-                <TableCell className="text-sm text-neutral-500">
+                <TableCell className="text-sm text-neutral-500 hidden md:table-cell">
                   {formatDate(proposal.expires_at)}
                 </TableCell>
                 <TableCell>
@@ -109,6 +109,7 @@ export default function ProposalTable({ proposals }: ProposalTableProps) {
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="hidden sm:inline-flex"
                       onClick={() => copyLink(proposal.slug)}
                     >
                       Copy link
@@ -120,7 +121,7 @@ export default function ProposalTable({ proposals }: ProposalTableProps) {
                       onClick={() => deleteProposal(proposal.id)}
                       disabled={deleting === proposal.id}
                     >
-                      Delete
+                      Del
                     </Button>
                   </div>
                 </TableCell>

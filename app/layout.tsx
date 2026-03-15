@@ -20,7 +20,7 @@ export default function RootLayout({
       <body className={`${geist.className} antialiased`}>
         <div className="flex h-screen bg-white">
           <ConditionalSidebar />
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto pb-20 md:pb-0">
             {children}
           </main>
         </div>
