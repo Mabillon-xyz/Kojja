@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
   const startDT = new Date(`${date}T${time}:00`);
   if (isNaN(startDT.getTime()))
     return NextResponse.json({ error: "Invalid date/time" }, { status: 400 });
+  const endDT = new Date(startDT.getTime() + 30 * 60 * 1000);
 
   try {
     const result = await getComposio().tools.execute("GOOGLECALENDAR_CREATE_EVENT", {
@@ -30,8 +31,8 @@ export async function POST(req: NextRequest) {
         summary: `Discovery Call — ${name}`,
         description: `30-minute discovery call with ${name} (${email}).`,
         start_datetime: startDT.toISOString(),
+        end_datetime: endDT.toISOString(),
         timezone: "Europe/Paris",
-        event_duration_hour: 0.5,
         calendar_id: PERSONAL_CAL_ID,
         attendees: [email],
         create_meet_event: true,

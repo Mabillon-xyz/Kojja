@@ -56,14 +56,6 @@ function extractSyncedUid(description?: string): string | null {
   return match ? match[1] : null;
 }
 
-function getDurationHours(
-  start: { dateTime?: string },
-  end: { dateTime?: string }
-): number {
-  if (!start.dateTime || !end.dateTime) return 1;
-  const ms = new Date(end.dateTime).getTime() - new Date(start.dateTime).getTime();
-  return Math.max(0.25, ms / (1000 * 60 * 60));
-}
 
 export async function POST() {
   if (!process.env.COMPOSIO_API_KEY) {
@@ -111,7 +103,9 @@ export async function POST() {
         ? `${marker}\n\n${event.description}`
         : marker;
 
-      const durationHours = getDurationHours(event.start, event.end ?? {});
+      const endDateTime = event.end?.dateTime ?? new Date(
+        new Date(event.start.dateTime).getTime() + 60 * 60 * 1000
+      ).toISOString();
 
       try {
         const result = await getComposio().tools.execute("GOOGLECALENDAR_CREATE_EVENT", {
@@ -120,8 +114,8 @@ export async function POST() {
           arguments: {
             summary: event.summary ?? "(EdenRed event)",
             start_datetime: event.start.dateTime,
+            end_datetime: endDateTime,
             timezone: event.start.timeZone ?? "Europe/Paris",
-            event_duration_hour: durationHours,
             calendar_id: PERSONAL_CAL_ID,
             description,
             ...(event.location ? { location: event.location } : {}),
