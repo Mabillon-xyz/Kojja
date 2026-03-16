@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
 import { triggerAutomations } from "@/lib/automations";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
 const USER_ID = "pg-test-de8a1257-28de-42e5-9d1d-edc298569d44";
@@ -54,6 +60,18 @@ export async function POST(req: NextRequest) {
       ev?.hangoutLink ??
       ev?.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ??
       null;
+
+    // Create CRM lead (best effort — don't block response)
+    const nameParts = name.trim().split(' ');
+    const first_name = nameParts[0] ?? name;
+    const last_name = nameParts.slice(1).join(' ') || '';
+    void supabase.from('leads').insert({
+      first_name,
+      last_name,
+      email: email.toLowerCase(),
+      call_date: startDT.toISOString(),
+      stage: 'call_scheduled',
+    });
 
     // Fire automations in background (don't await — don't block response)
     triggerAutomations({
