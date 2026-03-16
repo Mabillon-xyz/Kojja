@@ -403,3 +403,51 @@ ON CONFLICT (id) DO UPDATE
       last_updated = EXCLUDED.last_updated,
       sort_order = EXCLUDED.sort_order,
       is_system = EXCLUDED.is_system;
+
+-- ============================================================
+-- Leads CRM (pipeline de vente Koj²a — coachs intéressés)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS leads (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  first_name       TEXT NOT NULL,
+  last_name        TEXT NOT NULL,
+  email            TEXT NOT NULL,
+  company_name     TEXT,
+  city             TEXT,
+  phone            TEXT,
+  message          TEXT,
+  call_date        TIMESTAMPTZ,
+  call_booked_at   TIMESTAMPTZ DEFAULT now(),
+  stage            TEXT NOT NULL DEFAULT 'call_scheduled' CHECK (
+                     stage IN ('call_scheduled', 'call_done', 'proposal_sent', 'customer', 'not_interested')
+                   ),
+  notes            TEXT NOT NULL DEFAULT '',
+  next_action      TEXT,
+  next_action_date DATE,
+  created_at       TIMESTAMPTZ DEFAULT now(),
+  updated_at       TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TRIGGER leads_updated_at
+  BEFORE UPDATE ON leads
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- RLS: seuls les utilisateurs authentifiés peuvent lire/modifier les leads
+ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read leads"
+  ON leads FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Authenticated users can insert leads"
+  ON leads FOR INSERT TO authenticated WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can update leads"
+  ON leads FOR UPDATE TO authenticated USING (true);
+
+CREATE POLICY "Authenticated users can delete leads"
+  ON leads FOR DELETE TO authenticated USING (true);
+
+-- Service role (utilisé par /api/leads pour les bookings publics)
+CREATE POLICY "Service role full access"
+  ON leads FOR ALL TO service_role USING (true) WITH CHECK (true);

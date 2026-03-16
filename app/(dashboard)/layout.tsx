@@ -24,6 +24,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 Leads
               </Link>
               <Link
+                href="/crm"
+                className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
+              >
+                CRM
+              </Link>
+              <Link
                 href="/documentation"
                 className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
               >
