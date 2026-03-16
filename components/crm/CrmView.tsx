@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Lead } from '@/lib/read-leads'
+import { Lead } from '@/lib/lead-types'
 import LeadQueue from './LeadQueue'
 import LeadKanban from './LeadKanban'
 import AddLeadForm from './AddLeadForm'

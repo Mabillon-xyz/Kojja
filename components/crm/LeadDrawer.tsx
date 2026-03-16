@@ -1,6 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
-import { Lead, STAGE_LABELS, STAGES, formatRelativeDate } from '@/lib/read-leads'
+import { Lead, STAGE_LABELS, STAGES, formatRelativeDate } from '@/lib/lead-types'
 import { updateLeadNotes, updateLeadStage, deleteLead } from '@/app/actions/leads'
 
 type Props = {

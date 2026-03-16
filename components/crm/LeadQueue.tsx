@@ -1,6 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
-import { Lead, getLeadPriority } from '@/lib/read-leads'
+import { Lead, getLeadPriority } from '@/lib/lead-types'
 import { updateLeadStage } from '@/app/actions/leads'
 import LeadCard from './LeadCard'
 import LeadDrawer from './LeadDrawer'
@@ -28,7 +28,7 @@ export default function LeadQueue({ leads }: Props) {
   if (leads.length === 0) {
     return (
       <div className="text-center py-16">
-        <p className="text-sm text-neutral-400">Aucun lead pour l'instant.</p>
+        <p className="text-sm text-neutral-400">Aucun lead pour l&apos;instant.</p>
         <p className="text-sm text-neutral-400 mt-1">
           Partagez le lien{' '}
           <a href="/book" target="_blank" className="text-neutral-700 underline underline-offset-2 hover:text-neutral-900">

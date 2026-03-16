@@ -25,6 +25,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS documents_updated_at ON documents;
 CREATE TRIGGER documents_updated_at
   BEFORE UPDATE ON documents
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
@@ -429,6 +430,7 @@ CREATE TABLE IF NOT EXISTS leads (
   updated_at       TIMESTAMPTZ DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS leads_updated_at ON leads;
 CREATE TRIGGER leads_updated_at
   BEFORE UPDATE ON leads
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();

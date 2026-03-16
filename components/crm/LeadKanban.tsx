@@ -1,6 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
-import { Lead, STAGE_LABELS, STAGES, getLeadPriority } from '@/lib/read-leads'
+import { Lead, STAGE_LABELS, STAGES, getLeadPriority } from '@/lib/lead-types'
 import { updateLeadStage } from '@/app/actions/leads'
 import LeadCard from './LeadCard'
 import LeadDrawer from './LeadDrawer'

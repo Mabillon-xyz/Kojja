@@ -1,5 +1,5 @@
 'use client'
-import { Lead, STAGE_LABELS, getLeadPriority, formatRelativeDate } from '@/lib/read-leads'
+import { Lead, STAGE_LABELS, getLeadPriority, formatRelativeDate } from '@/lib/lead-types'
 
 type Props = {
   lead: Lead
