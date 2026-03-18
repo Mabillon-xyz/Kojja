@@ -45,7 +45,7 @@ export function interpolate(str: string, ctx: BookingContext): string {
     .replace(/\{\{email\}\}/g, ctx.email)
     .replace(/\{\{date\}\}/g, formatDateFR(ctx.date))
     .replace(/\{\{time\}\}/g, ctx.time)
-    .replace(/\{\{meetLink\}\}/g, ctx.meetLink ?? "")
+    .replace(/\{\{meetLink\}\}/g, ctx.meetLink ?? "_(Le lien Google Meet sera partagé avant le call)_")
     .replace(/\{\{calLink\}\}/g, ctx.calLink ?? "");
 }
 
@@ -67,14 +67,17 @@ export function buildEmailHtml(body: string, ctx: BookingContext): string {
 
   const content = lines.filter(Boolean).join("\n");
 
+  const avatarUrl = process.env.ORGANIZER_AVATAR_URL;
+  const avatar = avatarUrl
+    ? `<img src="${avatarUrl}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;" />`
+    : `<div style="width:44px;height:44px;background:#2563eb;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">CG</div>`;
+
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:40px 32px;">
-    <div style="margin-bottom:28px;">
-      <div style="width:36px;height:36px;background:#2563eb;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;">CG</div>
-    </div>
+    <div style="margin-bottom:28px;">${avatar}</div>
     ${content}
     <hr style="margin:28px 0;border:none;border-top:1px solid #f3f4f6;">
     <p style="margin:0;font-size:12px;color:#9ca3af;">${ORGANIZER_NAME} · <a href="https://kojja.vercel.app/book" style="color:#2563eb;text-decoration:none;">kojja.vercel.app/book</a></p>
