@@ -289,7 +289,7 @@ export default function BookPage() {
             onChange={e => setName(e.target.value)}
             required
             placeholder="Jean Dupont"
-            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
           />
         </div>
         <div>
@@ -302,7 +302,7 @@ export default function BookPage() {
             onChange={e => setEmail(e.target.value)}
             required
             placeholder="jean@entreprise.com"
-            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
           />
         </div>
         <button
