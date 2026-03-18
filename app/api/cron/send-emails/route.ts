@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export async function GET(req: NextRequest) {
@@ -10,8 +10,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const resend = new Resend(process.env.RESEND_API_KEY!);
-  const from = process.env.RESEND_FROM_EMAIL!;
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+  const from = `Clément Guiraud <${process.env.GMAIL_USER}>`;
   const supabase = await createServiceClient();
 
   // Fetch up to 50 pending emails that are due
@@ -31,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   for (const row of pending) {
     try {
-      await resend.emails.send({
+      await transporter.sendMail({
         from,
         to: row.to_email,
         subject: row.subject,

@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { AutomationStep, Automation } from "@/lib/automation-types";
 
@@ -7,6 +7,16 @@ export type { AutomationStep, Automation };
 
 const ORGANIZER_EMAIL = "clement.guiraudpro@gmail.com";
 const ORGANIZER_NAME = "Clément Guiraud";
+
+function getTransporter() {
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
 
 export type BookingContext = {
   name: string;
@@ -75,8 +85,8 @@ export function buildEmailHtml(body: string, ctx: BookingContext): string {
 
 // ── Core trigger function ─────────────────────────────────────────────────────
 export async function triggerAutomations(ctx: BookingContext): Promise<void> {
-  const resend = new Resend(process.env.RESEND_API_KEY!);
-  const from = process.env.RESEND_FROM_EMAIL!;
+  const transporter = getTransporter();
+  const from = `${ORGANIZER_NAME} <${process.env.GMAIL_USER}>`;
 
   let supabase: Awaited<ReturnType<typeof createServiceClient>>;
   try {
@@ -110,7 +120,7 @@ export async function triggerAutomations(ctx: BookingContext): Promise<void> {
       if (step.when === "immediately") {
         for (const to of recipients) {
           try {
-            await resend.emails.send({ from, to, subject, html: bodyHtml });
+            await transporter.sendMail({ from, to, subject, html: bodyHtml });
           } catch { /* best effort */ }
         }
       } else {

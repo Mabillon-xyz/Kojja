@@ -1,10 +1,17 @@
-import { Resend } from 'resend'
+import nodemailer from 'nodemailer'
 
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY!)
-}
-
+const FROM = `Clément Guiraud <${process.env.GMAIL_USER}>`
 const KICKOFF_URL = 'https://calendly.com/clement-guiraudpro/30min'
+
+function getTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  })
+}
 
 export async function sendProposalSignedEmail(params: {
   ownerEmail: string
@@ -14,8 +21,8 @@ export async function sendProposalSignedEmail(params: {
   proposalTitle: string
   proposalUrl: string
 }) {
-  await getResend().emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
+  await getTransporter().sendMail({
+    from: FROM,
     to: params.ownerEmail,
     subject: `✍️ ${params.clientName} signed "${params.proposalTitle}"`,
     html: `
@@ -37,8 +44,8 @@ export async function sendProposalToClientEmail(params: {
   proposalUrl: string
   ownerName: string
 }) {
-  await getResend().emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
+  await getTransporter().sendMail({
+    from: FROM,
     to: params.clientEmail,
     subject: `Your proposal — ${params.proposalTitle}`,
     html: `
@@ -77,18 +84,20 @@ export async function sendProposalPaidEmail(params: {
     currency: params.currency.toUpperCase(),
   }).format(params.amount)
 
-  const pdfAttachment = {
+  const attachment = {
     filename: `${params.proposalTitle.replace(/[^a-z0-9]/gi, '-')}.pdf`,
-    content: params.pdfBuffer.toString('base64'),
-    type: 'application/pdf',
+    content: params.pdfBuffer,
+    contentType: 'application/pdf',
   }
 
+  const transporter = getTransporter()
+
   // Notify owner
-  await getResend().emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
+  await transporter.sendMail({
+    from: FROM,
     to: params.ownerEmail,
     subject: `💰 Payment received for "${params.proposalTitle}"`,
-    attachments: [pdfAttachment],
+    attachments: [attachment],
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #1a1a1a;">
         <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">Payment Received</h1>
@@ -100,11 +109,11 @@ export async function sendProposalPaidEmail(params: {
   })
 
   // Confirm to client with PDF + kickoff link
-  await getResend().emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
+  await transporter.sendMail({
+    from: FROM,
     to: params.clientEmail,
     subject: `Payment confirmed — ${params.proposalTitle}`,
-    attachments: [pdfAttachment],
+    attachments: [attachment],
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #1a1a1a;">
         <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">Payment Confirmed</h1>
