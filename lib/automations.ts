@@ -70,7 +70,7 @@ export function buildEmailHtml(body: string, ctx: BookingContext): string {
   const avatarUrl = process.env.ORGANIZER_AVATAR_URL;
   const avatar = avatarUrl
     ? `<img src="${avatarUrl}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;" />`
-    : `<div style="width:44px;height:44px;background:#2563eb;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">CG</div>`;
+    : `<span style="font-size:36px;line-height:1;">🤝</span>`;
 
   return `<!DOCTYPE html>
 <html>
