@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import Sidebar from '@/components/dashboard/Sidebar'
 import NavSignOut from '@/components/dashboard/NavSignOut'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -9,50 +9,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect('/login')
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="font-semibold text-sm tracking-tight">
-              Koj²a
-            </Link>
-            <nav className="flex items-center gap-1">
-              <Link
-                href="/dashboard"
-                className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
-              >
-                Home
-              </Link>
-              <Link
-                href="/crm"
-                className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
-              >
-                CRM
-              </Link>
-              <Link
-                href="/documentation"
-                className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
-              >
-                Documentation
-              </Link>
-              <Link
-                href="/calendar-sync"
-                className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
-              >
-                Calendar
-              </Link>
-              <Link
-                href="/settings"
-                className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
-              >
-                Settings
-              </Link>
-            </nav>
-          </div>
+    <div className="flex h-screen bg-neutral-50 overflow-hidden">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-auto">
+        <header className="bg-white border-b border-neutral-200 px-6 h-12 flex items-center justify-end flex-shrink-0">
           <NavSignOut email={user.email ?? ''} />
-        </div>
-      </header>
-      <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
+        </header>
+        <main className="flex-1 overflow-auto pb-20 md:pb-0">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }
