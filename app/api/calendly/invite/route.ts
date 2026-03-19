@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   if (!process.env.COMPOSIO_API_KEY)
     return NextResponse.json({ error: "COMPOSIO_API_KEY not configured" }, { status: 500 });
 
-  const { name, email, date, time } = await req.json();
+  const { name, email, date, time, phone, message } = await req.json();
   if (!name || !email || !date || !time)
     return NextResponse.json({ error: "name, email, date and time are required" }, { status: 400 });
 
@@ -87,17 +87,22 @@ export async function POST(req: NextRequest) {
       ev?.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ??
       null;
 
-    // Create CRM lead (best effort — don't block response)
+    // Create CRM lead
     const nameParts = name.trim().split(' ');
     const first_name = nameParts[0] ?? name;
     const last_name = nameParts.slice(1).join(' ') || '';
-    void getSupabase().from('leads').insert({
+    const { error: leadError } = await getSupabase().from('leads').insert({
       first_name,
       last_name,
       email: email.toLowerCase(),
       call_date: startDT.toISOString(),
+      call_booked_at: new Date().toISOString(),
       stage: 'call_scheduled',
+      notes: '',
+      phone: phone ?? null,
+      message: message ?? null,
     });
+    if (leadError) console.error('Lead insert failed:', leadError.message);
 
     // Send guaranteed confirmation emails (always fires, regardless of automations)
     if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
