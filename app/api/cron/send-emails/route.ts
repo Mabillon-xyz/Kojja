@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createServiceClient } from "@/lib/supabase/server";
+import { logEmail } from "@/lib/email-log";
 
 export async function GET(req: NextRequest) {
   // Auth via CRON_SECRET (Vercel sets this automatically for cron jobs)
@@ -47,8 +48,10 @@ export async function GET(req: NextRequest) {
         .from("scheduled_emails")
         .update({ sent: true, sent_at: new Date().toISOString() })
         .eq("id", row.id);
+      await logEmail({ to_email: row.to_email, subject: row.subject, status: "success", source: "cron" });
       sent++;
-    } catch {
+    } catch (e) {
+      await logEmail({ to_email: row.to_email, subject: row.subject, status: "error", error: String(e), source: "cron" });
       failed++;
     }
   }

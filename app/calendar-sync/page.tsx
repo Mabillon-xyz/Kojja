@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import type { AvailabilityConfig, DaySchedule } from "@/lib/availability-types";
 import type { AutomationStep, Automation } from "@/lib/automation-types";
+import { getEmailLogs, type EmailLog } from "@/app/actions/email-logs";
 
 // ── Types ──────────────────────────────────────────────────────
 type CalEvent = {
@@ -23,7 +24,7 @@ type CalEvent = {
   htmlLink?: string;
 };
 
-type Tab = "calendar" | "scheduling" | "availability" | "automations";
+type Tab = "calendar" | "scheduling" | "availability" | "automations" | "logs";
 
 // ── Constants ──────────────────────────────────────────────────
 const MY_EMAIL = "clement.guiraudpro@gmail.com";
@@ -955,6 +956,149 @@ function AutomationsTab() {
   );
 }
 
+// ── Email Logs Tab ─────────────────────────────────────────────
+function EmailLogsTab() {
+  const [logs, setLogs] = useState<EmailLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "success" | "error">("all");
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    getEmailLogs().then((data) => {
+      setLogs(data);
+      setLoading(false);
+    });
+  }, []);
+
+  function relativeTime(iso: string) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  }
+
+  const filtered = filter === "all" ? logs : logs.filter((l) => l.status === filter);
+  const errorCount = logs.filter((l) => l.status === "error").length;
+
+  return (
+    <div className="max-w-4xl">
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Email logs</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {logs.length} email{logs.length !== 1 ? "s" : ""} sent
+            {errorCount > 0 && (
+              <span className="ml-2 text-red-500 font-medium">· {errorCount} error{errorCount !== 1 ? "s" : ""}</span>
+            )}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {(["all", "success", "error"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors capitalize ${
+                filter === f
+                  ? f === "error"
+                    ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700"
+                    : f === "success"
+                    ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700"
+                    : "bg-muted text-foreground border-border"
+                  : "bg-background text-muted-foreground border-border hover:text-foreground"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-sm text-muted-foreground py-12 text-center">Loading…</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-sm text-muted-foreground py-12 text-center">
+          {filter === "all" ? "No emails logged yet." : `No ${filter} emails.`}
+        </div>
+      ) : (
+        <div className="border border-border rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/50">
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">To</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Subject</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Source</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Sent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((log) => (
+                <>
+                  <tr
+                    key={log.id}
+                    onClick={() => setExpanded(expanded === log.id ? null : log.id)}
+                    className="border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                  >
+                    <td className="px-4 py-3 text-foreground font-mono text-xs truncate max-w-[180px]">{log.to_email}</td>
+                    <td className="px-4 py-3 text-foreground truncate max-w-[220px]">{log.subject}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                        log.status === "success"
+                          ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
+                          : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${log.status === "success" ? "bg-green-500" : "bg-red-500"}`} />
+                        {log.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs capitalize">{log.source ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs text-right whitespace-nowrap">{relativeTime(log.sent_at)}</td>
+                  </tr>
+                  {expanded === log.id && (
+                    <tr key={`${log.id}-detail`} className="border-b border-border last:border-0 bg-muted/20">
+                      <td colSpan={5} className="px-4 py-3">
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">To</span>
+                            <p className="font-mono text-foreground mt-0.5">{log.to_email}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Sent at</span>
+                            <p className="text-foreground mt-0.5">
+                              {new Date(log.sent_at).toLocaleString("en-GB", {
+                                day: "numeric", month: "short", year: "numeric",
+                                hour: "2-digit", minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">Subject</span>
+                            <p className="text-foreground mt-0.5">{log.subject}</p>
+                          </div>
+                          {log.error && (
+                            <div className="col-span-2">
+                              <span className="text-muted-foreground">Error</span>
+                              <p className="font-mono text-red-600 dark:text-red-400 mt-0.5 whitespace-pre-wrap break-all">{log.error}</p>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────
 export default function CalendarSyncPage() {
   const [tab, setTab] = useState<Tab>("calendar");
@@ -1049,12 +1193,13 @@ export default function CalendarSyncPage() {
       <div className="flex flex-col border-b border-border flex-shrink-0 bg-background">
         {/* Tabs row */}
         <div className="flex items-center overflow-x-auto scrollbar-none">
-          {(["calendar", "scheduling", "availability", "automations"] as Tab[]).map((t) => {
+          {(["calendar", "scheduling", "availability", "automations", "logs"] as Tab[]).map((t) => {
             const labels: Record<Tab, string> = {
               calendar: "Calendar",
               scheduling: "🔗 Booking link",
               availability: "🗓 Availability",
               automations: "✉️ Email sequences",
+              logs: "📧 Email logs",
             };
             return (
               <button
@@ -1198,6 +1343,13 @@ export default function CalendarSyncPage() {
         {tab === "automations" && (
           <div className="p-8">
             <AutomationsTab />
+          </div>
+        )}
+
+        {/* ── Email logs tab ── */}
+        {tab === "logs" && (
+          <div className="p-6">
+            <EmailLogsTab />
           </div>
         )}
       </div>

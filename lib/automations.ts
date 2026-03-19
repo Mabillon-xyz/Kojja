@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { createServiceClient } from "@/lib/supabase/server";
+import { logEmail } from "@/lib/email-log";
 import type { AutomationStep, Automation } from "@/lib/automation-types";
 
 // Re-export so existing imports from this file still work
@@ -124,7 +125,10 @@ export async function triggerAutomations(ctx: BookingContext): Promise<void> {
         for (const to of recipients) {
           try {
             await transporter.sendMail({ from, to, subject, html: bodyHtml });
-          } catch { /* best effort */ }
+            await logEmail({ to_email: to, subject, status: "success", source: "automation" });
+          } catch (e) {
+            await logEmail({ to_email: to, subject, status: "error", error: String(e), source: "automation" });
+          }
         }
       } else {
         let sendAt: Date;

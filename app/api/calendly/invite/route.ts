@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
 import { triggerAutomations, buildEmailHtml } from "@/lib/automations";
+import { logEmail } from "@/lib/email-log";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 
@@ -111,10 +112,16 @@ export async function POST(req: NextRequest) {
       // Email to organizer
       const orgBody = `Nouveau call réservé — ${name} (${email})\n\n📅 ${dateFR} à ${timeFR}\n📧 ${email}${meetLink ? `\n🎥 ${meetLink}` : ""}${ev?.htmlLink ? `\n📆 ${ev.htmlLink}` : ""}`;
 
+      const leadSubject = `✓ Call confirmé — ${dateFR} à ${timeFR}`;
+      const orgSubject = `📞 Nouveau call : ${name} — ${dateFR} à ${timeFR}`;
       void Promise.all([
-        transporter.sendMail({ from, to: email, subject: `✓ Call confirmé — ${dateFR} à ${timeFR}`, html: buildEmailHtml(leadBody, ctx) }),
-        transporter.sendMail({ from, to: ORGANIZER_EMAIL, subject: `📞 Nouveau call : ${name} — ${dateFR} à ${timeFR}`, html: buildEmailHtml(orgBody, ctx) }),
-      ]).catch(console.error);
+        transporter.sendMail({ from, to: email, subject: leadSubject, html: buildEmailHtml(leadBody, ctx) })
+          .then(() => logEmail({ to_email: email, subject: leadSubject, status: "success", source: "invite" }))
+          .catch((e) => logEmail({ to_email: email, subject: leadSubject, status: "error", error: String(e), source: "invite" })),
+        transporter.sendMail({ from, to: ORGANIZER_EMAIL, subject: orgSubject, html: buildEmailHtml(orgBody, ctx) })
+          .then(() => logEmail({ to_email: ORGANIZER_EMAIL, subject: orgSubject, status: "success", source: "invite" }))
+          .catch((e) => logEmail({ to_email: ORGANIZER_EMAIL, subject: orgSubject, status: "error", error: String(e), source: "invite" })),
+      ]);
     }
 
     // Fire automations in background for scheduled reminders (best effort)
