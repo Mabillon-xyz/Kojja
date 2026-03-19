@@ -1,5 +1,5 @@
 'use server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { Lead } from '@/lib/read-leads'
 
