@@ -1,0 +1,170 @@
+'use client'
+
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, Cell,
+} from 'recharts'
+import { Phone, Calendar } from 'lucide-react'
+
+export type DayCall = {
+  name: string
+  time: string | null
+  company: string | null
+}
+
+export type DayData = {
+  label: string     // "18" (day number)
+  sublabel: string  // "Mon"
+  iso: string       // "2026-03-18"
+  count: number
+  calls: DayCall[]
+  isToday: boolean
+  isPast: boolean
+}
+
+type CustomTooltipProps = {
+  active?: boolean
+  payload?: { payload: DayData }[]
+}
+
+function CustomTooltip({ active, payload }: CustomTooltipProps) {
+  if (!active || !payload?.length) return null
+  const d = payload[0].payload
+  return (
+    <div className="bg-white border border-neutral-200 rounded-xl shadow-lg px-3 py-2.5 text-xs min-w-[140px]">
+      <p className="font-semibold text-neutral-700 mb-1.5">
+        {d.sublabel} {d.label}
+        {d.isToday && <span className="ml-1.5 text-blue-600 font-bold">· Today</span>}
+      </p>
+      {d.calls.length === 0 ? (
+        <p className="text-neutral-400">No calls</p>
+      ) : (
+        d.calls.map((c, i) => (
+          <p key={i} className="text-neutral-600 leading-5">
+            {c.time ? <span className="font-semibold text-neutral-800">{c.time} </span> : null}
+            {c.name}
+            {c.company ? <span className="text-neutral-400"> · {c.company}</span> : null}
+          </p>
+        ))
+      )}
+    </div>
+  )
+}
+
+type XTickProps = {
+  x?: number | string; y?: number | string; payload?: { value: string }; data: DayData[]
+}
+
+function CustomXTick({ x = 0, y = 0, payload, data }: XTickProps) {
+  const nx = Number(x); const ny = Number(y)
+  if (!payload) return null
+  const day = data.find((d) => d.label === payload.value)
+  const isToday = day?.isToday ?? false
+  return (
+    <g transform={`translate(${nx},${ny})`}>
+      {isToday && (
+        <circle cx={0} cy={14} r={14} fill="#eff6ff" />
+      )}
+      <text
+        x={0} y={4}
+        textAnchor="middle"
+        fontSize={10}
+        fill={isToday ? '#2563eb' : '#a3a3a3'}
+        fontWeight={isToday ? 700 : 400}
+      >
+        {day?.sublabel}
+      </text>
+      <text
+        x={0} y={18}
+        textAnchor="middle"
+        fontSize={11}
+        fill={isToday ? '#2563eb' : '#737373'}
+        fontWeight={isToday ? 700 : 500}
+      >
+        {payload.value}
+      </text>
+    </g>
+  )
+}
+
+export default function DailyCallsChart({ data }: { data: DayData[] }) {
+  const today = data.find((d) => d.isToday)
+  const todayCalls = today?.calls ?? []
+
+  return (
+    <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+      {/* Chart header */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-2">
+        <div>
+          <h2 className="text-sm font-semibold text-neutral-900">First calls</h2>
+          <p className="text-xs text-neutral-400 mt-0.5">Scheduled per day</p>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+          <Calendar className="w-3.5 h-3.5" />
+          <span>−7 / +21 days</span>
+        </div>
+      </div>
+
+      {/* Bar chart */}
+      <div className="px-2 pb-2">
+        <ResponsiveContainer width="100%" height={140}>
+          <BarChart data={data} barSize={16} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <XAxis
+              dataKey="label"
+              tick={(props) => <CustomXTick {...props} data={data} />}
+              axisLine={false}
+              tickLine={false}
+              height={30}
+              interval={0}
+            />
+            <YAxis hide allowDecimals={false} />
+            <Tooltip
+              content={<CustomTooltip />}
+              cursor={{ fill: '#f5f5f5', radius: 4 }}
+            />
+            <Bar dataKey="count" radius={[4, 4, 0, 0]} minPointSize={0}>
+              {data.map((d) => (
+                <Cell
+                  key={d.iso}
+                  fill={d.isToday ? '#3b82f6' : d.isPast ? '#e5e5e5' : '#bfdbfe'}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Today's calls */}
+      <div className="border-t border-neutral-100">
+        <div className="px-5 py-3 flex items-center gap-2">
+          <Phone className="w-3.5 h-3.5 text-blue-500" />
+          <span className="text-xs font-bold uppercase tracking-widest text-blue-600">
+            Today · {todayCalls.length} call{todayCalls.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        {todayCalls.length === 0 ? (
+          <p className="px-5 pb-4 text-sm text-neutral-400">No calls scheduled today.</p>
+        ) : (
+          <div className="px-5 pb-4 space-y-2">
+            {todayCalls
+              .slice()
+              .sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'))
+              .map((c, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-blue-600 w-12 shrink-0 tabular-nums">
+                    {c.time ?? '—'}
+                  </span>
+                  <div className="min-w-0">
+                    <span className="text-sm font-semibold text-neutral-900">{c.name}</span>
+                    {c.company && (
+                      <span className="text-sm text-neutral-400"> · {c.company}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -1,9 +1,46 @@
 import { readLeads } from '@/lib/read-leads'
 import HomeClient from '@/components/dashboard/HomeClient'
 import NextActions from '@/components/dashboard/NextActions'
+import DailyCallsChart, { type DayData } from '@/components/dashboard/DailyCallsChart'
 import { TrendingUp, Users, BarChart2, Target } from 'lucide-react'
 
 const PRIX_CLIENT = 1750
+
+function buildDailyData(leads: Awaited<ReturnType<typeof readLeads>>): DayData[] {
+  const scheduled = leads.filter((l) => {
+    const name = `${l.first_name} ${l.last_name}`.toLowerCase()
+    return l.stage === 'call_scheduled' && !name.includes('test')
+  })
+
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+
+  return Array.from({ length: 29 }, (_, i) => {
+    const day = new Date(today); day.setDate(day.getDate() - 7 + i)
+    const iso = day.toISOString().split('T')[0]
+    const isToday = i === 7
+    const isPast = day < today
+
+    const calls = scheduled
+      .filter((l) => l.call_date && l.call_date.startsWith(iso))
+      .map((l) => ({
+        name: `${l.first_name} ${l.last_name}`,
+        time: l.call_date
+          ? new Date(l.call_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+          : null,
+        company: l.company_name,
+      }))
+
+    return {
+      label: String(day.getDate()),
+      sublabel: day.toLocaleDateString('en-GB', { weekday: 'short' }),
+      iso,
+      count: calls.length,
+      calls,
+      isToday,
+      isPast,
+    }
+  })
+}
 
 export default async function DashboardPage() {
   const leads = await readLeads()
@@ -13,6 +50,7 @@ export default async function DashboardPage() {
   const proposalsSent = leads.filter((l) => ['proposal_sent', 'customer'].includes(l.stage)).length
   const conversionRate = totalLeads > 0 ? Math.round((customers / totalLeads) * 100) : 0
   const revenue = customers * PRIX_CLIENT
+  const dailyData = buildDailyData(leads)
 
   const kpis = [
     {
@@ -72,7 +110,10 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Main content: actions + tasks */}
+      {/* Daily calls chart — full width */}
+      <DailyCallsChart data={dailyData} />
+
+      {/* Next actions + tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <NextActions leads={leads} />
