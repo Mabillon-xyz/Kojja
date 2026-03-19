@@ -1,6 +1,7 @@
 import { readLeads } from '@/lib/read-leads'
 import HomeClient from '@/components/dashboard/HomeClient'
 import CallsChart from '@/components/dashboard/CallsChart'
+import UpcomingCalls, { type DaySlot } from '@/components/dashboard/UpcomingCalls'
 import { TrendingUp, Users, BarChart2, Target } from 'lucide-react'
 
 const PRIX_CLIENT = 1750 // € par client
@@ -26,6 +27,43 @@ function buildChartData(leads: Awaited<ReturnType<typeof readLeads>>) {
   return sorted.map(([month, calls]) => ({ month, calls }))
 }
 
+function buildUpcomingDays(leads: Awaited<ReturnType<typeof readLeads>>): DaySlot[] {
+  const upcoming = leads.filter((l) => {
+    if (l.stage !== 'call_scheduled' || !l.call_date) return false
+    const name = `${l.first_name} ${l.last_name}`.toLowerCase()
+    return !name.includes('test')
+  })
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  return Array.from({ length: 14 }, (_, i) => {
+    const day = new Date(today)
+    day.setDate(day.getDate() + i)
+
+    const calls = upcoming
+      .filter((l) => {
+        const d = new Date(l.call_date!)
+        d.setHours(0, 0, 0, 0)
+        return d.getTime() === day.getTime()
+      })
+      .map((l) => ({
+        name: `${l.first_name} ${l.last_name}`,
+        time: new Date(l.call_date!).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time))
+
+    return {
+      iso: day.toISOString().split('T')[0],
+      dayLabel: day.toLocaleDateString('en-GB', { weekday: 'short' }),
+      dateNum: day.getDate(),
+      monthLabel: day.toLocaleDateString('en-GB', { month: 'short' }),
+      isToday: i === 0,
+      calls,
+    }
+  })
+}
+
 export default async function DashboardPage() {
   const leads = await readLeads()
 
@@ -37,6 +75,7 @@ export default async function DashboardPage() {
   const conversionRate = totalLeads > 0 ? Math.round((customers / totalLeads) * 100) : 0
   const revenue = customers * PRIX_CLIENT
   const chartData = buildChartData(leads)
+  const upcomingDays = buildUpcomingDays(leads)
 
   const kpis = [
     {
@@ -98,6 +137,8 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
+
+      <UpcomingCalls days={upcomingDays} />
 
       <CallsChart data={chartData} />
 
