@@ -1,172 +1,343 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+
+import { useState, useEffect } from 'react'
+import { ChevronLeft, ChevronRight, Clock, Video, Globe } from 'lucide-react'
+
+type Step = 'date' | 'form' | 'done'
+
+const MONTHS_FR = [
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+]
+const DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function formatDateFR(dateStr: string, time: string): string {
+  const d = new Date(`${dateStr}T12:00:00`)
+  const day = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  return `${day.charAt(0).toUpperCase() + day.slice(1)} à ${time}`
+}
 
 export default function BookPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const [step, setStep] = useState<Step>('date')
+  const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  const [slots, setSlots] = useState<string[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [message, setMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    if (!selectedDate) return
+    setLoadingSlots(true)
+    setSlots([])
+    fetch(`/api/availability?date=${selectedDate}`)
+      .then(r => r.json())
+      .then(d => setSlots(d.slots ?? []))
+      .catch(() => setSlots([]))
+      .finally(() => setLoadingSlots(false))
+  }, [selectedDate])
+
+  function buildCalendar() {
+    const year = month.getFullYear()
+    const m = month.getMonth()
+    const firstDay = new Date(year, m, 1)
+    const lastDay = new Date(year, m + 1, 0)
+    const startDow = (firstDay.getDay() + 6) % 7 // Monday-based
+    const cells: (Date | null)[] = []
+    for (let i = 0; i < startDow; i++) cells.push(null)
+    for (let d = 1; d <= lastDay.getDate(); d++) cells.push(new Date(year, m, d))
+    while (cells.length % 7 !== 0) cells.push(null)
+    return cells
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
+    if (!selectedDate || !selectedTime) return
+    setSubmitting(true)
     setError('')
-
-    const form = e.currentTarget
-    const data = {
-      first_name: (form.elements.namedItem('first_name') as HTMLInputElement).value,
-      last_name: (form.elements.namedItem('last_name') as HTMLInputElement).value,
-      email: (form.elements.namedItem('email') as HTMLInputElement).value,
-      company_name: (form.elements.namedItem('company_name') as HTMLInputElement).value,
-      city: (form.elements.namedItem('city') as HTMLInputElement).value,
-      phone: (form.elements.namedItem('phone') as HTMLInputElement).value,
-      call_date: (form.elements.namedItem('call_date') as HTMLInputElement).value || null,
-      message: (form.elements.namedItem('message') as HTMLTextAreaElement).value,
-      comment: (form.elements.namedItem('comment') as HTMLTextAreaElement).value,
-    }
-
     try {
-      const res = await fetch('/api/leads', {
+      const res = await fetch('/api/calendly/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name,
+          email,
+          date: selectedDate,
+          time: selectedTime,
+          ...(phone ? { phone } : {}),
+          ...(message ? { message } : {}),
+        }),
       })
-      if (!res.ok) {
-        const json = await res.json()
-        setError(json.error || 'An error occurred')
-        setLoading(false)
-        return
-      }
-      router.push('/book/confirmation')
-    } catch {
-      setError('An error occurred. Please try again.')
-      setLoading(false)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Erreur lors de la réservation')
+      setStep('done')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col items-center justify-center px-4 py-16">
-      <div className="w-full max-w-lg">
-        <div className="mb-10 text-center">
-          <p className="text-sm font-medium text-neutral-400 tracking-widest uppercase mb-3">Koj²a</p>
-          <h1 className="text-2xl font-semibold text-neutral-900 mb-2">
-            Book a 30-min call
-          </h1>
-          <p className="text-sm text-neutral-500">
-            We discuss your prospecting and how Koj²a can help you.
-          </p>
+  const cells = buildCalendar()
+  const prevMonthDisabled =
+    month.getFullYear() === today.getFullYear() && month.getMonth() <= today.getMonth()
+
+  const LeftPanel = (
+    <div className="w-full md:w-56 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-100 p-6 md:p-8 flex flex-col gap-5">
+      <div className="w-11 h-11 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-base select-none">
+        CG
+      </div>
+      <div>
+        <p className="text-xs text-gray-400 mb-0.5">Clément Guiraud</p>
+        <h1 className="text-lg font-semibold text-gray-900">Discovery Call</h1>
+      </div>
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Clock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          <span>30 minutes</span>
         </div>
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Video className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          <span>Google Meet</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Globe className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          <span>Europe/Paris</span>
+        </div>
+      </div>
+    </div>
+  )
 
-        <form onSubmit={handleSubmit} className="bg-white border border-neutral-200 rounded-xl p-8 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">First name *</label>
-              <input
-                name="first_name"
-                required
-                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
-                placeholder="Claire"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Last name *</label>
-              <input
-                name="last_name"
-                required
-                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
-                placeholder="Martin"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Email *</label>
-            <input
-              name="email"
-              type="email"
-              required
-              className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
-              placeholder="claire@coaching.com"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Company / practice</label>
-              <input
-                name="company_name"
-                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
-                placeholder="Coaching Company"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">City</label>
-              <input
-                name="city"
-                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
-                placeholder="Lyon"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Phone</label>
-              <input
-                name="phone"
-                type="tel"
-                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
-                placeholder="+33 6 12 34 56 78"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Preferred date</label>
-              <input
-                name="call_date"
-                type="datetime-local"
-                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Your context (optional)</label>
-            <textarea
-              name="message"
-              rows={3}
-              className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none"
-              placeholder="E.g. coach for 3 years, I work with SME executives in the manufacturing sector..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Anything else you&apos;d like to share? (optional)</label>
-            <textarea
-              name="comment"
-              rows={2}
-              className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none"
-              placeholder="Goals, challenges, questions..."
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-              {error}
+  if (step === 'done') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row overflow-hidden w-full max-w-2xl">
+          {LeftPanel}
+          <div className="flex-1 p-8 flex flex-col items-center justify-center text-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-2xl">✓</div>
+            <h2 className="text-lg font-semibold text-gray-900">Réservation confirmée !</h2>
+            <p className="text-sm text-gray-500">
+              Votre call avec Clément est confirmé.<br />
+              Un email de confirmation vous a été envoyé à <strong>{email}</strong>.
             </p>
+            {selectedDate && selectedTime && (
+              <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm text-blue-700 font-medium">
+                📅 {formatDateFR(selectedDate, selectedTime)}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row overflow-hidden w-full max-w-2xl">
+        {LeftPanel}
+
+        <div className="flex-1 p-6 md:p-8 min-w-0">
+
+          {/* Date + slot selection */}
+          {step === 'date' && (
+            <>
+              <h2 className="text-sm font-semibold text-gray-900 mb-5">Choisissez une date</h2>
+
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  disabled={prevMonthDisabled}
+                  onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
+                  className="p-1.5 rounded-full hover:bg-gray-100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-semibold text-gray-800">
+                  {MONTHS_FR[month.getMonth()]} {month.getFullYear()}
+                </span>
+                <button
+                  onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
+                  className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-7 mb-1">
+                {DAYS_FR.map(d => (
+                  <div key={d} className="text-center text-xs font-medium text-gray-400 py-1">{d}</div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7">
+                {cells.map((date, i) => {
+                  if (!date) return <div key={i} />
+                  const dateStr = toDateStr(date)
+                  const isPast = date < today
+                  const isSelected = selectedDate === dateStr
+                  const isToday = dateStr === toDateStr(today)
+                  return (
+                    <div key={i} className="flex items-center justify-center py-0.5">
+                      <button
+                        disabled={isPast}
+                        onClick={() => { setSelectedDate(dateStr); setSelectedTime(null) }}
+                        className={`w-9 h-9 rounded-full text-sm transition-all font-medium ${
+                          isSelected
+                            ? 'bg-blue-600 text-white'
+                            : isPast
+                            ? 'text-gray-300 cursor-not-allowed'
+                            : isToday
+                            ? 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
+                            : 'text-gray-800 hover:bg-blue-50 hover:text-blue-700 cursor-pointer'
+                        }`}
+                      >
+                        {date.getDate()}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {selectedDate && (
+                <div className="mt-5">
+                  {loadingSlots ? (
+                    <p className="text-sm text-gray-400 text-center py-4">Chargement des créneaux…</p>
+                  ) : slots.length === 0 ? (
+                    <p className="text-sm text-gray-400 text-center py-4">Aucun créneau disponible pour cette date.</p>
+                  ) : (
+                    <>
+                      <p className="text-xs font-medium text-gray-500 mb-3">Créneaux disponibles</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {slots.map(slot => (
+                          <button
+                            key={slot}
+                            onClick={() => setSelectedTime(slot)}
+                            className={`py-2 text-sm font-medium rounded-lg border transition-colors ${
+                              selectedTime === slot
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'border-gray-200 text-gray-700 hover:border-blue-400 hover:text-blue-600'
+                            }`}
+                          >
+                            {slot}
+                          </button>
+                        ))}
+                      </div>
+                      {selectedTime && (
+                        <button
+                          onClick={() => setStep('form')}
+                          className="mt-4 w-full py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Continuer →
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              <p className="mt-5 text-xs text-gray-400">Tous les créneaux sont affichés en heure de Paris</p>
+            </>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-neutral-900 text-white text-sm font-medium rounded-lg hover:bg-neutral-700 disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Sending...' : 'Book the call'}
-          </button>
-        </form>
+          {/* Booking form */}
+          {step === 'form' && selectedDate && selectedTime && (
+            <>
+              <button
+                onClick={() => setStep('date')}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-5 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" /> Retour
+              </button>
 
-        <p className="text-center text-xs text-neutral-400 mt-6">
-          You will receive a confirmation by email within 24h.
-        </p>
+              <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
+                <span className="text-blue-500">📅</span>
+                <span className="text-sm font-medium text-blue-700">
+                  {formatDateFR(selectedDate, selectedTime)}
+                </span>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Nom complet <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                    placeholder="Jean Dupont"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    placeholder="jean@entreprise.com"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Téléphone{' '}
+                    <span className="text-xs text-gray-400 font-normal">(optionnel)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="+33 6 12 34 56 78"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Quelque chose à partager ?{' '}
+                    <span className="text-xs text-gray-400 font-normal">(optionnel)</span>
+                  </label>
+                  <textarea
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    rows={3}
+                    placeholder="Votre contexte, vos objectifs, vos questions…"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {submitting ? 'Réservation en cours…' : 'Confirmer la réservation'}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
