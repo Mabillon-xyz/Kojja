@@ -2,6 +2,7 @@ import { readLeads } from '@/lib/read-leads'
 import HomeClient from '@/components/dashboard/HomeClient'
 import CallsChart from '@/components/dashboard/CallsChart'
 import UpcomingCalls, { type DaySlot } from '@/components/dashboard/UpcomingCalls'
+import NextActions from '@/components/dashboard/NextActions'
 import { TrendingUp, Users, BarChart2, Target } from 'lucide-react'
 
 const PRIX_CLIENT = 1750 // € par client
@@ -155,6 +156,8 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
+
+      <NextActions leads={leads} />
 
       <UpcomingCalls days={upcomingDays} noDateCalls={noDateCalls} />
 
