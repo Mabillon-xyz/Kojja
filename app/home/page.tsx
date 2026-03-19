@@ -1,7 +1,7 @@
 import { readLeads } from '@/lib/read-leads'
 import HomeClient from '@/components/HomeClient'
 
-const PRICE_PER_CUSTOMER = 2000
+const PRICE_PER_CUSTOMER = 1750
 
 export default async function HomePage() {
   const leads = await readLeads()
