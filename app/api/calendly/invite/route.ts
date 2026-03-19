@@ -105,7 +105,9 @@ export async function POST(req: NextRequest) {
     if (leadError) console.error('Lead insert failed:', leadError.message);
 
     // Send guaranteed confirmation emails (always fires, regardless of automations)
-    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      console.error("Email skipped: GMAIL_USER or GMAIL_APP_PASSWORD not set in env");
+    } else {
       const from = `${ORGANIZER_NAME} <${process.env.GMAIL_USER}>`;
       const dateFR = formatDateFR(startDT);
       const timeFR = formatTimeFR(startDT);
@@ -122,10 +124,10 @@ export async function POST(req: NextRequest) {
       void Promise.all([
         transporter.sendMail({ from, to: email, subject: leadSubject, html: buildEmailHtml(leadBody, ctx) })
           .then(() => logEmail({ to_email: email, subject: leadSubject, status: "success", source: "invite" }))
-          .catch((e) => logEmail({ to_email: email, subject: leadSubject, status: "error", error: String(e), source: "invite" })),
+          .catch((e) => { console.error("Email to lead failed:", String(e)); return logEmail({ to_email: email, subject: leadSubject, status: "error", error: String(e), source: "invite" }); }),
         transporter.sendMail({ from, to: ORGANIZER_EMAIL, subject: orgSubject, html: buildEmailHtml(orgBody, ctx) })
           .then(() => logEmail({ to_email: ORGANIZER_EMAIL, subject: orgSubject, status: "success", source: "invite" }))
-          .catch((e) => logEmail({ to_email: ORGANIZER_EMAIL, subject: orgSubject, status: "error", error: String(e), source: "invite" })),
+          .catch((e) => { console.error("Email to organizer failed:", String(e)); return logEmail({ to_email: ORGANIZER_EMAIL, subject: orgSubject, status: "error", error: String(e), source: "invite" }); }),
       ]);
     }
 

@@ -1,4 +1,11 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function logEmail(data: {
   to_email: string;
@@ -8,9 +15,9 @@ export async function logEmail(data: {
   source: string;
 }) {
   try {
-    const supabase = await createServiceClient();
-    await supabase.from("email_logs").insert(data);
-  } catch {
-    // Never let logging failures break the calling code
+    const { error } = await getSupabase().from("email_logs").insert(data);
+    if (error) console.error("logEmail insert failed:", error.message);
+  } catch (e) {
+    console.error("logEmail threw:", e);
   }
 }
