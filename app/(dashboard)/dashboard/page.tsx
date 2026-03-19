@@ -1,7 +1,7 @@
 import { readLeads } from '@/lib/read-leads'
 import HomeClient from '@/components/dashboard/HomeClient'
 
-const PRIX_CLIENT = 2000 // € par client
+const PRIX_CLIENT = 1750 // € par client
 
 export default async function DashboardPage() {
   const leads = await readLeads()
