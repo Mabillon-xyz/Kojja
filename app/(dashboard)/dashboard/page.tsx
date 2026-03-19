@@ -7,10 +7,7 @@ import { TrendingUp, Users, BarChart2, Target } from 'lucide-react'
 const PRIX_CLIENT = 1750
 
 function buildDailyData(leads: Awaited<ReturnType<typeof readLeads>>): DayData[] {
-  const scheduled = leads.filter((l) => {
-    const name = `${l.first_name} ${l.last_name}`.toLowerCase()
-    return l.stage === 'call_scheduled' && !name.includes('test')
-  })
+  const scheduled = leads.filter((l) => l.stage === 'call_scheduled')
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
 
