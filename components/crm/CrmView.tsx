@@ -4,17 +4,18 @@ import { Lead } from '@/lib/lead-types'
 import LeadQueue from './LeadQueue'
 import LeadKanban from './LeadKanban'
 import AddLeadForm from './AddLeadForm'
+import { Plus, LayoutList, Kanban } from 'lucide-react'
 
 export default function CrmView({ leads }: { leads: Lead[] }) {
   const [view, setView] = useState<'queue' | 'pipeline'>('queue')
   const [showAdd, setShowAdd] = useState(false)
 
   return (
-    <div>
+    <div className="max-w-5xl">
       {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-900">CRM</h1>
+          <h1 className="text-2xl font-bold text-neutral-900">CRM</h1>
           <p className="text-sm text-neutral-500 mt-0.5">
             {leads.length} coach{leads.length !== 1 ? 'es' : ''} in the pipeline
           </p>
@@ -25,22 +26,24 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
           <div className="flex items-center bg-neutral-100 rounded-lg p-1 gap-1">
             <button
               onClick={() => setView('queue')}
-              className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-all ${
                 view === 'queue'
-                  ? 'bg-white text-neutral-900 shadow-sm font-medium'
+                  ? 'bg-white text-neutral-900 shadow-sm font-semibold'
                   : 'text-neutral-500 hover:text-neutral-700'
               }`}
             >
+              <LayoutList className="w-3.5 h-3.5" />
               Queue
             </button>
             <button
               onClick={() => setView('pipeline')}
-              className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-all ${
                 view === 'pipeline'
-                  ? 'bg-white text-neutral-900 shadow-sm font-medium'
+                  ? 'bg-white text-neutral-900 shadow-sm font-semibold'
                   : 'text-neutral-500 hover:text-neutral-700'
               }`}
             >
+              <Kanban className="w-3.5 h-3.5" />
               Pipeline
             </button>
           </div>
@@ -48,11 +51,9 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
           {/* Add lead button */}
           <button
             onClick={() => setShowAdd(!showAdd)}
-            className="flex items-center gap-1.5 text-sm font-medium bg-neutral-900 text-white px-3 py-1.5 rounded-lg hover:bg-neutral-700 transition-colors"
+            className="flex items-center gap-1.5 text-sm font-semibold bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <Plus className="w-4 h-4" />
             Add
           </button>
         </div>
@@ -67,17 +68,17 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
 
       {/* Booking link reminder (empty state) */}
       {leads.length === 0 && !showAdd && (
-        <div className="mb-6 bg-neutral-50 border border-neutral-200 rounded-xl px-5 py-4 flex items-center justify-between">
+        <div className="mb-6 bg-blue-50 border border-blue-100 rounded-xl px-5 py-4 flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-neutral-700">Share your booking link</p>
-            <p className="text-xs text-neutral-400 mt-0.5">
+            <p className="text-sm font-semibold text-blue-900">Share your booking link</p>
+            <p className="text-xs text-blue-600 mt-0.5">
               Coaches who book a call appear here automatically.
             </p>
           </div>
           <a
             href="/book"
             target="_blank"
-            className="text-xs font-medium text-neutral-600 hover:text-neutral-900 bg-white border border-neutral-200 px-3 py-1.5 rounded-lg hover:border-neutral-400 transition-colors whitespace-nowrap"
+            className="text-xs font-semibold text-blue-700 hover:text-blue-900 bg-white border border-blue-200 px-3 py-1.5 rounded-lg hover:border-blue-400 transition-colors whitespace-nowrap shadow-sm"
           >
             /book →
           </a>

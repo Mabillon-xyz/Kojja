@@ -15,6 +15,14 @@ const PRIORITY_DOT: Record<'red' | 'yellow' | 'gray', string> = {
   gray: 'bg-neutral-300',
 }
 
+const STAGE_BADGE: Record<Lead['stage'], string> = {
+  call_scheduled: 'bg-blue-100 text-blue-700',
+  call_done: 'bg-amber-100 text-amber-700',
+  proposal_sent: 'bg-violet-100 text-violet-700',
+  customer: 'bg-emerald-100 text-emerald-700',
+  not_interested: 'bg-neutral-100 text-neutral-500',
+}
+
 const PRIORITY_LABEL: Record<Lead['stage'], (lead: Lead) => string> = {
   call_scheduled: (lead) => {
     if (!lead.call_date) return 'Call not dated'
@@ -48,25 +56,39 @@ const NEXT_STAGE: Partial<Record<Lead['stage'], { stage: Lead['stage']; label: s
   proposal_sent: { stage: 'customer', label: 'Mark as customer' },
 }
 
+function Initials({ name }: { name: string }) {
+  const parts = name.trim().split(' ').filter(Boolean)
+  const initials = parts.length >= 2
+    ? parts[0][0] + parts[parts.length - 1][0]
+    : (parts[0]?.[0] ?? '?')
+  return (
+    <div className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center text-xs font-semibold text-neutral-600 flex-shrink-0 border border-neutral-200">
+      {initials.toUpperCase()}
+    </div>
+  )
+}
+
 export default function LeadCard({ lead, onOpen, onStageChange, draggable = false, onDragStart }: Props) {
   const priority = getLeadPriority(lead)
   const subtitle = PRIORITY_LABEL[lead.stage](lead)
   const nextStep = NEXT_STAGE[lead.stage]
+  const fullName = `${lead.first_name} ${lead.last_name}`
 
   return (
     <div
-      className="group bg-white border border-neutral-200 rounded-lg px-4 py-3.5 hover:border-neutral-300 hover:shadow-sm transition-all cursor-pointer"
+      className="group bg-white border border-neutral-200 rounded-xl px-4 py-4 hover:border-neutral-300 hover:shadow-md transition-all cursor-pointer"
       draggable={draggable}
       onDragStart={draggable && onDragStart ? (e) => onDragStart(e, lead.id) : undefined}
       onClick={() => onOpen(lead)}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2.5 min-w-0">
-          <div className={`mt-1.5 flex-shrink-0 w-2 h-2 rounded-full ${PRIORITY_DOT[priority]}`} />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-neutral-900 truncate">
-              {lead.first_name} {lead.last_name}
-            </p>
+        <div className="flex items-start gap-3 min-w-0">
+          <Initials name={fullName} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-0.5">
+              <div className={`flex-shrink-0 w-2 h-2 rounded-full ${PRIORITY_DOT[priority]}`} />
+              <p className="text-sm font-semibold text-neutral-900 truncate">{fullName}</p>
+            </div>
             {lead.company_name && (
               <p className="text-xs text-neutral-500 truncate">
                 {lead.company_name}{lead.city ? ` · ${lead.city}` : ''}
@@ -76,7 +98,7 @@ export default function LeadCard({ lead, onOpen, onStageChange, draggable = fals
           </div>
         </div>
         <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
-          <span className="text-xs px-2 py-0.5 bg-neutral-100 text-neutral-500 rounded-full whitespace-nowrap">
+          <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap ${STAGE_BADGE[lead.stage]}`}>
             {STAGE_LABELS[lead.stage]}
           </span>
           <span className="text-xs text-neutral-400">
@@ -92,7 +114,7 @@ export default function LeadCard({ lead, onOpen, onStageChange, draggable = fals
               e.stopPropagation()
               onStageChange(lead.id, nextStep.stage)
             }}
-            className="text-xs font-medium text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 px-2 py-1 rounded-md transition-colors"
+            className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2.5 py-1 rounded-md transition-colors"
           >
             {nextStep.label} →
           </button>
