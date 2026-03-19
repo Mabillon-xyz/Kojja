@@ -18,6 +18,10 @@ export async function createLead(formData: FormData) {
     throw new Error('Champs obligatoires manquants')
   }
 
+  const contact_means = (formData.getAll('contact_means') as string[]).filter(Boolean)
+  const comment = (formData.get('comment') as string)?.trim() || null
+  const linkedin_url = (formData.get('linkedin_url') as string)?.trim() || null
+
   const { error } = await supabase.from('leads').insert({
     first_name,
     last_name,
@@ -27,6 +31,9 @@ export async function createLead(formData: FormData) {
     phone,
     call_date: call_date || null,
     stage: 'call_scheduled',
+    contact_means: contact_means.length > 0 ? contact_means : null,
+    comment,
+    linkedin_url,
   })
 
   if (error) throw new Error(`createLead: ${error.message}`)
