@@ -21,17 +21,7 @@ function getTransporter() {
   });
 }
 
-export async function GET(req: NextRequest) {
-  // Optional secret check — set CRON_SECRET in Vercel env to protect this endpoint
-  const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = req.headers.get("authorization") ?? "";
-    const qs = new URL(req.url).searchParams.get("secret") ?? "";
-    if (auth !== `Bearer ${secret}` && qs !== secret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
-
+export async function GET(_req: NextRequest) {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.error("[cron] GMAIL_USER or GMAIL_APP_PASSWORD not set");
     return NextResponse.json({ error: "Email not configured" }, { status: 500 });
