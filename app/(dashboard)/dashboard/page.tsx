@@ -1,106 +1,24 @@
 import { readLeads } from '@/lib/read-leads'
 import HomeClient from '@/components/dashboard/HomeClient'
-import CallsChart from '@/components/dashboard/CallsChart'
-import UpcomingCalls, { type DaySlot } from '@/components/dashboard/UpcomingCalls'
 import NextActions from '@/components/dashboard/NextActions'
 import { TrendingUp, Users, BarChart2, Target } from 'lucide-react'
 
-const PRIX_CLIENT = 1750 // € par client
-
-function buildChartData(leads: Awaited<ReturnType<typeof readLeads>>) {
-  const filtered = leads.filter((l) => {
-    const name = `${l.first_name} ${l.last_name}`.toLowerCase()
-    return !name.includes('test')
-  })
-
-  const counts: Record<string, number> = {}
-  for (const lead of filtered) {
-    const date = new Date(lead.call_booked_at)
-    const key = date.toLocaleString('en-GB', { month: 'short', year: '2-digit' })
-    counts[key] = (counts[key] ?? 0) + 1
-  }
-
-  const sorted = Object.entries(counts).sort(([a], [b]) => {
-    const parse = (s: string) => new Date(`1 ${s}`)
-    return parse(a).getTime() - parse(b).getTime()
-  })
-
-  return sorted.map(([month, calls]) => ({ month, calls }))
-}
-
-function buildUpcomingDays(leads: Awaited<ReturnType<typeof readLeads>>): DaySlot[] {
-  const upcoming = leads.filter((l) => {
-    if (l.stage !== 'call_scheduled' || !l.call_date) return false
-    const name = `${l.first_name} ${l.last_name}`.toLowerCase()
-    return !name.includes('test')
-  })
-
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  // Past 60 days (to catch overdue) + next 14 days
-  const START = -60
-  const END = 14
-
-  return Array.from({ length: END - START + 1 }, (_, i) => {
-    const day = new Date(today)
-    day.setDate(day.getDate() + START + i)
-
-    const isPast = day.getTime() < today.getTime()
-
-    const calls = upcoming
-      .filter((l) => {
-        const d = new Date(l.call_date!)
-        d.setHours(0, 0, 0, 0)
-        return d.getTime() === day.getTime()
-      })
-      .map((l) => ({
-        name: `${l.first_name} ${l.last_name}`,
-        time: new Date(l.call_date!).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-      }))
-      .sort((a, b) => a.time.localeCompare(b.time))
-
-    return {
-      iso: day.toISOString().split('T')[0],
-      dayLabel: day.toLocaleDateString('en-GB', { weekday: 'short' }),
-      dateNum: day.getDate(),
-      monthLabel: day.toLocaleDateString('en-GB', { month: 'short' }),
-      isToday: START + i === 0,
-      isPast,
-      calls,
-    }
-  })
-}
-
-function buildNoDateCalls(leads: Awaited<ReturnType<typeof readLeads>>): string[] {
-  return leads
-    .filter((l) => {
-      if (l.stage !== 'call_scheduled' || l.call_date) return false
-      const name = `${l.first_name} ${l.last_name}`.toLowerCase()
-      return !name.includes('test')
-    })
-    .map((l) => `${l.first_name} ${l.last_name}`)
-}
+const PRIX_CLIENT = 1750
 
 export default async function DashboardPage() {
   const leads = await readLeads()
 
   const totalLeads = leads.length
   const customers = leads.filter((l) => l.stage === 'customer').length
-  const proposalsSent = leads.filter((l) =>
-    ['proposal_sent', 'customer'].includes(l.stage)
-  ).length
+  const proposalsSent = leads.filter((l) => ['proposal_sent', 'customer'].includes(l.stage)).length
   const conversionRate = totalLeads > 0 ? Math.round((customers / totalLeads) * 100) : 0
   const revenue = customers * PRIX_CLIENT
-  const chartData = buildChartData(leads)
-  const upcomingDays = buildUpcomingDays(leads)
-  const noDateCalls = buildNoDateCalls(leads)
 
   const kpis = [
     {
       label: 'Revenue',
       value: '€' + revenue.toLocaleString('en-GB'),
-      sub: `based on €${PRIX_CLIENT.toLocaleString('en-GB')}/client`,
+      sub: `${customers} client${customers !== 1 ? 's' : ''} × €${PRIX_CLIENT.toLocaleString('en-GB')}`,
       icon: TrendingUp,
       iconBg: 'bg-emerald-100',
       iconColor: 'text-emerald-600',
@@ -109,7 +27,7 @@ export default async function DashboardPage() {
     {
       label: 'Customers',
       value: String(customers),
-      sub: '"customer" stage',
+      sub: 'Active clients',
       icon: Users,
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600',
@@ -118,14 +36,14 @@ export default async function DashboardPage() {
     {
       label: 'Total leads',
       value: String(totalLeads),
-      sub: 'since launch',
+      sub: 'Since launch',
       icon: BarChart2,
       iconBg: 'bg-violet-100',
       iconColor: 'text-violet-600',
       valueColor: 'text-neutral-900',
     },
     {
-      label: 'Conversion rate',
+      label: 'Conversion',
       value: conversionRate + '%',
       sub: `${proposalsSent} proposal${proposalsSent !== 1 ? 's' : ''} sent`,
       icon: Target,
@@ -136,12 +54,9 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-8 max-w-6xl">
-      <div>
-        <h1 className="text-2xl font-bold text-neutral-900">Home</h1>
-        <p className="text-neutral-500 text-sm mt-1">Product overview</p>
-      </div>
+    <div className="space-y-6 max-w-7xl">
 
+      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => (
           <div key={kpi.label} className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
@@ -157,13 +72,16 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <NextActions leads={leads} />
+      {/* Main content: actions + tasks */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <NextActions leads={leads} />
+        </div>
+        <div className="lg:col-span-1">
+          <HomeClient />
+        </div>
+      </div>
 
-      <UpcomingCalls days={upcomingDays} noDateCalls={noDateCalls} />
-
-      <CallsChart data={chartData} />
-
-      <HomeClient />
     </div>
   )
 }

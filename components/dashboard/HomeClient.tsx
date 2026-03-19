@@ -85,12 +85,12 @@ function CheckList({ storageKey, placeholder }: { storageKey: string; placeholde
 
 export default function HomeClient() {
   return (
-    <div className="grid grid-cols-2 gap-6">
-      <div className="bg-white border border-neutral-200 rounded-xl p-6">
+    <div className="flex flex-col gap-4">
+      <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-neutral-900 mb-4">To Do</h2>
         <CheckList storageKey="koja_todo_items" placeholder="Add a task..." />
       </div>
-      <div className="bg-white border border-neutral-200 rounded-xl p-6">
+      <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-neutral-900 mb-4">Road Map</h2>
         <CheckList storageKey="koja_roadmap_items" placeholder="Add a milestone..." />
       </div>
