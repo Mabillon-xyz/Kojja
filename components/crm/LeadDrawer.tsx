@@ -31,6 +31,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
 
   const [saved, setSaved] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   function handleSave() {
     if (!lead) return
@@ -64,9 +65,14 @@ export default function LeadDrawer({ lead, onClose }: Props) {
 
   function handleDelete() {
     if (!lead) return
+    setDeleteError(null)
     startTransition(async () => {
-      await deleteLead(lead.id)
-      onClose()
+      try {
+        await deleteLead(lead.id)
+        onClose()
+      } catch (e) {
+        setDeleteError(e instanceof Error ? e.message : 'Delete failed')
+      }
     })
   }
 
@@ -277,6 +283,9 @@ export default function LeadDrawer({ lead, onClose }: Props) {
             <p className="text-sm text-neutral-500 mb-5">
               {lead.first_name} {lead.last_name} will be permanently deleted from the CRM.
             </p>
+            {deleteError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-3 py-2 mb-3">{deleteError}</p>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
@@ -289,7 +298,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
                 disabled={isPending}
                 className="flex-1 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                Delete
+                {isPending ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

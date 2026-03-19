@@ -105,8 +105,9 @@ export async function updateLead(
 }
 
 export async function deleteLead(id: string) {
-  const supabase = await createServiceClient()
+  const supabase = await createClient()
   const { error } = await supabase.from('leads').delete().eq('id', id)
   if (error) throw new Error(`deleteLead: ${error.message}`)
   revalidatePath('/crm')
+  revalidatePath('/dashboard')
 }
