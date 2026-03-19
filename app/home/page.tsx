@@ -1,7 +1,30 @@
 import { readLeads } from '@/lib/read-leads'
 import HomeClient from '@/components/HomeClient'
+import CallsChart from '@/components/CallsChart'
 
 const PRICE_PER_CUSTOMER = 1750
+
+function buildChartData(leads: Awaited<ReturnType<typeof readLeads>>) {
+  const filtered = leads.filter((l) => {
+    const name = `${l.first_name} ${l.last_name}`.toLowerCase()
+    return !name.includes('test')
+  })
+
+  const counts: Record<string, number> = {}
+  for (const lead of filtered) {
+    const date = new Date(lead.call_booked_at)
+    const key = date.toLocaleString('en-GB', { month: 'short', year: '2-digit' })
+    counts[key] = (counts[key] ?? 0) + 1
+  }
+
+  // Sort chronologically
+  const sorted = Object.entries(counts).sort(([a], [b]) => {
+    const parse = (s: string) => new Date(`1 ${s}`)
+    return parse(a).getTime() - parse(b).getTime()
+  })
+
+  return sorted.map(([month, calls]) => ({ month, calls }))
+}
 
 export default async function HomePage() {
   const leads = await readLeads()
@@ -13,6 +36,7 @@ export default async function HomePage() {
   ).length
   const conversionRate = totalLeads > 0 ? Math.round((customers / totalLeads) * 100) : 0
   const revenue = customers * PRICE_PER_CUSTOMER
+  const chartData = buildChartData(leads)
 
   const kpis = [
     {
@@ -55,6 +79,8 @@ export default async function HomePage() {
           </div>
         ))}
       </div>
+
+      <CallsChart data={chartData} />
 
       <HomeClient />
     </div>
