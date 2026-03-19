@@ -35,13 +35,13 @@ const LEAD_KW = ["call", "appel", "discovery", "first", "premier", "lead", "demo
 const BOOK_URL = "https://kojja.vercel.app/book";
 
 const DAY_LABELS: Record<string, string> = {
-  "1": "Lundi",
-  "2": "Mardi",
-  "3": "Mercredi",
-  "4": "Jeudi",
-  "5": "Vendredi",
-  "6": "Samedi",
-  "7": "Dimanche",
+  "1": "Monday",
+  "2": "Tuesday",
+  "3": "Wednesday",
+  "4": "Thursday",
+  "5": "Friday",
+  "6": "Saturday",
+  "7": "Sunday",
 };
 
 const DEFAULT_CONFIG: AvailabilityConfig = {
@@ -65,7 +65,7 @@ function getMondayOfWeek(d: Date): Date {
 }
 
 function fmt(d: Date, opts: Intl.DateTimeFormatOptions) {
-  return d.toLocaleDateString("fr-FR", opts);
+  return d.toLocaleDateString("en-GB", opts);
 }
 
 function isLeadEvent(ev: CalEvent): boolean {
@@ -120,11 +120,11 @@ function EventDrawer({ event, onClose, onDelete }: { event: CalEvent; onClose: (
           <div className="min-w-0 pr-3">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${lead ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300" : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"}`}>
-                {lead ? "Lead call" : "Événement"}
+                {lead ? "Lead call" : "Event"}
               </span>
             </div>
             <h2 className="text-sm font-semibold text-neutral-900 dark:text-foreground leading-snug">
-              {event.summary ?? "(sans titre)"}
+              {event.summary ?? "(no title)"}
             </h2>
           </div>
           <button
@@ -143,11 +143,11 @@ function EventDrawer({ event, onClose, onDelete }: { event: CalEvent; onClose: (
               <Clock size={14} className="text-neutral-400 dark:text-muted-foreground mt-0.5 flex-shrink-0" />
               <div className="text-sm">
                 <p className="text-neutral-900 dark:text-foreground font-medium">
-                  {start.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  {start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                 </p>
                 <p className="text-neutral-500 dark:text-muted-foreground text-xs mt-0.5">
-                  {start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                  {end ? ` → ${end.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                  {start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                  {end ? ` → ${end.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}` : ""}
                   {durationLabel ? ` · ${durationLabel}` : ""}
                 </p>
               </div>
@@ -164,7 +164,7 @@ function EventDrawer({ event, onClose, onDelete }: { event: CalEvent; onClose: (
                 rel="noreferrer"
                 className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1"
               >
-                Rejoindre Google Meet <ExternalLink size={11} />
+                Join Google Meet <ExternalLink size={11} />
               </a>
             </div>
           )}
@@ -183,7 +183,7 @@ function EventDrawer({ event, onClose, onDelete }: { event: CalEvent; onClose: (
               <Users size={14} className="text-neutral-400 dark:text-muted-foreground mt-1 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-neutral-500 dark:text-muted-foreground uppercase tracking-wide mb-2">
-                  Participants · {(event.attendees ?? []).filter(a => !a.email.includes("resource.calendar")).length}
+                  Attendees · {(event.attendees ?? []).filter(a => !a.email.includes("resource.calendar")).length}
                 </p>
                 <div className="space-y-2">
                   {[...external, ...others].filter(a => !a.email.includes("resource.calendar")).map((a) => {
@@ -229,7 +229,7 @@ function EventDrawer({ event, onClose, onDelete }: { event: CalEvent; onClose: (
               rel="noreferrer"
               className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-neutral-600 dark:text-foreground/70 hover:text-neutral-900 dark:hover:text-foreground border border-neutral-200 dark:border-border rounded-lg hover:border-neutral-400 dark:hover:border-muted-foreground transition-colors"
             >
-              Ouvrir dans Google Calendar <ExternalLink size={11} />
+              Open in Google Calendar <ExternalLink size={11} />
             </a>
           )}
           {!confirmDelete ? (
@@ -237,7 +237,7 @@ function EventDrawer({ event, onClose, onDelete }: { event: CalEvent; onClose: (
               onClick={() => setConfirmDelete(true)}
               className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg transition-colors"
             >
-              <Trash2 size={12} /> Supprimer l&apos;événement
+              <Trash2 size={12} /> Delete event
             </button>
           ) : (
             <div className="flex gap-2">
@@ -246,7 +246,7 @@ function EventDrawer({ event, onClose, onDelete }: { event: CalEvent; onClose: (
                 disabled={deleting}
                 className="flex-1 py-2 text-xs font-medium text-neutral-600 dark:text-foreground/70 border border-neutral-200 dark:border-border rounded-lg hover:bg-neutral-50 dark:hover:bg-muted transition-colors disabled:opacity-50"
               >
-                Annuler
+                Cancel
               </button>
               <button
                 onClick={async () => {
@@ -257,7 +257,7 @@ function EventDrawer({ event, onClose, onDelete }: { event: CalEvent; onClose: (
                 disabled={deleting}
                 className="flex-1 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50"
               >
-                {deleting ? "Suppression…" : "Confirmer"}
+                {deleting ? "Deleting…" : "Confirm"}
               </button>
             </div>
           )}
@@ -355,8 +355,8 @@ function AvailabilityTab() {
   return (
     <div className="max-w-xl">
       <div className="mb-6">
-        <h2 className="text-sm font-semibold text-foreground mb-0.5">🗓 Heures de disponibilité</h2>
-        <p className="text-xs text-muted-foreground">Définissez vos créneaux disponibles pour les appels de découverte.</p>
+        <h2 className="text-sm font-semibold text-foreground mb-0.5">🗓 Availability hours</h2>
+        <p className="text-xs text-muted-foreground">Set your available slots for discovery calls.</p>
       </div>
 
       <div className="space-y-3">
@@ -395,7 +395,7 @@ function AvailabilityTab() {
                     onClick={() => addSlot(day)}
                     className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                   >
-                    <Plus size={12} /> Ajouter
+                    <Plus size={12} /> Add
                   </button>
                 )}
               </div>
@@ -431,7 +431,7 @@ function AvailabilityTab() {
               )}
 
               {!active && (
-                <p className="pl-12 mt-1 text-xs text-muted-foreground">Indisponible</p>
+                <p className="pl-12 mt-1 text-xs text-muted-foreground">Unavailable</p>
               )}
             </div>
           );
@@ -444,7 +444,7 @@ function AvailabilityTab() {
         className="mt-6 flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors"
       >
         {saved ? <Check size={14} /> : <Save size={14} />}
-        {saving ? "Enregistrement…" : saved ? "Enregistré !" : "Enregistrer"}
+        {saving ? "Saving…" : saved ? "Saved!" : "Save"}
       </button>
     </div>
   );
@@ -464,8 +464,8 @@ function SchedulingTab() {
   return (
     <div className="max-w-sm">
       <div className="mb-6">
-        <h2 className="text-sm font-semibold text-foreground mb-0.5">🔗 Lien de réservation</h2>
-        <p className="text-xs text-muted-foreground">Partagez ce lien avec vos leads pour qu&apos;ils réservent un créneau.</p>
+        <h2 className="text-sm font-semibold text-foreground mb-0.5">🔗 Booking link</h2>
+        <p className="text-xs text-muted-foreground">Share this link with your leads to let them book a slot.</p>
       </div>
 
       {/* Event card — Calendly style */}
@@ -507,7 +507,7 @@ function SchedulingTab() {
           }`}
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? "Copié !" : "Copier"}
+          {copied ? "Copied!" : "Copy"}
         </button>
       </div>
 
@@ -517,7 +517,7 @@ function SchedulingTab() {
         rel="noopener noreferrer"
         className="mt-3 block text-center text-xs text-blue-600 dark:text-blue-400 hover:underline"
       >
-        Ouvrir la page de réservation →
+        Open booking page →
       </a>
     </div>
   );
@@ -528,8 +528,8 @@ const ORGANIZER_EMAIL_DISPLAY = "clement.guiraudpro@gmail.com";
 
 const TEMPLATES: { name: string; description: string; steps: Omit<AutomationStep, "id">[] }[] = [
   {
-    name: "Confirmation seule",
-    description: "Un email immédiat pour confirmer le call.",
+    name: "Confirmation only",
+    description: "One immediate email to confirm the call.",
     steps: [
       {
         type: "send_email",
@@ -542,8 +542,8 @@ const TEMPLATES: { name: string; description: string; steps: Omit<AutomationStep
     ],
   },
   {
-    name: "Confirmation + Rappel 24h",
-    description: "Confirmation immédiate, puis rappel la veille.",
+    name: "Confirmation + 24h reminder",
+    description: "Immediate confirmation, then reminder the day before.",
     steps: [
       {
         type: "send_email",
@@ -564,8 +564,8 @@ const TEMPLATES: { name: string; description: string; steps: Omit<AutomationStep
     ],
   },
   {
-    name: "Séquence complète",
-    description: "Confirmation + rappel 24h + rappel 1h avant.",
+    name: "Full sequence",
+    description: "Confirmation + 24h reminder + 1h reminder.",
     steps: [
       {
         type: "send_email",
@@ -600,18 +600,18 @@ function newStepId() {
 }
 
 function stepWhenLabel(step: AutomationStep): string {
-  if (step.when === "immediately") return "Immédiatement";
+  if (step.when === "immediately") return "Immediately";
   if (step.when === "delay_after_booking") {
     const h = step.delay_minutes / 60;
-    return h >= 1 ? `${h}h après la réservation` : `${step.delay_minutes}min après la réservation`;
+    return h >= 1 ? `${h}h after booking` : `${step.delay_minutes}min after booking`;
   }
   // before_event
-  if (step.delay_minutes >= 1440) return `${step.delay_minutes / 1440}j avant le call`;
-  return `${step.delay_minutes / 60}h avant le call`;
+  if (step.delay_minutes >= 1440) return `${step.delay_minutes / 1440}d before call`;
+  return `${step.delay_minutes / 60}h before call`;
 }
 
 function recipientLabel(r: AutomationStep["recipient"]): string {
-  return r === "lead" ? "Lead" : r === "organizer" ? "Moi" : "Lead + Moi";
+  return r === "lead" ? "Lead" : r === "organizer" ? "Me" : "Lead + Me";
 }
 
 // ── Automations tab ──────────────────────────────────────────────
@@ -641,7 +641,7 @@ function AutomationsTab() {
   }
 
   async function deleteAutomation(id: string) {
-    if (!confirm("Supprimer cette automation ?")) return;
+    if (!confirm("Delete this automation?")) return;
     setAutomations((prev) => prev.filter((a) => a.id !== id));
     await fetch(`/api/automations/${id}`, { method: "DELETE" });
   }
@@ -697,7 +697,7 @@ function AutomationsTab() {
       when: "before_event",
       delay_minutes: 1440,
       recipient: "lead",
-      subject: "Rappel : votre call {{date}}",
+      subject: "Reminder: your call {{date}}",
       body: "Bonjour {{name}},\n\nRappel de votre call à {{time}}.\n\n🎥 {{meetLink}}\n\nClément",
     };
     setEditDraft({ ...editDraft, steps: [...editDraft.steps, newStep] });
@@ -720,8 +720,8 @@ function AutomationsTab() {
     <div className="max-w-2xl">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-sm font-semibold text-foreground mb-0.5">✉️ Séquences d&apos;emails</h2>
-          <p className="text-xs text-muted-foreground">Déclenché automatiquement quand un call est réservé.</p>
+          <h2 className="text-sm font-semibold text-foreground mb-0.5">✉️ Email sequences</h2>
+          <p className="text-xs text-muted-foreground">Triggered automatically when a call is booked.</p>
         </div>
       </div>
 
@@ -749,7 +749,7 @@ function AutomationsTab() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-foreground truncate">{auto.name}</span>
                       <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                        <Zap size={9} /> Call réservé
+                        <Zap size={9} /> Call booked
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -782,7 +782,7 @@ function AutomationsTab() {
                   <div className="border-t border-border bg-secondary px-4 pt-4 pb-5">
                     {/* Name */}
                     <div className="mb-4">
-                      <label className="block text-xs font-medium text-muted-foreground mb-1">Nom</label>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Name</label>
                       <input
                         value={draft.name}
                         onChange={(e) => setEditDraft({ ...draft, name: e.target.value })}
@@ -813,7 +813,7 @@ function AutomationsTab() {
                           <div className="grid grid-cols-2 gap-3 mb-3">
                             {/* When */}
                             <div>
-                              <label className="block text-[10px] font-medium text-muted-foreground mb-1">Quand</label>
+                              <label className="block text-[10px] font-medium text-muted-foreground mb-1">When</label>
                               <select
                                 value={step.when === "immediately" ? "immediately" : `${step.when}:${step.delay_minutes}`}
                                 onChange={(e) => {
@@ -829,34 +829,34 @@ function AutomationsTab() {
                                 }}
                                 className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-muted text-foreground focus:outline-none focus:border-[#5865f2]"
                               >
-                                <option value="immediately">Immédiatement</option>
-                                <option value="before_event:60">1h avant le call</option>
-                                <option value="before_event:180">3h avant le call</option>
-                                <option value="before_event:1440">24h avant le call</option>
-                                <option value="before_event:2880">48h avant le call</option>
-                                <option value="delay_after_booking:60">1h après la réservation</option>
-                                <option value="delay_after_booking:1440">24h après la réservation</option>
+                                <option value="immediately">Immediately</option>
+                                <option value="before_event:60">1h before call</option>
+                                <option value="before_event:180">3h before call</option>
+                                <option value="before_event:1440">24h before call</option>
+                                <option value="before_event:2880">48h before call</option>
+                                <option value="delay_after_booking:60">1h after booking</option>
+                                <option value="delay_after_booking:1440">24h after booking</option>
                               </select>
                             </div>
 
                             {/* Recipient */}
                             <div>
-                              <label className="block text-[10px] font-medium text-muted-foreground mb-1">Destinataire</label>
+                              <label className="block text-[10px] font-medium text-muted-foreground mb-1">Recipient</label>
                               <select
                                 value={step.recipient}
                                 onChange={(e) => updateDraftStep(idx, "recipient", e.target.value)}
                                 className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-muted text-foreground focus:outline-none focus:border-[#5865f2]"
                               >
-                                <option value="both">Lead + Moi</option>
-                                <option value="lead">Lead uniquement</option>
-                                <option value="organizer">Moi uniquement</option>
+                                <option value="both">Lead + Me</option>
+                                <option value="lead">Lead only</option>
+                                <option value="organizer">Me only</option>
                               </select>
                             </div>
                           </div>
 
                           {/* Subject */}
                           <div className="mb-2">
-                            <label className="block text-[10px] font-medium text-muted-foreground mb-1">Objet</label>
+                            <label className="block text-[10px] font-medium text-muted-foreground mb-1">Subject</label>
                             <input
                               value={step.subject}
                               onChange={(e) => updateDraftStep(idx, "subject", e.target.value)}
@@ -866,7 +866,7 @@ function AutomationsTab() {
 
                           {/* Body */}
                           <div>
-                            <label className="block text-[10px] font-medium text-muted-foreground mb-1">Corps</label>
+                            <label className="block text-[10px] font-medium text-muted-foreground mb-1">Body</label>
                             <textarea
                               rows={4}
                               value={step.body}
@@ -884,7 +884,7 @@ function AutomationsTab() {
                       onClick={addDraftStep}
                       className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium mb-4"
                     >
-                      <Plus size={12} /> Ajouter une étape
+                      <Plus size={12} /> Add step
                     </button>
 
                     {/* Save / Cancel */}
@@ -894,13 +894,13 @@ function AutomationsTab() {
                         disabled={saving}
                         className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors"
                       >
-                        <Save size={12} /> {saving ? "Enregistrement…" : "Enregistrer"}
+                        <Save size={12} /> {saving ? "Saving…" : "Save"}
                       </button>
                       <button
                         onClick={() => { setExpandedId(null); setEditDraft(null); }}
                         className="px-4 py-2 text-xs text-muted-foreground hover:text-foreground font-medium rounded-lg hover:bg-muted transition-colors"
                       >
-                        Annuler
+                        Cancel
                       </button>
                     </div>
                   </div>
@@ -914,7 +914,7 @@ function AutomationsTab() {
       {/* Templates section */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          {automations.length === 0 ? "Démarrer avec un modèle" : "Ajouter depuis un modèle"}
+          {automations.length === 0 ? "Start from a template" : "Add from a template"}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {TEMPLATES.map((tpl) => (
@@ -934,7 +934,7 @@ function AutomationsTab() {
               <div className="mt-2 flex flex-wrap gap-1">
                 {tpl.steps.map((s, i) => (
                   <span key={i} className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground rounded-full">
-                    {s.when === "immediately" ? "Immédiat" : s.when === "before_event" ? `-${s.delay_minutes / 60}h` : `+${s.delay_minutes / 60}h`}
+                    {s.when === "immediately" ? "Now" : s.when === "before_event" ? `-${s.delay_minutes / 60}h` : `+${s.delay_minutes / 60}h`}
                   </span>
                 ))}
               </div>
@@ -947,8 +947,8 @@ function AutomationsTab() {
       <div className="mt-6 flex items-start gap-2.5 bg-amber-900/20 border border-amber-700/40 rounded-xl px-4 py-3">
         <Power size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-amber-400 leading-relaxed">
-          Les emails sont envoyés via <strong>Gmail</strong> depuis <strong>{ORGANIZER_EMAIL_DISPLAY}</strong>.
-          Les rappels planifiés sont traités toutes les 5 minutes par le cron Vercel.
+          Emails are sent via <strong>Gmail</strong> from <strong>{ORGANIZER_EMAIL_DISPLAY}</strong>.
+          Scheduled reminders are processed every 5 minutes by the Vercel cron.
         </p>
       </div>
     </div>
@@ -1051,10 +1051,10 @@ export default function CalendarSyncPage() {
         <div className="flex items-center overflow-x-auto scrollbar-none">
           {(["calendar", "scheduling", "availability", "automations"] as Tab[]).map((t) => {
             const labels: Record<Tab, string> = {
-              calendar: "Calendrier",
-              scheduling: "🔗 Lien de réservation",
-              availability: "🗓 Heures de disponibilité",
-              automations: "✉️ Séquences d'emails",
+              calendar: "Calendar",
+              scheduling: "🔗 Booking link",
+              availability: "🗓 Availability",
+              automations: "✉️ Email sequences",
             };
             return (
               <button
@@ -1165,7 +1165,7 @@ export default function CalendarSyncPage() {
                               <span className="block truncate">{ev.summary ?? "(no title)"}</span>
                               {height > 26 && (
                                 <span className="block opacity-70 text-[9px]">
-                                  {new Date(ev.start.dateTime!).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                                  {new Date(ev.start.dateTime!).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                                 </span>
                               )}
                             </div>

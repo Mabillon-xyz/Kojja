@@ -4,10 +4,10 @@ import { useState, useCallback } from "react";
 import { Clock, Video, ChevronLeft, ChevronRight, Globe, ArrowLeft, Check, Calendar } from "lucide-react";
 
 const MONTH_NAMES = [
-  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
-const DAY_HEADERS = ["L", "M", "M", "J", "V", "S", "D"];
+const DAY_HEADERS = ["M", "T", "W", "T", "F", "S", "S"];
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -29,7 +29,7 @@ function getTodayParis(): string {
 
 function formatDateLong(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("fr-FR", {
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -101,11 +101,11 @@ export default function BookPage() {
         body: JSON.stringify({ name: name.trim(), email: email.trim(), date: selectedDate, time: selectedTime }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erreur lors de la réservation");
+      if (!res.ok) throw new Error(data.error ?? "Booking error");
       setConfirmed({ meetLink: data.meetLink, calLink: data.calLink });
       setStep("confirmed");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erreur");
+      alert(err instanceof Error ? err.message : "Error");
     } finally {
       setSubmitting(false);
     }
@@ -154,7 +154,7 @@ export default function BookPage() {
   // ─── Calendar panel ──────────────────────────────────────────────────────────
   const calendarPanel = (
     <div className="flex-1 p-8 min-w-0">
-      <h2 className="text-sm font-semibold text-gray-900 mb-6">Sélectionner une date</h2>
+      <h2 className="text-sm font-semibold text-gray-900 mb-6">Select a date</h2>
 
       {/* Month nav */}
       <div className="flex items-center justify-between mb-5">
@@ -223,7 +223,7 @@ export default function BookPage() {
         })}
       </div>
 
-      <p className="mt-5 text-xs text-gray-400">Tous les créneaux sont affichés en heure de Paris</p>
+      <p className="mt-5 text-xs text-gray-400">All slots are displayed in Paris time</p>
     </div>
   );
 
@@ -241,7 +241,7 @@ export default function BookPage() {
           </div>
         ) : slots.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-10">
-            Aucun créneau disponible
+            No slots available
           </p>
         ) : (
           slots.map(slot => (
@@ -266,7 +266,7 @@ export default function BookPage() {
         className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-6 transition-colors"
       >
         <ArrowLeft size={14} />
-        Retour
+        Back
       </button>
 
       {/* Selected slot summary */}
@@ -281,14 +281,14 @@ export default function BookPage() {
       <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Nom complet <span className="text-red-400">*</span>
+            Full name <span className="text-red-400">*</span>
           </label>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             required
-            placeholder="Jean Dupont"
+            placeholder="John Smith"
             className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
           />
         </div>
@@ -301,7 +301,7 @@ export default function BookPage() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
-            placeholder="jean@entreprise.com"
+            placeholder="john@company.com"
             className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
           />
         </div>
@@ -310,7 +310,7 @@ export default function BookPage() {
           disabled={submitting || !name.trim() || !email.trim()}
           className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-1"
         >
-          {submitting ? "Réservation en cours…" : "Confirmer le rendez-vous"}
+          {submitting ? "Booking…" : "Confirm booking"}
         </button>
       </form>
     </div>
@@ -323,9 +323,9 @@ export default function BookPage() {
         <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-5">
           <Check size={22} className="text-green-600" />
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">C&apos;est confirmé !</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">You&apos;re all set!</h2>
         <p className="text-sm text-gray-500 mb-6">
-          Un e-mail de confirmation vous a été envoyé. À très vite !
+          A confirmation email has been sent. See you soon!
         </p>
 
         <div className="bg-gray-50 rounded-xl p-4 mb-6">
@@ -344,7 +344,7 @@ export default function BookPage() {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Video size={14} />
-              Rejoindre Meet
+              Join Meet
             </a>
           )}
           {confirmed?.calLink && (
@@ -355,7 +355,7 @@ export default function BookPage() {
               className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Calendar size={14} />
-              Voir dans Calendar
+              View in Calendar
             </a>
           )}
         </div>

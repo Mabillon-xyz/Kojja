@@ -87,7 +87,7 @@ export default function LeadKanban({ leads }: Props) {
                 ))}
                 {stageLeads.length === 0 && (
                   <div className="h-20 border-2 border-dashed border-neutral-200 dark:border-border rounded-lg flex items-center justify-center">
-                    <span className="text-xs text-neutral-300 dark:text-muted-foreground/60">Déposer ici</span>
+                    <span className="text-xs text-neutral-300 dark:text-muted-foreground/60">Drop here</span>
                   </div>
                 )}
               </div>
