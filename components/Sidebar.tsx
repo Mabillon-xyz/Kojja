@@ -5,6 +5,17 @@ import { usePathname } from "next/navigation";
 
 const nav = [
   {
+    label: "Home",
+    href: "/home",
+    emoji: "🏠",
+    icon: (
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9,22 9,12 15,12 15,22" />
+      </svg>
+    ),
+  },
+  {
     label: "Calendrier",
     href: "/calendar-sync",
     emoji: "📅",

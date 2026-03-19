@@ -6,7 +6,7 @@ import ConditionalSidebar from "@/components/ConditionalSidebar";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Dashboard",
+  title: "Koj²a",
   description: "Personal toolbox",
 };
 
