@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Lead, STAGE_LABELS, STAGES, formatRelativeDate } from '@/lib/lead-types'
 import { updateLead, updateLeadStage, deleteLead } from '@/app/actions/leads'
 
@@ -9,6 +10,7 @@ type Props = {
 }
 
 export default function LeadDrawer({ lead, onClose }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   // Contact fields (editable)
   const [firstName, setFirstName] = useState(lead?.first_name ?? '')
@@ -70,6 +72,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
       try {
         await deleteLead(lead.id)
         onClose()
+        router.refresh()
       } catch (e) {
         setDeleteError(e instanceof Error ? e.message : 'Delete failed')
       }
