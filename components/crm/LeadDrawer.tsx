@@ -1,7 +1,7 @@
 'use client'
 import { useState, useTransition } from 'react'
 import { Lead, STAGE_LABELS, STAGES, formatRelativeDate } from '@/lib/lead-types'
-import { updateLeadNotes, updateLeadStage, deleteLead } from '@/app/actions/leads'
+import { updateLead, updateLeadStage, deleteLead } from '@/app/actions/leads'
 
 type Props = {
   lead: Lead | null
@@ -10,22 +10,46 @@ type Props = {
 
 export default function LeadDrawer({ lead, onClose }: Props) {
   const [isPending, startTransition] = useTransition()
-  const [notes, setNotes] = useState(lead?.notes ?? '')
+  // Contact fields (editable)
+  const [firstName, setFirstName] = useState(lead?.first_name ?? '')
+  const [lastName, setLastName] = useState(lead?.last_name ?? '')
+  const [email, setEmail] = useState(lead?.email ?? '')
+  const [phone, setPhone] = useState(lead?.phone ?? '')
+  const [companyName, setCompanyName] = useState(lead?.company_name ?? '')
+  const [city, setCity] = useState(lead?.city ?? '')
+  const [callDate, setCallDate] = useState(
+    lead?.call_date ? new Date(lead.call_date).toISOString().slice(0, 16) : ''
+  )
+  // New fields
+  const [contactMeans, setContactMeans] = useState<string[]>(lead?.contact_means ?? [])
+  const [linkedinUrl, setLinkedinUrl] = useState(lead?.linkedin_url ?? '')
+  const [comment, setComment] = useState(lead?.comment ?? '')
+  // CRM fields
   const [nextAction, setNextAction] = useState(lead?.next_action ?? '')
   const [nextActionDate, setNextActionDate] = useState(lead?.next_action_date ?? '')
-  const [contactMeans, setContactMeans] = useState<string[]>(lead?.contact_means ?? [])
-  const [comment, setComment] = useState(lead?.comment ?? '')
-  const [linkedinUrl, setLinkedinUrl] = useState(lead?.linkedin_url ?? '')
+  const [notes, setNotes] = useState(lead?.notes ?? '')
+
   const [saved, setSaved] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-
-  // Reset state when lead changes
-  if (lead && notes === '' && lead.notes) setNotes(lead.notes)
 
   function handleSave() {
     if (!lead) return
     startTransition(async () => {
-      await updateLeadNotes(lead.id, notes, nextAction, nextActionDate, contactMeans, comment, linkedinUrl)
+      await updateLead(lead.id, {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone,
+        company_name: companyName,
+        city,
+        call_date: callDate,
+        notes,
+        next_action: nextAction,
+        next_action_date: nextActionDate,
+        contact_means: contactMeans,
+        comment,
+        linkedin_url: linkedinUrl,
+      })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     })
@@ -46,17 +70,18 @@ export default function LeadDrawer({ lead, onClose }: Props) {
     })
   }
 
-  if (!lead) return null
+  function toggleContactMean(val: string) {
+    setContactMeans((prev) =>
+      prev.includes(val) ? prev.filter((m) => m !== val) : [...prev, val]
+    )
+  }
 
-  const callDate = lead.call_date ? new Date(lead.call_date) : null
+  if (!lead) return null
 
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/20 z-40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
 
       {/* Panel */}
       <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col overflow-hidden">
@@ -64,11 +89,11 @@ export default function LeadDrawer({ lead, onClose }: Props) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
           <div>
             <h2 className="font-semibold text-neutral-900">
-              {lead.first_name} {lead.last_name}
+              {firstName} {lastName}
             </h2>
-            {lead.company_name && (
+            {(companyName || city) && (
               <p className="text-sm text-neutral-500">
-                {lead.company_name}{lead.city ? ` · ${lead.city}` : ''}
+                {companyName}{city ? ` · ${city}` : ''}
               </p>
             )}
           </div>
@@ -83,22 +108,24 @@ export default function LeadDrawer({ lead, onClose }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-          {/* Info bloc */}
-          <div className="space-y-2">
-            <InfoRow label="Email" value={lead.email} href={`mailto:${lead.email}`} />
-            {lead.phone && <InfoRow label="Téléphone" value={lead.phone} href={`tel:${lead.phone}`} />}
-            {linkedinUrl && <InfoRow label="LinkedIn" value={linkedinUrl} href={linkedinUrl} />}
-            {callDate && (
-              <InfoRow
-                label="Call"
-                value={`${callDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })} (${formatRelativeDate(lead.call_date)})`}
-              />
-            )}
-            <InfoRow label="Inscrit" value={formatRelativeDate(lead.call_booked_at)} />
-            {lead.message && <InfoRow label="Message" value={lead.message} />}
+
+          {/* Contact info */}
+          <div>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">Contact</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Prénom" value={firstName} onChange={setFirstName} />
+              <Field label="Nom" value={lastName} onChange={setLastName} />
+            </div>
+            <div className="mt-2 space-y-2">
+              <Field label="Email" value={email} onChange={setEmail} type="email" />
+              <Field label="Téléphone" value={phone} onChange={setPhone} type="tel" />
+              <Field label="Entreprise" value={companyName} onChange={setCompanyName} />
+              <Field label="Ville" value={city} onChange={setCity} />
+              <Field label="Date du call" value={callDate} onChange={setCallDate} type="datetime-local" />
+            </div>
           </div>
 
-          {/* Contact means */}
+          {/* Moyen de contact */}
           <div>
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Moyen de contact</p>
             <div className="flex flex-wrap gap-2">
@@ -109,9 +136,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
                   <button
                     key={means}
                     type="button"
-                    onClick={() =>
-                      setContactMeans(active ? contactMeans.filter((m) => m !== val) : [...contactMeans, val])
-                    }
+                    onClick={() => toggleContactMean(val)}
                     className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                       active
                         ? 'bg-neutral-900 text-white border-neutral-900'
@@ -125,7 +150,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
             </div>
           </div>
 
-          {/* LinkedIn URL */}
+          {/* LinkedIn */}
           <div>
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Profil LinkedIn</p>
             <input
@@ -136,7 +161,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
             />
           </div>
 
-          {/* Stage selector */}
+          {/* Stade */}
           <div>
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Stade</p>
             <div className="flex flex-wrap gap-2">
@@ -157,7 +182,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
             </div>
           </div>
 
-          {/* Next action */}
+          {/* Prochaine action */}
           <div>
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Prochaine action</p>
             <input
@@ -180,13 +205,13 @@ export default function LeadDrawer({ lead, onClose }: Props) {
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={5}
+              rows={4}
               placeholder="Informations sur ce coach..."
               className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none"
             />
           </div>
 
-          {/* Comment */}
+          {/* Commentaire */}
           <div>
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Commentaire</p>
             <textarea
@@ -202,10 +227,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
           <div>
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Timeline</p>
             <div className="space-y-2">
-              <TimelineEvent
-                label="Demande de call reçue"
-                date={lead.call_booked_at}
-              />
+              <TimelineEvent label="Demande de call reçue" date={lead.call_booked_at} />
               {lead.call_date && (
                 <TimelineEvent
                   label={`Call ${new Date(lead.call_date) < new Date() ? 'tenu' : 'prévu'}`}
@@ -220,6 +242,10 @@ export default function LeadDrawer({ lead, onClose }: Props) {
               )}
             </div>
           </div>
+
+          <p className="text-xs text-neutral-400">
+            Inscrit {formatRelativeDate(lead.call_booked_at)}
+          </p>
         </div>
 
         {/* Footer */}
@@ -270,17 +296,26 @@ export default function LeadDrawer({ lead, onClose }: Props) {
   )
 }
 
-function InfoRow({ label, value, href }: { label: string; value: string; href?: string }) {
+function Field({
+  label,
+  value,
+  onChange,
+  type = 'text',
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  type?: string
+}) {
   return (
-    <div className="flex gap-3 text-sm">
-      <span className="text-neutral-400 w-20 flex-shrink-0">{label}</span>
-      {href ? (
-        <a href={href} className="text-neutral-700 hover:text-neutral-900 underline underline-offset-2 truncate">
-          {value}
-        </a>
-      ) : (
-        <span className="text-neutral-700">{value}</span>
-      )}
+    <div>
+      <label className="block text-xs text-neutral-400 mb-1">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
+      />
     </div>
   )
 }

@@ -55,29 +55,45 @@ export async function updateLeadStage(id: string, stage: Lead['stage']) {
   revalidatePath('/crm')
 }
 
-export async function updateLeadNotes(
+export async function updateLead(
   id: string,
-  notes: string,
-  next_action: string,
-  next_action_date: string,
-  contact_means: string[],
-  comment: string,
-  linkedin_url: string,
+  fields: {
+    first_name: string
+    last_name: string
+    email: string
+    phone: string
+    company_name: string
+    city: string
+    call_date: string
+    notes: string
+    next_action: string
+    next_action_date: string
+    contact_means: string[]
+    comment: string
+    linkedin_url: string
+  },
 ) {
   const supabase = await createClient()
   const { error } = await supabase
     .from('leads')
     .update({
-      notes,
-      next_action: next_action || null,
-      next_action_date: next_action_date || null,
-      contact_means: contact_means.length > 0 ? contact_means : null,
-      comment: comment || null,
-      linkedin_url: linkedin_url || null,
+      first_name: fields.first_name.trim(),
+      last_name: fields.last_name.trim(),
+      email: fields.email.trim().toLowerCase(),
+      phone: fields.phone.trim() || null,
+      company_name: fields.company_name.trim() || null,
+      city: fields.city.trim() || null,
+      call_date: fields.call_date || null,
+      notes: fields.notes,
+      next_action: fields.next_action || null,
+      next_action_date: fields.next_action_date || null,
+      contact_means: fields.contact_means.length > 0 ? fields.contact_means : null,
+      comment: fields.comment || null,
+      linkedin_url: fields.linkedin_url.trim() || null,
     })
     .eq('id', id)
 
-  if (error) throw new Error(`updateLeadNotes: ${error.message}`)
+  if (error) throw new Error(`updateLead: ${error.message}`)
   revalidatePath('/crm')
 }
 

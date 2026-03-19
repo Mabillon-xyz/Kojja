@@ -54,7 +54,7 @@ export default function LeadQueue({ leads }: Props) {
       </div>
 
       {selected && (
-        <LeadDrawer lead={selected} onClose={() => setSelected(null)} />
+        <LeadDrawer key={selected.id} lead={selected} onClose={() => setSelected(null)} />
       )}
     </>
   )

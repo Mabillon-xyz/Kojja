@@ -97,7 +97,7 @@ export default function LeadKanban({ leads }: Props) {
       </div>
 
       {selected && (
-        <LeadDrawer lead={selected} onClose={() => setSelected(null)} />
+        <LeadDrawer key={selected.id} lead={selected} onClose={() => setSelected(null)} />
       )}
     </>
   )
