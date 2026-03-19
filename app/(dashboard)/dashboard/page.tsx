@@ -16,7 +16,7 @@ function buildDailyData(leads: Awaited<ReturnType<typeof readLeads>>): DayData[]
 
   return Array.from({ length: 29 }, (_, i) => {
     const day = new Date(today); day.setDate(day.getDate() - 7 + i)
-    const iso = day.toISOString().split('T')[0]
+    const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
     const isToday = i === 7
     const isPast = day < today
 
