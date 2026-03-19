@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
 
       const leadSubject = `✓ Call confirmé — ${dateFR} à ${timeFR}`;
       const orgSubject = `📞 Nouveau call : ${name} — ${dateFR} à ${timeFR}`;
-      void Promise.all([
+      await Promise.all([
         transporter.sendMail({ from, to: email, subject: leadSubject, html: buildEmailHtml(leadBody, ctx) })
           .then(() => logEmail({ to_email: email, subject: leadSubject, status: "success", source: "invite" }))
           .catch((e) => { console.error("Email to lead failed:", String(e)); return logEmail({ to_email: email, subject: leadSubject, status: "error", error: String(e), source: "invite" }); }),

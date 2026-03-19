@@ -1,5 +1,12 @@
 "use server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export type EmailLog = {
   id: string;
@@ -12,8 +19,7 @@ export type EmailLog = {
 };
 
 export async function getEmailLogs(): Promise<EmailLog[]> {
-  const supabase = await createServiceClient();
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("email_logs")
     .select("*")
     .order("sent_at", { ascending: false })
