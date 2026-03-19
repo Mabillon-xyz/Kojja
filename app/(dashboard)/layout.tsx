@@ -36,6 +36,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 Documentation
               </Link>
               <Link
+                href="/calendar-sync"
+                className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
+              >
+                Calendar
+              </Link>
+              <Link
                 href="/settings"
                 className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
               >
