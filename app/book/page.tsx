@@ -22,6 +22,7 @@ export default function BookPage() {
       phone: (form.elements.namedItem('phone') as HTMLInputElement).value,
       call_date: (form.elements.namedItem('call_date') as HTMLInputElement).value || null,
       message: (form.elements.namedItem('message') as HTMLTextAreaElement).value,
+      comment: (form.elements.namedItem('comment') as HTMLTextAreaElement).value,
     }
 
     try {
@@ -32,13 +33,13 @@ export default function BookPage() {
       })
       if (!res.ok) {
         const json = await res.json()
-        setError(json.error || 'Une erreur est survenue')
+        setError(json.error || 'An error occurred')
         setLoading(false)
         return
       }
       router.push('/book/confirmation')
     } catch {
-      setError('Une erreur est survenue. Réessayez.')
+      setError('An error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -49,17 +50,17 @@ export default function BookPage() {
         <div className="mb-10 text-center">
           <p className="text-sm font-medium text-neutral-400 tracking-widest uppercase mb-3">Koj²a</p>
           <h1 className="text-2xl font-semibold text-neutral-900 mb-2">
-            Réserver un call de 30 min
+            Book a 30-min call
           </h1>
           <p className="text-sm text-neutral-500">
-            On discute de votre prospection et de comment Koj²a peut vous aider.
+            We discuss your prospecting and how Koj²a can help you.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white border border-neutral-200 rounded-xl p-8 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Prénom *</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">First name *</label>
               <input
                 name="first_name"
                 required
@@ -68,7 +69,7 @@ export default function BookPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Nom *</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Last name *</label>
               <input
                 name="last_name"
                 required
@@ -85,21 +86,21 @@ export default function BookPage() {
               type="email"
               required
               className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
-              placeholder="claire@cabinet-coaching.fr"
+              placeholder="claire@coaching.com"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Cabinet / entreprise</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Company / practice</label>
               <input
                 name="company_name"
                 className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
-                placeholder="Cabinet Coaching Lyon"
+                placeholder="Coaching Company"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Ville</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">City</label>
               <input
                 name="city"
                 className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
@@ -110,16 +111,16 @@ export default function BookPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Téléphone</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Phone</label>
               <input
                 name="phone"
                 type="tel"
                 className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
-                placeholder="06 12 34 56 78"
+                placeholder="+33 6 12 34 56 78"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Date souhaitée</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Preferred date</label>
               <input
                 name="call_date"
                 type="datetime-local"
@@ -129,12 +130,22 @@ export default function BookPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Votre contexte (optionnel)</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Your context (optional)</label>
             <textarea
               name="message"
               rows={3}
               className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none"
-              placeholder="Ex : coach depuis 3 ans, je travaille avec des dirigeants de PME industrielles en région lyonnaise..."
+              placeholder="E.g. coach for 3 years, I work with SME executives in the manufacturing sector..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Anything else you&apos;d like to share? (optional)</label>
+            <textarea
+              name="comment"
+              rows={2}
+              className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none"
+              placeholder="Goals, challenges, questions..."
             />
           </div>
 
@@ -149,12 +160,12 @@ export default function BookPage() {
             disabled={loading}
             className="w-full py-2.5 bg-neutral-900 text-white text-sm font-medium rounded-lg hover:bg-neutral-700 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Envoi en cours...' : 'Réserver le call'}
+            {loading ? 'Sending...' : 'Book the call'}
           </button>
         </form>
 
         <p className="text-center text-xs text-neutral-400 mt-6">
-          Vous recevrez une confirmation par email sous 24h.
+          You will receive a confirmation by email within 24h.
         </p>
       </div>
     </div>

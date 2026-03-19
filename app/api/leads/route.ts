@@ -30,7 +30,7 @@ function buildGCalLink(callDate: string, leadName: string): string {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { first_name, last_name, email, company_name, city, phone, message, call_date } = body
+    const { first_name, last_name, email, company_name, city, phone, message, comment, call_date } = body
 
     if (!first_name || !last_name || !email) {
       return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 })
@@ -46,6 +46,7 @@ export async function POST(request: Request) {
         city: city?.trim() || null,
         phone: phone?.trim() || null,
         message: message?.trim() || null,
+        comment: comment?.trim() || null,
         call_date: call_date || null,
         stage: 'call_scheduled',
       }])
