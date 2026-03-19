@@ -37,9 +37,15 @@ function buildUpcomingDays(leads: Awaited<ReturnType<typeof readLeads>>): DaySlo
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  return Array.from({ length: 14 }, (_, i) => {
+  // Past 60 days (to catch overdue) + next 14 days
+  const START = -60
+  const END = 14
+
+  return Array.from({ length: END - START + 1 }, (_, i) => {
     const day = new Date(today)
-    day.setDate(day.getDate() + i)
+    day.setDate(day.getDate() + START + i)
+
+    const isPast = day.getTime() < today.getTime()
 
     const calls = upcoming
       .filter((l) => {
@@ -58,10 +64,21 @@ function buildUpcomingDays(leads: Awaited<ReturnType<typeof readLeads>>): DaySlo
       dayLabel: day.toLocaleDateString('en-GB', { weekday: 'short' }),
       dateNum: day.getDate(),
       monthLabel: day.toLocaleDateString('en-GB', { month: 'short' }),
-      isToday: i === 0,
+      isToday: START + i === 0,
+      isPast,
       calls,
     }
   })
+}
+
+function buildNoDateCalls(leads: Awaited<ReturnType<typeof readLeads>>): string[] {
+  return leads
+    .filter((l) => {
+      if (l.stage !== 'call_scheduled' || l.call_date) return false
+      const name = `${l.first_name} ${l.last_name}`.toLowerCase()
+      return !name.includes('test')
+    })
+    .map((l) => `${l.first_name} ${l.last_name}`)
 }
 
 export default async function DashboardPage() {
@@ -76,6 +93,7 @@ export default async function DashboardPage() {
   const revenue = customers * PRIX_CLIENT
   const chartData = buildChartData(leads)
   const upcomingDays = buildUpcomingDays(leads)
+  const noDateCalls = buildNoDateCalls(leads)
 
   const kpis = [
     {
@@ -138,7 +156,7 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <UpcomingCalls days={upcomingDays} />
+      <UpcomingCalls days={upcomingDays} noDateCalls={noDateCalls} />
 
       <CallsChart data={chartData} />
 
