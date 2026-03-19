@@ -73,7 +73,7 @@ export default function Sidebar() {
       <aside className="hidden md:flex w-52 h-screen border-r border-border flex-col bg-background flex-shrink-0">
         {/* Logo */}
         <div className="px-4 py-5 border-b border-border">
-          <span className="text-sm font-semibold text-foreground tracking-tight">🧠 Dashboard</span>
+          <span className="text-sm font-semibold text-foreground tracking-tight">Koj²a</span>
         </div>
 
         {/* Nav */}
