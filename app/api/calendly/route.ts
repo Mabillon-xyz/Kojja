@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
+import { createClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
 const USER_ID = "pg-test-de8a1257-28de-42e5-9d1d-edc298569d44";
@@ -16,6 +25,7 @@ export async function DELETE(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const eventId = searchParams.get("eventId");
+  const attendeeEmail = searchParams.get("attendeeEmail");
   if (!eventId)
     return NextResponse.json({ error: "eventId is required" }, { status: 400 });
 
@@ -31,6 +41,17 @@ export async function DELETE(req: NextRequest) {
 
     if (!result.successful)
       return NextResponse.json({ error: result.error ?? "Failed to delete event" }, { status: 500 });
+
+    // Clear call_date on the matching lead so it disappears from the chart
+    if (attendeeEmail) {
+      await getSupabase()
+        .from("leads")
+        .update({ call_date: null })
+        .eq("email", attendeeEmail.toLowerCase())
+        .eq("stage", "call_scheduled");
+      revalidatePath("/dashboard");
+      revalidatePath("/crm");
+    }
 
     return NextResponse.json({ deleted: true });
   } catch (err: unknown) {

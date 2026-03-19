@@ -1356,7 +1356,10 @@ export default function CalendarSyncPage() {
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
           onDelete={async (id) => {
-            await fetch(`/api/calendly?eventId=${encodeURIComponent(id)}`, { method: "DELETE" });
+            const attendeeEmail = selectedEvent.attendees?.find((a) => !a.self)?.email;
+            const params = new URLSearchParams({ eventId: id });
+            if (attendeeEmail) params.set("attendeeEmail", attendeeEmail);
+            await fetch(`/api/calendly?${params}`, { method: "DELETE" });
             setEvents((prev) => prev.filter((e) => e.id !== id));
             setSelectedEvent(null);
           }}
