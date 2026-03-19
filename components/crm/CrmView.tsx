@@ -7,11 +7,11 @@ import AddLeadForm from './AddLeadForm'
 import { Plus, LayoutList, Kanban } from 'lucide-react'
 
 export default function CrmView({ leads }: { leads: Lead[] }) {
-  const [view, setView] = useState<'queue' | 'pipeline'>('queue')
+  const [view, setView] = useState<'queue' | 'pipeline'>('pipeline')
   const [showAdd, setShowAdd] = useState(false)
 
   return (
-    <div className="max-w-5xl">
+    <div>
       {/* Page header */}
       <div className="flex items-center justify-between mb-8">
         <div>
