@@ -25,6 +25,11 @@ const nav = [
     emoji: '📅',
   },
   {
+    label: 'Flows',
+    href: '/flows',
+    emoji: '⚡',
+  },
+  {
     label: 'Settings',
     href: '/settings',
     emoji: '⚙️',
