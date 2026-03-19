@@ -1,0 +1,75 @@
+import { NextRequest, NextResponse } from "next/server";
+import { Composio } from "@composio/core";
+
+const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
+const USER_ID = "pg-test-de8a1257-28de-42e5-9d1d-edc298569d44";
+
+let composioClient: Composio | null = null;
+function getComposio() {
+  if (!composioClient) composioClient = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+  return composioClient;
+}
+
+export async function DELETE(req: NextRequest) {
+  if (!process.env.COMPOSIO_API_KEY)
+    return NextResponse.json({ error: "COMPOSIO_API_KEY not configured" }, { status: 500 });
+
+  const { searchParams } = new URL(req.url);
+  const eventId = searchParams.get("eventId");
+  if (!eventId)
+    return NextResponse.json({ error: "eventId is required" }, { status: 400 });
+
+  try {
+    const result = await getComposio().tools.execute("GOOGLECALENDAR_DELETE_EVENT", {
+      userId: USER_ID,
+      version: "20260312_00",
+      arguments: {
+        calendarId: PERSONAL_CAL_ID,
+        eventId,
+      },
+    });
+
+    if (!result.successful)
+      return NextResponse.json({ error: result.error ?? "Failed to delete event" }, { status: 500 });
+
+    return NextResponse.json({ deleted: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+export async function GET(req: NextRequest) {
+  if (!process.env.COMPOSIO_API_KEY)
+    return NextResponse.json({ error: "COMPOSIO_API_KEY not configured" }, { status: 500 });
+
+  const { searchParams } = new URL(req.url);
+  const timeMin = searchParams.get("start") ?? new Date().toISOString();
+  const timeMax = searchParams.get("end") ?? new Date(Date.now() + 7 * 86400000).toISOString();
+
+  try {
+    const result = await getComposio().tools.execute("GOOGLECALENDAR_EVENTS_LIST", {
+      userId: USER_ID,
+      version: "20260312_00",
+      arguments: {
+        calendarId: PERSONAL_CAL_ID,
+        timeMin,
+        timeMax,
+        singleEvents: true,
+        orderBy: "startTime",
+        maxResults: 250,
+      },
+    });
+
+    if (!result.successful) {
+      console.error("[calendly] Composio error:", JSON.stringify(result, null, 2));
+      return NextResponse.json({ error: result.error ?? "Failed to list events", detail: result }, { status: 500 });
+    }
+
+    const items = (result.data as { items?: unknown[] })?.items ?? [];
+    return NextResponse.json({ items });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
