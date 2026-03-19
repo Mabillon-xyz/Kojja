@@ -1,10 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Cell,
 } from 'recharts'
-import { Phone, Calendar } from 'lucide-react'
+import { Phone, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export type DayCall = {
   name: string
@@ -21,6 +22,8 @@ export type DayData = {
   isToday: boolean
   isPast: boolean
 }
+
+const WINDOW = 21
 
 type CustomTooltipProps = {
   active?: boolean
@@ -52,14 +55,18 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 type XTickProps = {
-  x?: number | string; y?: number | string; payload?: { value: string }; data: DayData[]
+  x?: number | string
+  y?: number | string
+  payload?: { value: string }
+  visibleData: DayData[]
 }
 
-function CustomXTick({ x = 0, y = 0, payload, data }: XTickProps) {
+function CustomXTick({ x = 0, y = 0, payload, visibleData }: XTickProps) {
   const nx = Number(x); const ny = Number(y)
   if (!payload) return null
-  const day = data.find((d) => d.label === payload.value)
-  const isToday = day?.isToday ?? false
+  const day = visibleData.find((d) => d.iso === payload.value)
+  if (!day) return null
+  const isToday = day.isToday
   return (
     <g transform={`translate(${nx},${ny})`}>
       {isToday && (
@@ -72,7 +79,7 @@ function CustomXTick({ x = 0, y = 0, payload, data }: XTickProps) {
         fill={isToday ? '#2563eb' : '#a3a3a3'}
         fontWeight={isToday ? 700 : 400}
       >
-        {day?.sublabel}
+        {day.sublabel}
       </text>
       <text
         x={0} y={18}
@@ -81,15 +88,27 @@ function CustomXTick({ x = 0, y = 0, payload, data }: XTickProps) {
         fill={isToday ? '#2563eb' : '#737373'}
         fontWeight={isToday ? 700 : 500}
       >
-        {payload.value}
+        {day.label}
       </text>
     </g>
   )
 }
 
 export default function DailyCallsChart({ data }: { data: DayData[] }) {
-  const today = data.find((d) => d.isToday)
-  const todayCalls = today?.calls ?? []
+  const todayIdx = data.findIndex((d) => d.isToday)
+  const [offset, setOffset] = useState(Math.max(0, todayIdx - 3))
+
+  const visibleData = data.slice(offset, offset + WINDOW)
+  const todayCalls = data.find((d) => d.isToday)?.calls ?? []
+
+  const canPrev = offset > 0
+  const canNext = offset + WINDOW < data.length
+
+  const rangeStart = visibleData[0]
+  const rangeEnd = visibleData[visibleData.length - 1]
+  const rangeLabel = rangeStart && rangeEnd
+    ? `${rangeStart.sublabel} ${rangeStart.label} – ${rangeEnd.sublabel} ${rangeEnd.label}`
+    : ''
 
   return (
     <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
@@ -99,19 +118,32 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
           <h2 className="text-sm font-semibold text-neutral-900">First calls</h2>
           <p className="text-xs text-neutral-400 mt-0.5">Scheduled per day</p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-neutral-400">
-          <Calendar className="w-3.5 h-3.5" />
-          <span>−7 / +21 days</span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-neutral-400 mr-2">{rangeLabel}</span>
+          <button
+            onClick={() => setOffset(o => Math.max(0, o - 7))}
+            disabled={!canPrev}
+            className="p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-30 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4 text-neutral-500" />
+          </button>
+          <button
+            onClick={() => setOffset(o => Math.min(data.length - WINDOW, o + 7))}
+            disabled={!canNext}
+            className="p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-30 transition-colors"
+          >
+            <ChevronRight className="w-4 h-4 text-neutral-500" />
+          </button>
         </div>
       </div>
 
       {/* Bar chart */}
       <div className="px-2 pb-2">
         <ResponsiveContainer width="100%" height={140}>
-          <BarChart data={data} barSize={16} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <BarChart data={visibleData} barSize={20} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <XAxis
-              dataKey="label"
-              tick={(props) => <CustomXTick {...props} data={data} />}
+              dataKey="iso"
+              tick={(props) => <CustomXTick {...props} visibleData={visibleData} />}
               axisLine={false}
               tickLine={false}
               height={30}
@@ -123,7 +155,7 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
               cursor={{ fill: '#f5f5f5', radius: 4 }}
             />
             <Bar dataKey="count" radius={[4, 4, 0, 0]} minPointSize={0}>
-              {data.map((d) => (
+              {visibleData.map((d) => (
                 <Cell
                   key={d.iso}
                   fill={d.isToday ? '#3b82f6' : d.isPast ? '#e5e5e5' : '#bfdbfe'}
