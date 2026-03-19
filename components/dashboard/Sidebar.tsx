@@ -2,42 +2,30 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
+import { Settings, BookOpen, X } from 'lucide-react'
 
 const nav = [
-  {
-    label: 'Home',
-    href: '/dashboard',
-    emoji: '🏠',
-  },
-  {
-    label: 'CRM',
-    href: '/crm',
-    emoji: '👥',
-  },
-  {
-    label: 'Documentation',
-    href: '/documentation',
-    emoji: '📖',
-  },
-  {
-    label: 'Calendar',
-    href: '/calendar-sync',
-    emoji: '📅',
-  },
-  {
-    label: 'Flows',
-    href: '/flows',
-    emoji: '⚡',
-  },
-  {
-    label: 'Settings',
-    href: '/settings',
-    emoji: '⚙️',
-  },
+  { label: 'Home', href: '/dashboard', emoji: '🏠' },
+  { label: 'CRM', href: '/crm', emoji: '👥' },
+  { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
+  { label: 'Flows', href: '/flows', emoji: '⚡' },
+]
+
+const mobileNav = [
+  { label: 'Home', href: '/dashboard', emoji: '🏠' },
+  { label: 'CRM', href: '/crm', emoji: '👥' },
+  { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
+  { label: 'Flows', href: '/flows', emoji: '⚡' },
+  { label: 'Settings', href: '/settings', emoji: '⚙️' },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  const settingsActive = pathname === '/settings' || pathname.startsWith('/settings/')
+  const docsActive = pathname === '/documentation' || pathname.startsWith('/documentation/')
 
   return (
     <>
@@ -46,6 +34,8 @@ export default function Sidebar() {
         <div className="px-5 py-4 border-b border-neutral-100">
           <span className="text-sm font-bold text-neutral-900 tracking-tight">Koj²a</span>
         </div>
+
+        {/* Main nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + '/')
@@ -66,11 +56,52 @@ export default function Sidebar() {
             )
           })}
         </nav>
+
+        {/* Settings icon at bottom */}
+        <div className="px-3 pb-4 relative">
+          <button
+            onClick={() => setSettingsOpen((o) => !o)}
+            className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-all ${
+              settingsActive || docsActive || settingsOpen
+                ? 'bg-blue-50 text-blue-700'
+                : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700'
+            }`}
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+
+          {/* Settings popover */}
+          {settingsOpen && (
+            <div className="absolute bottom-14 left-3 right-3 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden z-50">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-neutral-100">
+                <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Settings</span>
+                <button onClick={() => setSettingsOpen(false)} className="text-neutral-400 hover:text-neutral-600 transition-colors">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="p-1.5">
+                <Link
+                  href="/documentation"
+                  onClick={() => setSettingsOpen(false)}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
+                    docsActive
+                      ? 'bg-blue-50 text-blue-700 font-semibold'
+                      : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4 flex-shrink-0" />
+                  Documentation
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 flex items-center justify-around px-1 pt-1 pb-5">
-        {nav.map((item) => {
+        {mobileNav.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + '/')
           return (
             <Link
