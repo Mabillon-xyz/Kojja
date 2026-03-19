@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   ChevronLeft, ChevronRight, RefreshCw, Video, Save,
   RotateCw, Copy, Check, Clock, Globe, Plus, Trash2, Zap, Mail,
-  ChevronDown, ChevronUp, Power,
+  ChevronDown, ChevronUp, Power, X, ExternalLink, MapPin, Users,
 } from "lucide-react";
 import type { AvailabilityConfig, DaySchedule } from "@/lib/availability-types";
 import type { AutomationStep, Automation } from "@/lib/automation-types";
@@ -74,6 +74,165 @@ function isLeadEvent(ev: CalEvent): boolean {
     (a) => !a.self && a.email.toLowerCase() !== MY_EMAIL && !a.email.includes("resource.calendar")
   );
   return hasExternal || LEAD_KW.some((kw) => title.includes(kw));
+}
+
+// ── Event detail drawer ──────────────────────────────────────────
+const STATUS_ICON: Record<string, { icon: string; color: string }> = {
+  accepted:     { icon: "✓", color: "text-green-600 dark:text-green-400" },
+  declined:     { icon: "✗", color: "text-red-600 dark:text-red-400" },
+  tentative:    { icon: "?", color: "text-yellow-600 dark:text-yellow-400" },
+  needsAction:  { icon: "…", color: "text-muted-foreground" },
+};
+
+function EventDrawer({ event, onClose }: { event: CalEvent; onClose: () => void }) {
+  const start = event.start.dateTime ? new Date(event.start.dateTime) : null;
+  const end   = event.end?.dateTime  ? new Date(event.end.dateTime)   : null;
+  const lead  = isLeadEvent(event);
+
+  const meetLink =
+    event.hangoutLink ??
+    event.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ??
+    null;
+
+  const durationMin = start && end ? Math.round((end.getTime() - start.getTime()) / 60000) : null;
+  const durationLabel = durationMin
+    ? durationMin >= 60
+      ? `${Math.floor(durationMin / 60)}h${durationMin % 60 ? `${durationMin % 60}min` : ""}`
+      : `${durationMin} min`
+    : null;
+
+  const external = (event.attendees ?? []).filter(
+    (a) => !a.self && a.email.toLowerCase() !== MY_EMAIL && !a.email.includes("resource.calendar")
+  );
+  const others = (event.attendees ?? []).filter(
+    (a) => a.self || a.email.toLowerCase() === MY_EMAIL
+  );
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
+      <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white dark:bg-card shadow-xl z-50 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-start justify-between px-5 py-4 border-b border-neutral-200 dark:border-border">
+          <div className="min-w-0 pr-3">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${lead ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300" : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"}`}>
+                {lead ? "Lead call" : "Événement"}
+              </span>
+            </div>
+            <h2 className="text-sm font-semibold text-neutral-900 dark:text-foreground leading-snug">
+              {event.summary ?? "(sans titre)"}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-muted rounded-md text-neutral-400 dark:text-muted-foreground hover:text-neutral-600 dark:hover:text-foreground/70 transition-colors flex-shrink-0"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          {/* Date / time / duration */}
+          {start && (
+            <div className="flex items-start gap-3">
+              <Clock size={14} className="text-neutral-400 dark:text-muted-foreground mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="text-neutral-900 dark:text-foreground font-medium">
+                  {start.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                </p>
+                <p className="text-neutral-500 dark:text-muted-foreground text-xs mt-0.5">
+                  {start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                  {end ? ` → ${end.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                  {durationLabel ? ` · ${durationLabel}` : ""}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Meet link */}
+          {meetLink && (
+            <div className="flex items-start gap-3">
+              <Video size={14} className="text-neutral-400 dark:text-muted-foreground mt-0.5 flex-shrink-0" />
+              <a
+                href={meetLink}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1"
+              >
+                Rejoindre Google Meet <ExternalLink size={11} />
+              </a>
+            </div>
+          )}
+
+          {/* Location */}
+          {event.location && (
+            <div className="flex items-start gap-3">
+              <MapPin size={14} className="text-neutral-400 dark:text-muted-foreground mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-neutral-700 dark:text-foreground/80">{event.location}</p>
+            </div>
+          )}
+
+          {/* Attendees */}
+          {(external.length > 0 || others.length > 0) && (
+            <div className="flex items-start gap-3">
+              <Users size={14} className="text-neutral-400 dark:text-muted-foreground mt-1 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-neutral-500 dark:text-muted-foreground uppercase tracking-wide mb-2">
+                  Participants · {(event.attendees ?? []).filter(a => !a.email.includes("resource.calendar")).length}
+                </p>
+                <div className="space-y-2">
+                  {[...external, ...others].filter(a => !a.email.includes("resource.calendar")).map((a) => {
+                    const s = STATUS_ICON[a.responseStatus ?? "needsAction"] ?? STATUS_ICON.needsAction;
+                    return (
+                      <div key={a.email} className="flex items-center gap-2">
+                        <span className={`text-xs font-bold w-4 text-center ${s.color}`}>{s.icon}</span>
+                        <div className="min-w-0">
+                          {a.displayName && (
+                            <p className="text-xs font-medium text-neutral-900 dark:text-foreground truncate">
+                              {a.displayName}{a.self ? " (moi)" : ""}
+                            </p>
+                          )}
+                          <p className={`text-xs truncate ${a.displayName ? "text-neutral-400 dark:text-muted-foreground" : "text-neutral-700 dark:text-foreground/80"}`}>
+                            {a.email}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Description */}
+          {event.description && (
+            <div>
+              <p className="text-xs font-medium text-neutral-500 dark:text-muted-foreground uppercase tracking-wide mb-1.5">Description</p>
+              <p className="text-sm text-neutral-700 dark:text-foreground/80 whitespace-pre-line leading-relaxed">
+                {event.description}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {event.htmlLink && (
+          <div className="px-5 py-3 border-t border-neutral-100 dark:border-border">
+            <a
+              href={event.htmlLink}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-neutral-600 dark:text-foreground/70 hover:text-neutral-900 dark:hover:text-foreground border border-neutral-200 dark:border-border rounded-lg hover:border-neutral-400 dark:hover:border-muted-foreground transition-colors"
+            >
+              Ouvrir dans Google Calendar <ExternalLink size={11} />
+            </a>
+          </div>
+        )}
+      </div>
+    </>
+  );
 }
 
 // ── Availability editor subcomponent ────────────────────────────
@@ -775,6 +934,7 @@ export default function CalendarSyncPage() {
 
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalEvent | null>(null);
 
   async function triggerSync() {
     setSyncing(true);
@@ -963,7 +1123,8 @@ export default function CalendarSyncPage() {
                             <div
                               key={ev.id}
                               style={{ position: "absolute", left: 2, right: 2, top, height, zIndex: 1 }}
-                              className={`rounded-md px-1.5 py-0.5 overflow-hidden text-[10px] font-medium leading-tight border-l-2 ${
+                              onClick={(e) => { e.stopPropagation(); setSelectedEvent(ev); }}
+                              className={`rounded-md px-1.5 py-0.5 overflow-hidden text-[10px] font-medium leading-tight border-l-2 cursor-pointer hover:brightness-95 transition-all ${
                                 lead
                                   ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-400 dark:border-red-500"
                                   : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-400"
@@ -1008,6 +1169,11 @@ export default function CalendarSyncPage() {
           </div>
         )}
       </div>
+
+      {/* ── Event detail drawer ── */}
+      {selectedEvent && (
+        <EventDrawer event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
     </div>
   );
 }
