@@ -94,9 +94,9 @@ export default function FlowsList({ events }: { events: WebhookEvent[] }) {
                             <table className="w-full text-xs">
                               <thead>
                                 <tr className="border-b border-border bg-muted">
-                                  <th className="pl-14 pr-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">Nom</th>
-                                  <th className="px-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">Entreprise</th>
-                                  <th className="px-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">Titre</th>
+                                  <th className="pl-14 pr-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">Name</th>
+                                  <th className="px-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">Company</th>
+                                  <th className="px-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">Title</th>
                                   <th className="px-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">LinkedIn</th>
                                 </tr>
                               </thead>

@@ -37,13 +37,13 @@ export default async function Koja2Page() {
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="grid grid-cols-[auto_1fr_160px] items-center px-4 py-2 border-b border-gray-100 bg-gray-50">
           <div className="w-10" />
-          <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Nom</span>
-          <span className="text-xs font-medium text-gray-400 uppercase tracking-wide text-right">Modifié</span>
+          <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Name</span>
+          <span className="text-xs font-medium text-gray-400 uppercase tracking-wide text-right">Modified</span>
         </div>
 
         {docs.length === 0 && (
           <div className="px-4 py-12 text-center text-sm text-gray-400">
-            Aucun document — lance le SQL seed dans Supabase.
+            No documents — run the SQL seed in Supabase.
           </div>
         )}
 

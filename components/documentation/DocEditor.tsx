@@ -88,7 +88,7 @@ export default function DocEditor({
   }
 
   function handleDelete() {
-    if (!confirm('Supprimer ce document définitivement ?')) return
+    if (!confirm('Permanently delete this document?')) return
     startTransition(() => deleteDocument(id))
   }
 
@@ -97,8 +97,8 @@ export default function DocEditor({
       {/* Toolbar */}
       <div className="flex items-center justify-between px-8 py-3 border-b border-neutral-100 bg-white sticky top-14 z-10">
         <div className="flex items-center gap-2 text-xs text-neutral-400">
-          {lastUpdated && <span>Mis à jour : {lastUpdated}</span>}
-          {saved && <span className="text-green-600 font-medium">✓ Enregistré</span>}
+          {lastUpdated && <span>Updated: {lastUpdated}</span>}
+          {saved && <span className="text-green-600 font-medium">✓ Saved</span>}
         </div>
         <div className="flex items-center gap-2">
           {editing ? (
@@ -107,14 +107,14 @@ export default function DocEditor({
                 onClick={() => { setEditing(false); setTitle(initialTitle); setEmoji(initialEmoji); setContent(initialContent) }}
                 className="text-sm text-neutral-500 hover:text-neutral-900 px-3 py-1.5 rounded-lg hover:bg-neutral-100 transition-colors"
               >
-                Annuler
+                Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={isPending}
                 className="text-sm bg-neutral-900 text-white px-4 py-1.5 rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50"
               >
-                {isPending ? 'Enregistrement…' : 'Enregistrer'}
+                {isPending ? 'Saving…' : 'Save'}
               </button>
             </>
           ) : (
@@ -124,14 +124,14 @@ export default function DocEditor({
                   onClick={handleDelete}
                   className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
                 >
-                  Supprimer
+                  Delete
                 </button>
               )}
               <button
                 onClick={() => setEditing(true)}
                 className="text-sm bg-neutral-900 text-white px-4 py-1.5 rounded-lg hover:bg-neutral-700 transition-colors"
               >
-                Modifier
+                Edit
               </button>
             </>
           )}
@@ -153,7 +153,7 @@ export default function DocEditor({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="flex-1 text-3xl font-bold text-neutral-900 bg-transparent outline-none placeholder:text-neutral-300 border-b border-neutral-200 pb-2 focus:border-neutral-400 transition-colors"
-              placeholder="Titre du document"
+              placeholder="Document title"
             />
           </div>
         ) : (
