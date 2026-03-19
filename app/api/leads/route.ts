@@ -62,8 +62,8 @@ export async function POST(request: Request) {
     const fullName = `${first_name.trim()} ${last_name.trim()}`
     const owner = process.env.GMAIL_USER!
 
-    // Email to the lead
-    await transporter.sendMail({
+    // Emails — non-blocking: lead is already saved, email failures must not return 500
+    try { await transporter.sendMail({
       from: `Koj²a <${owner}>`,
       to: email.trim().toLowerCase(),
       subject: 'Votre demande de call Koj²a est bien reçue',
@@ -80,12 +80,12 @@ export async function POST(request: Request) {
           <p style="font-size: 12px; color: #737373;">Koj²a — votre assistant de prospection</p>
         </div>
       `,
-    })
+    }) } catch (e) { console.error('Email to lead failed:', e) }
 
     // Notification to owner
     const gCalLink = call_date ? buildGCalLink(call_date, fullName) : null
 
-    await transporter.sendMail({
+    try { await transporter.sendMail({
       from: `Koj²a <${owner}>`,
       to: owner,
       subject: `Nouveau call réservé — ${fullName}${company_name ? ` (${company_name})` : ''}`,
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
           </div>` : ''}
         </div>
       `,
-    })
+    }) } catch (e) { console.error('Email to owner failed:', e) }
 
     return NextResponse.json({ data }, { status: 201 })
   } catch {
