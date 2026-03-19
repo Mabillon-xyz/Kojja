@@ -915,7 +915,7 @@ function AutomationsTab() {
       <div className="mt-6 flex items-start gap-2.5 bg-amber-900/20 border border-amber-700/40 rounded-xl px-4 py-3">
         <Power size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-amber-400 leading-relaxed">
-          Les emails sont envoyés via <strong>Resend</strong> depuis <strong>{ORGANIZER_EMAIL_DISPLAY}</strong>.
+          Les emails sont envoyés via <strong>Gmail</strong> depuis <strong>{ORGANIZER_EMAIL_DISPLAY}</strong>.
           Les rappels planifiés sont traités toutes les 5 minutes par le cron Vercel.
         </p>
       </div>

@@ -45,7 +45,7 @@ export function interpolate(str: string, ctx: BookingContext): string {
     .replace(/\{\{email\}\}/g, ctx.email)
     .replace(/\{\{date\}\}/g, formatDateFR(ctx.date))
     .replace(/\{\{time\}\}/g, ctx.time)
-    .replace(/\{\{meetLink\}\}/g, ctx.meetLink ?? "_(Le lien Google Meet sera partagé avant le call)_")
+    .replace(/\{\{meetLink\}\}/g, ctx.meetLink ?? "(Le lien Google Meet sera partagé avant le call)")
     .replace(/\{\{calLink\}\}/g, ctx.calLink ?? "");
 }
 
