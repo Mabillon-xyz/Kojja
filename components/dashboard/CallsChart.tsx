@@ -7,7 +7,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from 'recharts'
 
 type Props = {
@@ -42,7 +41,7 @@ export default function CallsChart({ data }: Props) {
               borderRadius: '8px',
               fontSize: '12px',
             }}
-            formatter={(value: number) => [value, 'calls']}
+            formatter={(value) => [value, 'calls']}
           />
           <Bar dataKey="calls" radius={[4, 4, 0, 0]} fill="#171717" />
         </BarChart>
