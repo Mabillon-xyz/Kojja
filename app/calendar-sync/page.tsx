@@ -202,7 +202,7 @@ function AvailabilityTab() {
                 {active && (
                   <button
                     onClick={() => addSlot(day)}
-                    className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 font-medium"
+                    className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                   >
                     <Plus size={12} /> Ajouter
                   </button>
@@ -324,7 +324,7 @@ function SchedulingTab() {
         href={BOOK_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-3 block text-center text-xs text-blue-400 hover:underline"
+        className="mt-3 block text-center text-xs text-blue-600 dark:text-blue-400 hover:underline"
       >
         Ouvrir la page de réservation →
       </a>
@@ -557,7 +557,7 @@ function AutomationsTab() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-foreground truncate">{auto.name}</span>
-                      <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-900/40 text-blue-400 flex items-center gap-1">
+                      <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center gap-1">
                         <Zap size={9} /> Call réservé
                       </span>
                     </div>
@@ -579,7 +579,7 @@ function AutomationsTab() {
                     </button>
                     <button
                       onClick={() => deleteAutomation(auto.id)}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-900/20 transition-colors"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 dark:hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -605,7 +605,7 @@ function AutomationsTab() {
                         <div key={step.id} className="bg-muted border border-border rounded-xl p-4">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
-                              <div className="w-5 h-5 rounded-full bg-blue-900/40 flex items-center justify-center text-[10px] font-bold text-blue-400">
+                              <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-400">
                                 {idx + 1}
                               </div>
                               <span className="text-xs font-semibold text-foreground/70 flex items-center gap-1">
@@ -691,7 +691,7 @@ function AutomationsTab() {
                     {/* Add step */}
                     <button
                       onClick={addDraftStep}
-                      className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-medium mb-4"
+                      className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium mb-4"
                     >
                       <Plus size={12} /> Ajouter une étape
                     </button>
@@ -731,13 +731,13 @@ function AutomationsTab() {
               key={tpl.name}
               onClick={() => createFromTemplate(tpl)}
               disabled={creating}
-              className="text-left border border-border rounded-xl p-4 hover:border-blue-500 hover:bg-blue-900/20 transition-all group disabled:opacity-50"
+              className="text-left border border-border rounded-xl p-4 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group disabled:opacity-50"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded-lg bg-blue-900/40 flex items-center justify-center">
-                  <Zap size={12} className="text-blue-400" />
+                <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                  <Zap size={12} className="text-blue-600 dark:text-blue-400" />
                 </div>
-                <span className="text-xs font-semibold text-foreground/80 group-hover:text-blue-400">{tpl.name}</span>
+                <span className="text-xs font-semibold text-foreground/80 group-hover:text-blue-600 dark:group-hover:text-blue-400">{tpl.name}</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">{tpl.description}</p>
               <div className="mt-2 flex flex-wrap gap-1">
@@ -870,7 +870,7 @@ export default function CalendarSyncPage() {
                 onClick={() => setTab(t)}
                 className={`flex-shrink-0 px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
                   tab === t
-                    ? "border-blue-500 text-blue-400"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -920,7 +920,7 @@ export default function CalendarSyncPage() {
         {tab === "calendar" && (
           <div className="p-3 md:p-5">
             {error && (
-                <div className="mb-4 px-4 py-3 bg-red-900/30 border border-red-500/40 text-red-300 text-sm rounded-xl">{error}</div>
+                <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-500/40 text-red-700 dark:text-red-300 text-sm rounded-xl">{error}</div>
               )}
 
               <div className="bg-muted rounded-2xl border border-border shadow-sm overflow-hidden">
@@ -965,8 +965,8 @@ export default function CalendarSyncPage() {
                               style={{ position: "absolute", left: 2, right: 2, top, height, zIndex: 1 }}
                               className={`rounded-md px-1.5 py-0.5 overflow-hidden text-[10px] font-medium leading-tight border-l-2 ${
                                 lead
-                                  ? "bg-red-900/30 text-red-300 border-red-500"
-                                  : "bg-blue-900/30 text-blue-300 border-blue-400"
+                                  ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-400 dark:border-red-500"
+                                  : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-400"
                               }`}
                             >
                               <span className="block truncate">{ev.summary ?? "(no title)"}</span>
