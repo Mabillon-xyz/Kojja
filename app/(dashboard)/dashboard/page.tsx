@@ -16,24 +16,24 @@ export default async function DashboardPage() {
 
   const kpis = [
     {
-      label: 'Revenus',
-      value: revenue.toLocaleString('fr-FR') + ' €',
-      sub: `basé sur ${PRIX_CLIENT.toLocaleString('fr-FR')} €/client`,
+      label: 'Revenue',
+      value: '€' + revenue.toLocaleString('en-GB'),
+      sub: `based on €${PRIX_CLIENT.toLocaleString('en-GB')}/customer`,
     },
     {
-      label: 'Clients',
+      label: 'Customers',
       value: customers,
-      sub: 'stage "client"',
+      sub: '"customer" stage',
     },
     {
-      label: 'Leads totaux',
+      label: 'Total leads',
       value: totalLeads,
-      sub: 'depuis le lancement',
+      sub: 'since launch',
     },
     {
-      label: 'Taux de conversion',
-      value: conversionRate + ' %',
-      sub: `${proposalsSent} proposition${proposalsSent !== 1 ? 's' : ''} envoyée${proposalsSent !== 1 ? 's' : ''}`,
+      label: 'Conversion rate',
+      value: conversionRate + '%',
+      sub: `${proposalsSent} proposal${proposalsSent !== 1 ? 's' : ''} sent`,
     },
   ]
 
@@ -41,7 +41,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-neutral-900">Home</h1>
-        <p className="text-neutral-500 text-sm mt-1">{"Vue d'ensemble du produit."}</p>
+        <p className="text-neutral-500 text-sm mt-1">Product overview.</p>
       </div>
 
       {/* KPIs */}

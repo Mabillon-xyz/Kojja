@@ -113,21 +113,21 @@ export default function LeadDrawer({ lead, onClose }: Props) {
           <div>
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">Contact</p>
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Prénom" value={firstName} onChange={setFirstName} />
-              <Field label="Nom" value={lastName} onChange={setLastName} />
+              <Field label="First name" value={firstName} onChange={setFirstName} />
+              <Field label="Last name" value={lastName} onChange={setLastName} />
             </div>
             <div className="mt-2 space-y-2">
               <Field label="Email" value={email} onChange={setEmail} type="email" />
-              <Field label="Téléphone" value={phone} onChange={setPhone} type="tel" />
-              <Field label="Entreprise" value={companyName} onChange={setCompanyName} />
-              <Field label="Ville" value={city} onChange={setCity} />
-              <Field label="Date du call" value={callDate} onChange={setCallDate} type="datetime-local" />
+              <Field label="Phone" value={phone} onChange={setPhone} type="tel" />
+              <Field label="Company" value={companyName} onChange={setCompanyName} />
+              <Field label="City" value={city} onChange={setCity} />
+              <Field label="Call date" value={callDate} onChange={setCallDate} type="datetime-local" />
             </div>
           </div>
 
-          {/* Moyen de contact */}
+          {/* Contact means */}
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Moyen de contact</p>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Contact means</p>
             <div className="flex flex-wrap gap-2">
               {(['WhatsApp', 'SMS', 'Mail', 'LinkedIn'] as const).map((means) => {
                 const val = means.toLowerCase()
@@ -152,7 +152,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
 
           {/* LinkedIn */}
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Profil LinkedIn</p>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">LinkedIn profile</p>
             <input
               value={linkedinUrl}
               onChange={(e) => setLinkedinUrl(e.target.value)}
@@ -161,9 +161,9 @@ export default function LeadDrawer({ lead, onClose }: Props) {
             />
           </div>
 
-          {/* Stade */}
+          {/* Stage */}
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Stade</p>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Stage</p>
             <div className="flex flex-wrap gap-2">
               {STAGES.map((s) => (
                 <button
@@ -182,13 +182,13 @@ export default function LeadDrawer({ lead, onClose }: Props) {
             </div>
           </div>
 
-          {/* Prochaine action */}
+          {/* Next action */}
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Prochaine action</p>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Next action</p>
             <input
               value={nextAction}
               onChange={(e) => setNextAction(e.target.value)}
-              placeholder="Ex : Envoyer la proposition..."
+              placeholder="E.g. Send the proposal..."
               className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
             />
             <input
@@ -206,19 +206,19 @@ export default function LeadDrawer({ lead, onClose }: Props) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
-              placeholder="Informations sur ce coach..."
+              placeholder="Notes about this coach..."
               className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none"
             />
           </div>
 
-          {/* Commentaire */}
+          {/* Comment */}
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Commentaire</p>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Comment</p>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
-              placeholder="Commentaire rapide..."
+              placeholder="Quick note..."
               className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none"
             />
           </div>
@@ -227,16 +227,16 @@ export default function LeadDrawer({ lead, onClose }: Props) {
           <div>
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Timeline</p>
             <div className="space-y-2">
-              <TimelineEvent label="Demande de call reçue" date={lead.call_booked_at} />
+              <TimelineEvent label="Call request received" date={lead.call_booked_at} />
               {lead.call_date && (
                 <TimelineEvent
-                  label={`Call ${new Date(lead.call_date) < new Date() ? 'tenu' : 'prévu'}`}
+                  label={`Call ${new Date(lead.call_date) < new Date() ? 'held' : 'scheduled'}`}
                   date={lead.call_date}
                 />
               )}
               {lead.stage !== 'call_scheduled' && (
                 <TimelineEvent
-                  label={`Stade : ${STAGE_LABELS[lead.stage]}`}
+                  label={`Stage: ${STAGE_LABELS[lead.stage]}`}
                   date={lead.updated_at}
                 />
               )}
@@ -244,7 +244,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
           </div>
 
           <p className="text-xs text-neutral-400">
-            Inscrit {formatRelativeDate(lead.call_booked_at)}
+            Registered {formatRelativeDate(lead.call_booked_at)}
           </p>
         </div>
 
@@ -254,14 +254,14 @@ export default function LeadDrawer({ lead, onClose }: Props) {
             onClick={() => setShowDeleteConfirm(true)}
             className="text-xs text-red-500 hover:text-red-700 transition-colors"
           >
-            Supprimer
+            Delete
           </button>
           <button
             onClick={handleSave}
             disabled={isPending}
             className="text-sm font-medium bg-neutral-900 text-white px-4 py-2 rounded-lg hover:bg-neutral-700 disabled:opacity-50 transition-colors"
           >
-            {saved ? 'Sauvegardé ✓' : isPending ? 'Sauvegarde...' : 'Sauvegarder'}
+            {saved ? 'Saved ✓' : isPending ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
@@ -270,23 +270,23 @@ export default function LeadDrawer({ lead, onClose }: Props) {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/40 z-60 flex items-center justify-center px-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="font-semibold text-neutral-900 mb-2">Supprimer ce lead ?</h3>
+            <h3 className="font-semibold text-neutral-900 mb-2">Delete this lead?</h3>
             <p className="text-sm text-neutral-500 mb-5">
-              {lead.first_name} {lead.last_name} sera définitivement supprimé du CRM.
+              {lead.first_name} {lead.last_name} will be permanently deleted from the CRM.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 py-2 text-sm border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
               >
-                Annuler
+                Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isPending}
                 className="flex-1 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                Supprimer
+                Delete
               </button>
             </div>
           </div>
@@ -327,7 +327,7 @@ function TimelineEvent({ label, date }: { label: string; date: string }) {
       <div>
         <span className="text-neutral-700">{label}</span>
         <span className="text-neutral-400 ml-2 text-xs">
-          {new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+          {new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
         </span>
       </div>
     </div>

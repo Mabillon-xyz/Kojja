@@ -16,7 +16,7 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
         <div>
           <h1 className="text-xl font-semibold text-neutral-900">CRM</h1>
           <p className="text-sm text-neutral-500 mt-0.5">
-            {leads.length} coach{leads.length !== 1 ? 's' : ''} dans le pipeline
+            {leads.length} coach{leads.length !== 1 ? 'es' : ''} in the pipeline
           </p>
         </div>
 
@@ -53,7 +53,7 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Ajouter
+            Add
           </button>
         </div>
       </div>
@@ -69,9 +69,9 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
       {leads.length === 0 && !showAdd && (
         <div className="mb-6 bg-neutral-50 border border-neutral-200 rounded-xl px-5 py-4 flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-neutral-700">Partagez votre lien de réservation</p>
+            <p className="text-sm font-medium text-neutral-700">Share your booking link</p>
             <p className="text-xs text-neutral-400 mt-0.5">
-              Les coachs qui bookent un call apparaissent automatiquement ici.
+              Coaches who book a call appear here automatically.
             </p>
           </div>
           <a

@@ -17,35 +17,35 @@ const PRIORITY_DOT: Record<'red' | 'yellow' | 'gray', string> = {
 
 const PRIORITY_LABEL: Record<Lead['stage'], (lead: Lead) => string> = {
   call_scheduled: (lead) => {
-    if (!lead.call_date) return 'Call non daté'
+    if (!lead.call_date) return 'Call not dated'
     const callDate = new Date(lead.call_date)
     const now = new Date()
-    if (callDate < now) return 'Call passé — marquer fait'
+    if (callDate < now) return 'Call passed — mark done'
     const diffMs = callDate.getTime() - now.getTime()
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-    if (diffHours < 48) return `Call dans ${diffHours}h`
-    return `Call le ${callDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`
+    if (diffHours < 48) return `Call in ${diffHours}h`
+    return `Call on ${callDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`
   },
   call_done: (lead) => {
     const updated = new Date(lead.updated_at)
     const diffDays = Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24))
-    if (diffDays > 7) return `Pas de suivi depuis ${diffDays} jours`
-    return lead.next_action || 'Call fait'
+    if (diffDays > 7) return `No follow-up for ${diffDays} days`
+    return lead.next_action || 'Call done'
   },
   proposal_sent: (lead) => {
     const updated = new Date(lead.updated_at)
     const diffDays = Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24))
-    if (diffDays > 7) return `À relancer — ${diffDays} jours sans réponse`
-    return lead.next_action || 'Proposition envoyée'
+    if (diffDays > 7) return `Follow up — ${diffDays} days without reply`
+    return lead.next_action || 'Proposal sent'
   },
-  customer: () => 'Client actif',
-  not_interested: () => 'Pas intéressé',
+  customer: () => 'Active customer',
+  not_interested: () => 'Not interested',
 }
 
 const NEXT_STAGE: Partial<Record<Lead['stage'], { stage: Lead['stage']; label: string }>> = {
-  call_scheduled: { stage: 'call_done', label: 'Marquer call fait' },
-  call_done: { stage: 'proposal_sent', label: 'Envoyer la proposition' },
-  proposal_sent: { stage: 'customer', label: 'Marquer client' },
+  call_scheduled: { stage: 'call_done', label: 'Mark call done' },
+  call_done: { stage: 'proposal_sent', label: 'Send proposal' },
+  proposal_sent: { stage: 'customer', label: 'Mark as customer' },
 }
 
 export default function LeadCard({ lead, onOpen, onStageChange, draggable = false, onDragStart }: Props) {

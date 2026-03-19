@@ -8,13 +8,13 @@ export default function BookConfirmationPage() {
           </svg>
         </div>
         <p className="text-sm font-medium text-neutral-400 tracking-widest uppercase mb-3">Koj²a</p>
-        <h1 className="text-2xl font-semibold text-neutral-900 mb-3">Demande reçue !</h1>
+        <h1 className="text-2xl font-semibold text-neutral-900 mb-3">Request received!</h1>
         <p className="text-sm text-neutral-500 leading-relaxed">
-          Votre demande de call a bien été enregistrée. Vous recevrez une confirmation
-          par email sous 24h avec le lien de visio.
+          Your call request has been recorded. You will receive a confirmation
+          by email within 24h with the video link.
         </p>
         <p className="text-sm text-neutral-400 mt-6">
-          Une question ? Écrivez à{' '}
+          A question? Write to{' '}
           <a href="mailto:contact@kojja.fr" className="text-neutral-900 underline underline-offset-2">
             contact@kojja.fr
           </a>

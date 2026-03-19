@@ -15,7 +15,7 @@ export async function createLead(formData: FormData) {
   const call_date = (formData.get('call_date') as string) || null
 
   if (!first_name || !last_name || !email) {
-    throw new Error('Champs obligatoires manquants')
+    throw new Error('Required fields missing')
   }
 
   const contact_means = (formData.getAll('contact_means') as string[]).filter(Boolean)
@@ -48,12 +48,12 @@ export async function updateLeadStage(id: string, stage: Lead['stage']) {
   if (stage === 'call_done') {
     const nextDate = new Date()
     nextDate.setDate(nextDate.getDate() + 3)
-    updates.next_action = 'Envoyer la proposition'
+    updates.next_action = 'Send proposal'
     updates.next_action_date = nextDate.toISOString().split('T')[0]
   } else if (stage === 'proposal_sent') {
     const nextDate = new Date()
     nextDate.setDate(nextDate.getDate() + 7)
-    updates.next_action = 'Relancer si pas de réponse'
+    updates.next_action = 'Follow up if no reply'
     updates.next_action_date = nextDate.toISOString().split('T')[0]
   }
 

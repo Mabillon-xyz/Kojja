@@ -26,37 +26,37 @@ export default function AddLeadForm({ onClose }: { onClose: () => void }) {
         setContactMeans([])
         onClose()
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erreur')
+        setError(err instanceof Error ? err.message : 'Error')
       }
     })
   }
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="bg-white border border-neutral-200 rounded-xl p-5 space-y-4">
-      <h3 className="font-medium text-sm text-neutral-900">Ajouter un lead manuellement</h3>
+      <h3 className="font-medium text-sm text-neutral-900">Add a lead manually</h3>
 
       <div className="grid grid-cols-2 gap-3">
-        <InputField name="first_name" label="Prénom *" placeholder="Claire" required />
-        <InputField name="last_name" label="Nom *" placeholder="Martin" required />
+        <InputField name="first_name" label="First name *" placeholder="Claire" required />
+        <InputField name="last_name" label="Last name *" placeholder="Martin" required />
       </div>
 
-      <InputField name="email" label="Email *" type="email" placeholder="claire@cabinet.fr" required />
+      <InputField name="email" label="Email *" type="email" placeholder="claire@company.com" required />
 
       <div className="grid grid-cols-2 gap-3">
-        <InputField name="phone" label="Téléphone" type="tel" placeholder="+33 6 00 00 00 00" />
+        <InputField name="phone" label="Phone" type="tel" placeholder="+33 6 00 00 00 00" />
         <InputField name="linkedin_url" label="LinkedIn" placeholder="linkedin.com/in/..." />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <InputField name="company_name" label="Entreprise" placeholder="Cabinet Coaching Lyon" />
-        <InputField name="city" label="Ville" placeholder="Lyon" />
+        <InputField name="company_name" label="Company" placeholder="Coaching Company" />
+        <InputField name="city" label="City" placeholder="Lyon" />
       </div>
 
-      <InputField name="call_date" label="Date du call" type="datetime-local" />
+      <InputField name="call_date" label="Call date" type="datetime-local" />
 
-      {/* Moyen de contact */}
+      {/* Contact means */}
       <div>
-        <label className="block text-xs text-neutral-500 mb-2">Moyen de contact</label>
+        <label className="block text-xs text-neutral-500 mb-2">Contact means</label>
         <div className="flex flex-wrap gap-2">
           {(['WhatsApp', 'SMS', 'Mail', 'LinkedIn'] as const).map((means) => {
             const val = means.toLowerCase()
@@ -79,13 +79,13 @@ export default function AddLeadForm({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {/* Commentaire */}
+      {/* Comment */}
       <div>
-        <label className="block text-xs text-neutral-500 mb-1">Commentaire</label>
+        <label className="block text-xs text-neutral-500 mb-1">Comment</label>
         <textarea
           name="comment"
           rows={2}
-          placeholder="Commentaire rapide..."
+          placeholder="Quick note..."
           className="w-full px-3 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none"
         />
       </div>
@@ -100,14 +100,14 @@ export default function AddLeadForm({ onClose }: { onClose: () => void }) {
           onClick={onClose}
           className="flex-1 py-2 text-sm border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
         >
-          Annuler
+          Cancel
         </button>
         <button
           type="submit"
           disabled={isPending}
           className="flex-1 py-2 text-sm bg-neutral-900 text-white rounded-lg hover:bg-neutral-700 disabled:opacity-50 transition-colors"
         >
-          {isPending ? 'Ajout...' : 'Ajouter'}
+          {isPending ? 'Adding...' : 'Add'}
         </button>
       </div>
     </form>

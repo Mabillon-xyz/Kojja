@@ -47,22 +47,22 @@ export function formatRelativeDate(dateStr: string | null): string {
   const diffMs = now.getTime() - date.getTime()
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffDays === 0) return "Aujourd'hui"
-  if (diffDays === 1) return 'Hier'
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
   if (diffDays < 0) {
     const futureDays = Math.abs(diffDays)
-    if (futureDays === 1) return 'Demain'
-    return `Dans ${futureDays} jours`
+    if (futureDays === 1) return 'Tomorrow'
+    return `In ${futureDays} days`
   }
-  return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`
+  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
 }
 
 export const STAGE_LABELS: Record<Lead['stage'], string> = {
-  call_scheduled: 'Call prévu',
-  call_done: 'Call fait',
-  proposal_sent: 'Proposition',
-  customer: 'Client',
-  not_interested: 'Pas intéressé',
+  call_scheduled: 'Call scheduled',
+  call_done: 'Call done',
+  proposal_sent: 'Proposal sent',
+  customer: 'Customer',
+  not_interested: 'Not interested',
 }
 
 export const STAGES: Lead['stage'][] = [
