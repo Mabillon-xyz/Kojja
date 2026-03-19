@@ -1,5 +1,6 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createDirectClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import type { Lead } from '@/lib/read-leads'
 
@@ -105,7 +106,11 @@ export async function updateLead(
 }
 
 export async function deleteLead(id: string) {
-  const supabase = await createClient()
+  // Use service role to bypass RLS — delete requires elevated permissions
+  const supabase = createDirectClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   const { error } = await supabase.from('leads').delete().eq('id', id)
   if (error) throw new Error(`deleteLead: ${error.message}`)
   revalidatePath('/crm')
