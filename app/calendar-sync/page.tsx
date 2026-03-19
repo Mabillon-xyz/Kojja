@@ -84,7 +84,10 @@ const STATUS_ICON: Record<string, { icon: string; color: string }> = {
   needsAction:  { icon: "…", color: "text-muted-foreground" },
 };
 
-function EventDrawer({ event, onClose }: { event: CalEvent; onClose: () => void }) {
+function EventDrawer({ event, onClose, onDelete }: { event: CalEvent; onClose: () => void; onDelete: (id: string) => Promise<void> }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const start = event.start.dateTime ? new Date(event.start.dateTime) : null;
   const end   = event.end?.dateTime  ? new Date(event.end.dateTime)   : null;
   const lead  = isLeadEvent(event);
@@ -218,8 +221,8 @@ function EventDrawer({ event, onClose }: { event: CalEvent; onClose: () => void 
         </div>
 
         {/* Footer */}
-        {event.htmlLink && (
-          <div className="px-5 py-3 border-t border-neutral-100 dark:border-border">
+        <div className="px-5 py-3 border-t border-neutral-100 dark:border-border space-y-2">
+          {event.htmlLink && (
             <a
               href={event.htmlLink}
               target="_blank"
@@ -228,8 +231,37 @@ function EventDrawer({ event, onClose }: { event: CalEvent; onClose: () => void 
             >
               Ouvrir dans Google Calendar <ExternalLink size={11} />
             </a>
-          </div>
-        )}
+          )}
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg transition-colors"
+            >
+              <Trash2 size={12} /> Supprimer l&apos;événement
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="flex-1 py-2 text-xs font-medium text-neutral-600 dark:text-foreground/70 border border-neutral-200 dark:border-border rounded-lg hover:bg-neutral-50 dark:hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={async () => {
+                  setDeleting(true);
+                  await onDelete(event.id);
+                  setDeleting(false);
+                }}
+                disabled={deleting}
+                className="flex-1 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {deleting ? "Suppression…" : "Confirmer"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
@@ -1172,7 +1204,15 @@ export default function CalendarSyncPage() {
 
       {/* ── Event detail drawer ── */}
       {selectedEvent && (
-        <EventDrawer event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+        <EventDrawer
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onDelete={async (id) => {
+            await fetch(`/api/calendly?eventId=${encodeURIComponent(id)}`, { method: "DELETE" });
+            setEvents((prev) => prev.filter((e) => e.id !== id));
+            setSelectedEvent(null);
+          }}
+        />
       )}
     </div>
   );

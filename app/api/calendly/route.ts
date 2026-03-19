@@ -10,6 +10,35 @@ function getComposio() {
   return composioClient;
 }
 
+export async function DELETE(req: NextRequest) {
+  if (!process.env.COMPOSIO_API_KEY)
+    return NextResponse.json({ error: "COMPOSIO_API_KEY not configured" }, { status: 500 });
+
+  const { searchParams } = new URL(req.url);
+  const eventId = searchParams.get("eventId");
+  if (!eventId)
+    return NextResponse.json({ error: "eventId is required" }, { status: 400 });
+
+  try {
+    const result = await getComposio().tools.execute("GOOGLECALENDAR_DELETE_EVENT", {
+      userId: USER_ID,
+      version: "20260312_00",
+      arguments: {
+        calendarId: PERSONAL_CAL_ID,
+        eventId,
+      },
+    });
+
+    if (!result.successful)
+      return NextResponse.json({ error: result.error ?? "Failed to delete event" }, { status: 500 });
+
+    return NextResponse.json({ deleted: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
 export async function GET(req: NextRequest) {
   if (!process.env.COMPOSIO_API_KEY)
     return NextResponse.json({ error: "COMPOSIO_API_KEY not configured" }, { status: 500 });
