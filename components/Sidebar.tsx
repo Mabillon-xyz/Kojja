@@ -70,10 +70,10 @@ export default function Sidebar() {
   return (
     <>
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden md:flex w-52 h-screen border-r border-[#2f2f2f] flex-col bg-[#191919] flex-shrink-0">
+      <aside className="hidden md:flex w-52 h-screen border-r border-border flex-col bg-background flex-shrink-0">
         {/* Logo */}
-        <div className="px-4 py-5 border-b border-[#2f2f2f]">
-          <span className="text-sm font-semibold text-[#e6e6e6] tracking-tight">🧠 Dashboard</span>
+        <div className="px-4 py-5 border-b border-border">
+          <span className="text-sm font-semibold text-foreground tracking-tight">🧠 Dashboard</span>
         </div>
 
         {/* Nav */}
@@ -86,8 +86,8 @@ export default function Sidebar() {
                 href={item.href}
                 className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
                   active
-                    ? "bg-[#2f2f2f] text-[#e6e6e6] font-medium"
-                    : "text-[#9b9b9b] hover:bg-[#252525] hover:text-[#d4d4d4]"
+                    ? "bg-muted text-foreground font-medium"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 }`}
               >
                 <span className="text-base leading-none">{item.emoji}</span>
@@ -99,7 +99,7 @@ export default function Sidebar() {
       </aside>
 
       {/* ── Mobile bottom nav ── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#191919] border-t border-[#2f2f2f] flex items-center justify-around px-1 pt-1 pb-5">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border flex items-center justify-around px-1 pt-1 pb-5">
         {nav.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
@@ -107,7 +107,7 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center gap-0.5 py-1.5 px-4 rounded-xl transition-colors ${
-                active ? "text-[#e6e6e6]" : "text-[#555]"
+                active ? "text-foreground" : "text-muted-foreground"
               }`}
             >
               <span className="text-lg leading-none">{item.emoji}</span>

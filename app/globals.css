@@ -2,6 +2,7 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 
+/* ── Dark mode (default) ───────────────────────────────────────────────────── */
 @theme {
   --color-background: hsl(0 0% 10%);
   --color-foreground: hsl(0 0% 90%);
@@ -25,10 +26,35 @@
   --radius: 0.5rem;
 }
 
+/* ── Light mode overrides ──────────────────────────────────────────────────── */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-background: hsl(0 0% 100%);
+    --color-foreground: hsl(0 0% 9%);
+    --color-card: hsl(0 0% 98%);
+    --color-card-foreground: hsl(0 0% 9%);
+    --color-popover: hsl(0 0% 100%);
+    --color-popover-foreground: hsl(0 0% 9%);
+    --color-primary: hsl(0 0% 9%);
+    --color-primary-foreground: hsl(0 0% 98%);
+    --color-secondary: hsl(0 0% 96%);
+    --color-secondary-foreground: hsl(0 0% 9%);
+    --color-muted: hsl(0 0% 94%);
+    --color-muted-foreground: hsl(0 0% 45%);
+    --color-accent: hsl(0 0% 94%);
+    --color-accent-foreground: hsl(0 0% 9%);
+    --color-destructive: hsl(0 72% 51%);
+    --color-destructive-foreground: hsl(0 0% 98%);
+    --color-border: hsl(0 0% 88%);
+    --color-input: hsl(0 0% 94%);
+    --color-ring: hsl(0 0% 40%);
+  }
+}
+
 @layer base {
   body {
-    background-color: #191919;
-    color: #e6e6e6;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
   }
 
   ::-webkit-scrollbar {
@@ -39,11 +65,11 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #383838;
+    background: var(--color-border);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #4a4a4a;
+    background: var(--color-muted-foreground);
   }
 }
 

@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geist.className} antialiased`}>
-        <div className="flex h-screen bg-[#191919]">
+        <div className="flex h-screen bg-background">
           <ConditionalSidebar />
           <main className="flex-1 overflow-auto pb-20 md:pb-0">
             {children}
