@@ -164,8 +164,8 @@ function AvailabilityTab() {
   return (
     <div className="max-w-xl">
       <div className="mb-6">
-        <h2 className="text-sm font-semibold text-[#e6e6e6] mb-0.5">🗓 Heures de disponibilité</h2>
-        <p className="text-xs text-[#666]">Définissez vos créneaux disponibles pour les appels de découverte.</p>
+        <h2 className="text-sm font-semibold text-foreground mb-0.5">🗓 Heures de disponibilité</h2>
+        <p className="text-xs text-muted-foreground">Définissez vos créneaux disponibles pour les appels de découverte.</p>
       </div>
 
       <div className="space-y-3">
@@ -176,7 +176,7 @@ function AvailabilityTab() {
             <div
               key={day}
               className={`rounded-xl border px-4 py-3 transition-colors ${
-                active ? "border-[#383838] bg-[#252525]" : "border-[#252525] bg-[#2f2f2f]"
+                active ? "border-border bg-muted" : "border-muted bg-secondary"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -185,7 +185,7 @@ function AvailabilityTab() {
                   <button
                     onClick={() => toggleDay(day)}
                     className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
-                      active ? "bg-blue-600" : "bg-[#383838]"
+                      active ? "bg-blue-600" : "bg-muted"
                     }`}
                   >
                     <span
@@ -194,7 +194,7 @@ function AvailabilityTab() {
                       }`}
                     />
                   </button>
-                  <span className={`text-sm font-medium w-24 ${active ? "text-[#d4d4d4]" : "text-[#666]"}`}>
+                  <span className={`text-sm font-medium w-24 ${active ? "text-foreground/80" : "text-muted-foreground"}`}>
                     {DAY_LABELS[day]}
                   </span>
                 </div>
@@ -217,19 +217,19 @@ function AvailabilityTab() {
                         type="time"
                         value={slot.start}
                         onChange={(e) => updateSlot(day, idx, "start", e.target.value)}
-                        className="border border-[#383838] rounded-lg px-2.5 py-1.5 text-sm text-[#c0c0c0] bg-[#252525] focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]/30"
+                        className="border border-border rounded-lg px-2.5 py-1.5 text-sm text-foreground/70 bg-muted focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]/30"
                       />
-                      <span className="text-xs text-[#666]">–</span>
+                      <span className="text-xs text-muted-foreground">–</span>
                       <input
                         type="time"
                         value={slot.end}
                         onChange={(e) => updateSlot(day, idx, "end", e.target.value)}
-                        className="border border-[#383838] rounded-lg px-2.5 py-1.5 text-sm text-[#c0c0c0] bg-[#252525] focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]/30"
+                        className="border border-border rounded-lg px-2.5 py-1.5 text-sm text-foreground/70 bg-muted focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]/30"
                       />
                       {slots.length > 1 && (
                         <button
                           onClick={() => removeSlot(day, idx)}
-                          className="text-[#555] hover:text-red-500 transition-colors"
+                          className="text-muted-foreground hover:text-red-500 transition-colors"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -240,7 +240,7 @@ function AvailabilityTab() {
               )}
 
               {!active && (
-                <p className="pl-12 mt-1 text-xs text-[#555]">Indisponible</p>
+                <p className="pl-12 mt-1 text-xs text-muted-foreground">Indisponible</p>
               )}
             </div>
           );
@@ -273,30 +273,30 @@ function SchedulingTab() {
   return (
     <div className="max-w-sm">
       <div className="mb-6">
-        <h2 className="text-sm font-semibold text-[#e6e6e6] mb-0.5">🔗 Lien de réservation</h2>
-        <p className="text-xs text-[#666]">Partagez ce lien avec vos leads pour qu&apos;ils réservent un créneau.</p>
+        <h2 className="text-sm font-semibold text-foreground mb-0.5">🔗 Lien de réservation</h2>
+        <p className="text-xs text-muted-foreground">Partagez ce lien avec vos leads pour qu&apos;ils réservent un créneau.</p>
       </div>
 
       {/* Event card — Calendly style */}
-      <div className="border border-[#383838] rounded-2xl overflow-hidden bg-[#252525] shadow-sm">
-        <div className="p-5 border-b border-[#383838]">
+      <div className="border border-border rounded-2xl overflow-hidden bg-muted shadow-sm">
+        <div className="p-5 border-b border-border">
           <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm mb-3 select-none">
             CG
           </div>
-          <p className="text-xs text-[#666] mb-0.5">Clément Guiraud</p>
-          <h3 className="text-base font-semibold text-[#e6e6e6]">Discovery Call</h3>
+          <p className="text-xs text-muted-foreground mb-0.5">Clément Guiraud</p>
+          <h3 className="text-base font-semibold text-foreground">Discovery Call</h3>
         </div>
         <div className="p-5 space-y-2.5">
-          <div className="flex items-center gap-2.5 text-sm text-[#9b9b9b]">
-            <Clock size={14} className="text-[#666] flex-shrink-0" />
+          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+            <Clock size={14} className="text-muted-foreground flex-shrink-0" />
             <span>30 minutes</span>
           </div>
-          <div className="flex items-center gap-2.5 text-sm text-[#9b9b9b]">
-            <Video size={14} className="text-[#666] flex-shrink-0" />
+          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+            <Video size={14} className="text-muted-foreground flex-shrink-0" />
             <span>Google Meet</span>
           </div>
-          <div className="flex items-center gap-2.5 text-sm text-[#9b9b9b]">
-            <Globe size={14} className="text-[#666] flex-shrink-0" />
+          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+            <Globe size={14} className="text-muted-foreground flex-shrink-0" />
             <span>Europe/Paris</span>
           </div>
         </div>
@@ -304,7 +304,7 @@ function SchedulingTab() {
 
       {/* Copy link row */}
       <div className="mt-5 flex items-center gap-2">
-        <div className="flex-1 px-3 py-2.5 bg-[#2f2f2f] border border-[#383838] rounded-xl text-xs text-[#9b9b9b] truncate select-all font-mono">
+        <div className="flex-1 px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs text-muted-foreground truncate select-all font-mono">
           {BOOK_URL}
         </div>
         <button
@@ -529,8 +529,8 @@ function AutomationsTab() {
     <div className="max-w-2xl">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-sm font-semibold text-[#e6e6e6] mb-0.5">✉️ Séquences d&apos;emails</h2>
-          <p className="text-xs text-[#666]">Déclenché automatiquement quand un call est réservé.</p>
+          <h2 className="text-sm font-semibold text-foreground mb-0.5">✉️ Séquences d&apos;emails</h2>
+          <p className="text-xs text-muted-foreground">Déclenché automatiquement quand un call est réservé.</p>
         </div>
       </div>
 
@@ -541,14 +541,14 @@ function AutomationsTab() {
             const isEditing = expandedId === auto.id && editDraft?.id === auto.id;
             const draft = isEditing ? editDraft! : auto;
             return (
-              <div key={auto.id} className="border border-[#383838] rounded-xl bg-[#252525] overflow-hidden">
+              <div key={auto.id} className="border border-border rounded-xl bg-muted overflow-hidden">
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-4 py-3">
                   {/* Enable toggle */}
                   <button
                     onClick={() => toggleEnabled(auto)}
                     className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
-                      auto.enabled ? "bg-blue-600" : "bg-[#383838]"
+                      auto.enabled ? "bg-blue-600" : "bg-muted"
                     }`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${auto.enabled ? "translate-x-4" : "translate-x-0.5"}`} />
@@ -556,12 +556,12 @@ function AutomationsTab() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-[#e6e6e6] truncate">{auto.name}</span>
+                      <span className="text-sm font-semibold text-foreground truncate">{auto.name}</span>
                       <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-900/40 text-blue-400 flex items-center gap-1">
                         <Zap size={9} /> Call réservé
                       </span>
                     </div>
-                    <p className="text-xs text-[#666] mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {auto.steps.length} email{auto.steps.length > 1 ? "s" : ""} ·{" "}
                       {auto.steps.map((s) => stepWhenLabel(s)).join(" → ")}
                     </p>
@@ -573,13 +573,13 @@ function AutomationsTab() {
                         if (isEditing) { setExpandedId(null); setEditDraft(null); }
                         else startEdit(auto);
                       }}
-                      className="p-1.5 rounded-lg text-[#666] hover:text-[#e6e6e6] hover:bg-[#383838] transition-colors text-xs font-medium"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-xs font-medium"
                     >
                       {isEditing ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
                     <button
                       onClick={() => deleteAutomation(auto.id)}
-                      className="p-1.5 rounded-lg text-[#555] hover:text-red-500 hover:bg-red-900/20 transition-colors"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-900/20 transition-colors"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -588,32 +588,32 @@ function AutomationsTab() {
 
                 {/* Inline editor */}
                 {isEditing && (
-                  <div className="border-t border-[#383838] bg-[#2f2f2f] px-4 pt-4 pb-5">
+                  <div className="border-t border-border bg-secondary px-4 pt-4 pb-5">
                     {/* Name */}
                     <div className="mb-4">
-                      <label className="block text-xs font-medium text-[#9b9b9b] mb-1">Nom</label>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Nom</label>
                       <input
                         value={draft.name}
                         onChange={(e) => setEditDraft({ ...draft, name: e.target.value })}
-                        className="w-full border border-[#383838] rounded-lg px-3 py-2 text-sm bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]"
+                        className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-muted text-foreground focus:outline-none focus:border-[#5865f2]"
                       />
                     </div>
 
                     {/* Steps */}
                     <div className="space-y-4 mb-4">
                       {draft.steps.map((step, idx) => (
-                        <div key={step.id} className="bg-[#252525] border border-[#383838] rounded-xl p-4">
+                        <div key={step.id} className="bg-muted border border-border rounded-xl p-4">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <div className="w-5 h-5 rounded-full bg-blue-900/40 flex items-center justify-center text-[10px] font-bold text-blue-400">
                                 {idx + 1}
                               </div>
-                              <span className="text-xs font-semibold text-[#c0c0c0] flex items-center gap-1">
+                              <span className="text-xs font-semibold text-foreground/70 flex items-center gap-1">
                                 <Mail size={11} /> Email
                               </span>
                             </div>
                             {draft.steps.length > 1 && (
-                              <button onClick={() => removeDraftStep(idx)} className="text-[#555] hover:text-red-500 transition-colors">
+                              <button onClick={() => removeDraftStep(idx)} className="text-muted-foreground hover:text-red-500 transition-colors">
                                 <Trash2 size={12} />
                               </button>
                             )}
@@ -622,7 +622,7 @@ function AutomationsTab() {
                           <div className="grid grid-cols-2 gap-3 mb-3">
                             {/* When */}
                             <div>
-                              <label className="block text-[10px] font-medium text-[#888] mb-1">Quand</label>
+                              <label className="block text-[10px] font-medium text-muted-foreground mb-1">Quand</label>
                               <select
                                 value={step.when === "immediately" ? "immediately" : `${step.when}:${step.delay_minutes}`}
                                 onChange={(e) => {
@@ -636,7 +636,7 @@ function AutomationsTab() {
                                     updateDraftStep(idx, "delay_minutes", parseInt(mins));
                                   }
                                 }}
-                                className="w-full border border-[#383838] rounded-lg px-2.5 py-1.5 text-xs bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]"
+                                className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-muted text-foreground focus:outline-none focus:border-[#5865f2]"
                               >
                                 <option value="immediately">Immédiatement</option>
                                 <option value="before_event:60">1h avant le call</option>
@@ -650,11 +650,11 @@ function AutomationsTab() {
 
                             {/* Recipient */}
                             <div>
-                              <label className="block text-[10px] font-medium text-[#888] mb-1">Destinataire</label>
+                              <label className="block text-[10px] font-medium text-muted-foreground mb-1">Destinataire</label>
                               <select
                                 value={step.recipient}
                                 onChange={(e) => updateDraftStep(idx, "recipient", e.target.value)}
-                                className="w-full border border-[#383838] rounded-lg px-2.5 py-1.5 text-xs bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]"
+                                className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-muted text-foreground focus:outline-none focus:border-[#5865f2]"
                               >
                                 <option value="both">Lead + Moi</option>
                                 <option value="lead">Lead uniquement</option>
@@ -665,24 +665,24 @@ function AutomationsTab() {
 
                           {/* Subject */}
                           <div className="mb-2">
-                            <label className="block text-[10px] font-medium text-[#888] mb-1">Objet</label>
+                            <label className="block text-[10px] font-medium text-muted-foreground mb-1">Objet</label>
                             <input
                               value={step.subject}
                               onChange={(e) => updateDraftStep(idx, "subject", e.target.value)}
-                              className="w-full border border-[#383838] rounded-lg px-2.5 py-1.5 text-xs bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2]"
+                              className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-muted text-foreground focus:outline-none focus:border-[#5865f2]"
                             />
                           </div>
 
                           {/* Body */}
                           <div>
-                            <label className="block text-[10px] font-medium text-[#888] mb-1">Corps</label>
+                            <label className="block text-[10px] font-medium text-muted-foreground mb-1">Corps</label>
                             <textarea
                               rows={4}
                               value={step.body}
                               onChange={(e) => updateDraftStep(idx, "body", e.target.value)}
-                              className="w-full border border-[#383838] rounded-lg px-2.5 py-1.5 text-xs bg-[#252525] text-[#e6e6e6] focus:outline-none focus:border-[#5865f2] resize-y"
+                              className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-muted text-foreground focus:outline-none focus:border-[#5865f2] resize-y"
                             />
-                            <p className="mt-1 text-[10px] text-[#555]">Variables : {"{{name}} {{date}} {{time}} {{meetLink}}"}</p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">Variables : {"{{name}} {{date}} {{time}} {{meetLink}}"}</p>
                           </div>
                         </div>
                       ))}
@@ -707,7 +707,7 @@ function AutomationsTab() {
                       </button>
                       <button
                         onClick={() => { setExpandedId(null); setEditDraft(null); }}
-                        className="px-4 py-2 text-xs text-[#9b9b9b] hover:text-[#e6e6e6] font-medium rounded-lg hover:bg-[#383838] transition-colors"
+                        className="px-4 py-2 text-xs text-muted-foreground hover:text-foreground font-medium rounded-lg hover:bg-muted transition-colors"
                       >
                         Annuler
                       </button>
@@ -722,7 +722,7 @@ function AutomationsTab() {
 
       {/* Templates section */}
       <div>
-        <p className="text-xs font-semibold text-[#888] uppercase tracking-wide mb-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           {automations.length === 0 ? "Démarrer avec un modèle" : "Ajouter depuis un modèle"}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -731,18 +731,18 @@ function AutomationsTab() {
               key={tpl.name}
               onClick={() => createFromTemplate(tpl)}
               disabled={creating}
-              className="text-left border border-[#383838] rounded-xl p-4 hover:border-blue-500 hover:bg-blue-900/20 transition-all group disabled:opacity-50"
+              className="text-left border border-border rounded-xl p-4 hover:border-blue-500 hover:bg-blue-900/20 transition-all group disabled:opacity-50"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-6 h-6 rounded-lg bg-blue-900/40 flex items-center justify-center">
                   <Zap size={12} className="text-blue-400" />
                 </div>
-                <span className="text-xs font-semibold text-[#d4d4d4] group-hover:text-blue-400">{tpl.name}</span>
+                <span className="text-xs font-semibold text-foreground/80 group-hover:text-blue-400">{tpl.name}</span>
               </div>
-              <p className="text-[11px] text-[#666] leading-relaxed">{tpl.description}</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">{tpl.description}</p>
               <div className="mt-2 flex flex-wrap gap-1">
                 {tpl.steps.map((s, i) => (
-                  <span key={i} className="text-[10px] px-1.5 py-0.5 bg-[#383838] text-[#888] rounded-full">
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground rounded-full">
                     {s.when === "immediately" ? "Immédiat" : s.when === "before_event" ? `-${s.delay_minutes / 60}h` : `+${s.delay_minutes / 60}h`}
                   </span>
                 ))}
@@ -854,7 +854,7 @@ export default function CalendarSyncPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* ── Header with tabs ── */}
-      <div className="flex flex-col border-b border-[#383838] flex-shrink-0 bg-[#191919]">
+      <div className="flex flex-col border-b border-border flex-shrink-0 bg-background">
         {/* Tabs row */}
         <div className="flex items-center overflow-x-auto scrollbar-none">
           {(["calendar", "scheduling", "availability", "automations"] as Tab[]).map((t) => {
@@ -871,7 +871,7 @@ export default function CalendarSyncPage() {
                 className={`flex-shrink-0 px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
                   tab === t
                     ? "border-blue-500 text-blue-400"
-                    : "border-transparent text-[#9b9b9b] hover:text-[#e6e6e6]"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {labels[t]}
@@ -884,14 +884,14 @@ export default function CalendarSyncPage() {
         {tab === "calendar" && (
           <div className="flex flex-wrap items-center gap-2 px-4 pb-2 pt-1">
             <div className="flex items-center gap-1.5">
-              <button onClick={prevWeek} className="p-1.5 rounded-lg hover:bg-[#383838] text-[#9b9b9b] hover:text-[#e6e6e6] transition-colors">
+              <button onClick={prevWeek} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-sm font-semibold text-[#d4d4d4] text-center whitespace-nowrap">{weekLabel}</span>
-              <button onClick={nextWeek} className="p-1.5 rounded-lg hover:bg-[#383838] text-[#9b9b9b] hover:text-[#e6e6e6] transition-colors">
+              <span className="text-sm font-semibold text-foreground/80 text-center whitespace-nowrap">{weekLabel}</span>
+              <button onClick={nextWeek} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronRight size={16} />
               </button>
-              <button onClick={goToday} className="px-3 py-1.5 text-xs font-medium bg-[#383838] hover:bg-[#2f2f2f] text-[#9b9b9b] rounded-lg transition-colors">
+              <button onClick={goToday} className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-secondary text-muted-foreground rounded-lg transition-colors">
                 Today
               </button>
             </div>
@@ -900,12 +900,12 @@ export default function CalendarSyncPage() {
                 <span className={`text-xs hidden sm:inline ${syncMsg.ok ? "text-green-400" : "text-red-400"}`}>{syncMsg.text}</span>
               )}
               <button onClick={triggerSync} disabled={syncing}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#383838] hover:bg-[#2f2f2f] disabled:opacity-50 text-[#e6e6e6] rounded-lg transition-colors">
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-muted hover:bg-secondary disabled:opacity-50 text-foreground rounded-lg transition-colors">
                 <RotateCw size={12} className={syncing ? "animate-spin" : ""} />
                 <span className="hidden sm:inline">{syncing ? "Syncing…" : "EdenRed sync"}</span>
                 {!syncing && <span className="sm:hidden">Sync</span>}
               </button>
-              <button onClick={fetchEvents} disabled={loading} className="p-1.5 rounded-lg hover:bg-[#383838] text-[#666] hover:text-[#e6e6e6] transition-colors disabled:opacity-40">
+              <button onClick={fetchEvents} disabled={loading} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40">
                 <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
               </button>
             </div>
@@ -923,17 +923,17 @@ export default function CalendarSyncPage() {
                 <div className="mb-4 px-4 py-3 bg-red-900/30 border border-red-500/40 text-red-300 text-sm rounded-xl">{error}</div>
               )}
 
-              <div className="bg-[#252525] rounded-2xl border border-[#383838] shadow-sm overflow-hidden">
+              <div className="bg-muted rounded-2xl border border-border shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                 {/* Day headers */}
-                <div className="grid border-b border-[#383838]" style={{ gridTemplateColumns: "52px repeat(7, minmax(80px, 1fr))" }}>
+                <div className="grid border-b border-border" style={{ gridTemplateColumns: "52px repeat(7, minmax(80px, 1fr))" }}>
                   <div />
                   {days.map((d, i) => {
                     const isToday = d.getTime() === todayDate.getTime();
                     return (
-                      <div key={i} className="py-2.5 text-center border-l border-[#2f2f2f]">
-                        <div className="text-[10px] font-medium text-[#666] uppercase tracking-wide">{DAYS_SHORT[i]}</div>
-                        <div className={`mx-auto mt-0.5 w-7 h-7 flex items-center justify-center text-base font-bold rounded-full ${isToday ? "bg-red-600 text-white" : "text-[#c0c0c0]"}`}>
+                      <div key={i} className="py-2.5 text-center border-l border-border">
+                        <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{DAYS_SHORT[i]}</div>
+                        <div className={`mx-auto mt-0.5 w-7 h-7 flex items-center justify-center text-base font-bold rounded-full ${isToday ? "bg-red-600 text-white" : "text-foreground/70"}`}>
                           {d.getDate()}
                         </div>
                       </div>
@@ -946,15 +946,15 @@ export default function CalendarSyncPage() {
                   <div className="grid" style={{ gridTemplateColumns: "52px repeat(7, minmax(80px, 1fr))" }}>
                     <div className="relative" style={{ height: totalPx }}>
                       {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
-                        <div key={i} style={{ position: "absolute", top: i * SLOT_H, right: 6, fontSize: 10, color: "#555", paddingTop: 2 }}>
+                        <div key={i} style={{ position: "absolute", top: i * SLOT_H, right: 6, fontSize: 10, color: "var(--color-muted-foreground)", paddingTop: 2 }}>
                           {HOUR_START + i}:00
                         </div>
                       ))}
                     </div>
                     {days.map((d, di) => (
-                      <div key={di} className="relative border-l border-[#2f2f2f]" style={{ height: totalPx }}>
+                      <div key={di} className="relative border-l border-border" style={{ height: totalPx }}>
                         {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
-                          <div key={i} style={{ position: "absolute", top: i * SLOT_H, left: 0, right: 0, borderTop: "1px solid #2f2f2f", pointerEvents: "none" }} />
+                          <div key={i} style={{ position: "absolute", top: i * SLOT_H, left: 0, right: 0, borderTop: "1px solid var(--color-border)", pointerEvents: "none" }} />
                         ))}
                         {dayEvents(d).map((ev) => {
                           const { top, height } = eventStyle(ev);
