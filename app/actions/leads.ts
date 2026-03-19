@@ -55,7 +55,15 @@ export async function updateLeadStage(id: string, stage: Lead['stage']) {
   revalidatePath('/crm')
 }
 
-export async function updateLeadNotes(id: string, notes: string, next_action: string, next_action_date: string) {
+export async function updateLeadNotes(
+  id: string,
+  notes: string,
+  next_action: string,
+  next_action_date: string,
+  contact_means: string[],
+  comment: string,
+  linkedin_url: string,
+) {
   const supabase = await createClient()
   const { error } = await supabase
     .from('leads')
@@ -63,6 +71,9 @@ export async function updateLeadNotes(id: string, notes: string, next_action: st
       notes,
       next_action: next_action || null,
       next_action_date: next_action_date || null,
+      contact_means: contact_means.length > 0 ? contact_means : null,
+      comment: comment || null,
+      linkedin_url: linkedin_url || null,
     })
     .eq('id', id)
 

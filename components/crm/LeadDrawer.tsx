@@ -13,6 +13,9 @@ export default function LeadDrawer({ lead, onClose }: Props) {
   const [notes, setNotes] = useState(lead?.notes ?? '')
   const [nextAction, setNextAction] = useState(lead?.next_action ?? '')
   const [nextActionDate, setNextActionDate] = useState(lead?.next_action_date ?? '')
+  const [contactMeans, setContactMeans] = useState<string[]>(lead?.contact_means ?? [])
+  const [comment, setComment] = useState(lead?.comment ?? '')
+  const [linkedinUrl, setLinkedinUrl] = useState(lead?.linkedin_url ?? '')
   const [saved, setSaved] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
@@ -22,7 +25,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
   function handleSave() {
     if (!lead) return
     startTransition(async () => {
-      await updateLeadNotes(lead.id, notes, nextAction, nextActionDate)
+      await updateLeadNotes(lead.id, notes, nextAction, nextActionDate, contactMeans, comment, linkedinUrl)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     })
@@ -84,6 +87,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
           <div className="space-y-2">
             <InfoRow label="Email" value={lead.email} href={`mailto:${lead.email}`} />
             {lead.phone && <InfoRow label="Téléphone" value={lead.phone} href={`tel:${lead.phone}`} />}
+            {linkedinUrl && <InfoRow label="LinkedIn" value={linkedinUrl} href={linkedinUrl} />}
             {callDate && (
               <InfoRow
                 label="Call"
@@ -92,6 +96,44 @@ export default function LeadDrawer({ lead, onClose }: Props) {
             )}
             <InfoRow label="Inscrit" value={formatRelativeDate(lead.call_booked_at)} />
             {lead.message && <InfoRow label="Message" value={lead.message} />}
+          </div>
+
+          {/* Contact means */}
+          <div>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Moyen de contact</p>
+            <div className="flex flex-wrap gap-2">
+              {(['WhatsApp', 'SMS', 'Mail', 'LinkedIn'] as const).map((means) => {
+                const val = means.toLowerCase()
+                const active = contactMeans.includes(val)
+                return (
+                  <button
+                    key={means}
+                    type="button"
+                    onClick={() =>
+                      setContactMeans(active ? contactMeans.filter((m) => m !== val) : [...contactMeans, val])
+                    }
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      active
+                        ? 'bg-neutral-900 text-white border-neutral-900'
+                        : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
+                    }`}
+                  >
+                    {means}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* LinkedIn URL */}
+          <div>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Profil LinkedIn</p>
+            <input
+              value={linkedinUrl}
+              onChange={(e) => setLinkedinUrl(e.target.value)}
+              placeholder="https://linkedin.com/in/..."
+              className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
+            />
           </div>
 
           {/* Stage selector */}
@@ -140,6 +182,18 @@ export default function LeadDrawer({ lead, onClose }: Props) {
               onChange={(e) => setNotes(e.target.value)}
               rows={5}
               placeholder="Informations sur ce coach..."
+              className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none"
+            />
+          </div>
+
+          {/* Comment */}
+          <div>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Commentaire</p>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              placeholder="Commentaire rapide..."
               className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none"
             />
           </div>

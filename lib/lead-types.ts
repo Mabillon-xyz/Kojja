@@ -15,6 +15,9 @@ export type Lead = {
   notes: string
   next_action: string | null
   next_action_date: string | null
+  contact_means: string[] | null
+  comment: string | null
+  linkedin_url: string | null
   created_at: string
   updated_at: string
 }
