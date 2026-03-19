@@ -1,7 +1,29 @@
 import { readLeads } from '@/lib/read-leads'
 import HomeClient from '@/components/dashboard/HomeClient'
+import CallsChart from '@/components/dashboard/CallsChart'
 
 const PRIX_CLIENT = 1750 // € par client
+
+function buildChartData(leads: Awaited<ReturnType<typeof readLeads>>) {
+  const filtered = leads.filter((l) => {
+    const name = `${l.first_name} ${l.last_name}`.toLowerCase()
+    return !name.includes('test')
+  })
+
+  const counts: Record<string, number> = {}
+  for (const lead of filtered) {
+    const date = new Date(lead.call_booked_at)
+    const key = date.toLocaleString('en-GB', { month: 'short', year: '2-digit' })
+    counts[key] = (counts[key] ?? 0) + 1
+  }
+
+  const sorted = Object.entries(counts).sort(([a], [b]) => {
+    const parse = (s: string) => new Date(`1 ${s}`)
+    return parse(a).getTime() - parse(b).getTime()
+  })
+
+  return sorted.map(([month, calls]) => ({ month, calls }))
+}
 
 export default async function DashboardPage() {
   const leads = await readLeads()
@@ -13,6 +35,7 @@ export default async function DashboardPage() {
   ).length
   const conversionRate = totalLeads > 0 ? Math.round((customers / totalLeads) * 100) : 0
   const revenue = customers * PRIX_CLIENT
+  const chartData = buildChartData(leads)
 
   const kpis = [
     {
@@ -44,7 +67,6 @@ export default async function DashboardPage() {
         <p className="text-neutral-500 text-sm mt-1">Product overview.</p>
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-4 gap-4">
         {kpis.map((kpi) => (
           <div key={kpi.label} className="bg-white border border-neutral-200 rounded-xl p-5">
@@ -57,7 +79,8 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* To Do + Road Map */}
+      <CallsChart data={chartData} />
+
       <HomeClient />
     </div>
   )
