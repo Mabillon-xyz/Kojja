@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 
@@ -21,7 +21,7 @@ function getTransporter() {
   });
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.error("[cron] GMAIL_USER or GMAIL_APP_PASSWORD not set");
     return NextResponse.json({ error: "Email not configured" }, { status: 500 });
