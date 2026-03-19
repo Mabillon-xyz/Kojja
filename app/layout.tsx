@@ -3,12 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Koj²a",
-  description: "Prospection intelligente pour coachs business",
+  description: "Smart prospecting for business coaches",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="en">
       <body className="antialiased">{children}</body>
     </html>
   );

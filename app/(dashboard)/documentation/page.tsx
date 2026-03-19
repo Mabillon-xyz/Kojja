@@ -18,7 +18,7 @@ export default async function DocumentationPage() {
           <input type="hidden" name="emoji" value="📄" />
           <input
             name="title"
-            placeholder="Titre du nouveau document…"
+            placeholder="New document title…"
             required
             className="text-sm border border-neutral-200 rounded-lg px-3 py-2 w-56 focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent placeholder:text-neutral-400"
           />
@@ -26,7 +26,7 @@ export default async function DocumentationPage() {
             type="submit"
             className="text-sm bg-neutral-900 text-white px-4 py-2 rounded-lg hover:bg-neutral-700 transition-colors whitespace-nowrap"
           >
-            + Nouveau
+            + New
           </button>
         </form>
       </div>
@@ -35,8 +35,8 @@ export default async function DocumentationPage() {
       <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <div className="grid grid-cols-[auto_1fr_160px] items-center px-4 py-2 border-b border-neutral-100 bg-neutral-50">
           <div className="w-10" />
-          <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Nom</span>
-          <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide text-right">Modifié</span>
+          <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Name</span>
+          <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide text-right">Modified</span>
         </div>
 
         {docs.map((doc, i) => (
@@ -63,7 +63,7 @@ export default async function DocumentationPage() {
               </span>
               {doc.isSystem && (
                 <span className="text-xs text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
-                  stratégie
+                  strategy
                 </span>
               )}
             </div>
