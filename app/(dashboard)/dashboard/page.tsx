@@ -41,7 +41,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-neutral-900">Home</h1>
-        <p className="text-neutral-500 text-sm mt-1">Vue d&apos;ensemble du produit.</p>
+        <p className="text-neutral-500 text-sm mt-1">{"Vue d'ensemble du produit."}</p>
       </div>
 
       {/* KPIs */}
