@@ -1,7 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
-import { triggerAutomations } from "@/lib/automations";
+import { triggerAutomations, buildEmailHtml } from "@/lib/automations";
 import { createClient } from "@supabase/supabase-js";
+import nodemailer from "nodemailer";
+
+const ORGANIZER_EMAIL = "clement.guiraudpro@gmail.com";
+const ORGANIZER_NAME = "Clément Guiraud";
+
+function getTransporter() {
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
+
+function formatDateFR(date: Date) {
+  return date.toLocaleDateString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+}
+function formatTimeFR(date: Date) {
+  return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
 
 function getSupabase() {
   return createClient(
@@ -75,7 +98,26 @@ export async function POST(req: NextRequest) {
       stage: 'call_scheduled',
     });
 
-    // Fire automations in background (don't await — don't block response)
+    // Send guaranteed confirmation emails (always fires, regardless of automations)
+    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+      const from = `${ORGANIZER_NAME} <${process.env.GMAIL_USER}>`;
+      const dateFR = formatDateFR(startDT);
+      const timeFR = formatTimeFR(startDT);
+      const ctx = { name, email, date, time: timeFR, meetLink, calLink: ev?.htmlLink ?? null, eventStartIso: startDT.toISOString() };
+      const transporter = getTransporter();
+
+      // Email to lead
+      const leadBody = `Bonjour ${name},\n\nVotre discovery call de 30 minutes avec Clément Guiraud est confirmé.\n\n📅 ${dateFR} à ${timeFR} (heure de Paris)\n🎥 Rejoindre le Meet : ${meetLink ?? "(lien partagé avant le call)"}\n\nÀ très vite,\nClément`;
+      // Email to organizer
+      const orgBody = `Nouveau call réservé — ${name} (${email})\n\n📅 ${dateFR} à ${timeFR}\n📧 ${email}${meetLink ? `\n🎥 ${meetLink}` : ""}${ev?.htmlLink ? `\n📆 ${ev.htmlLink}` : ""}`;
+
+      void Promise.all([
+        transporter.sendMail({ from, to: email, subject: `✓ Call confirmé — ${dateFR} à ${timeFR}`, html: buildEmailHtml(leadBody, ctx) }),
+        transporter.sendMail({ from, to: ORGANIZER_EMAIL, subject: `📞 Nouveau call : ${name} — ${dateFR} à ${timeFR}`, html: buildEmailHtml(orgBody, ctx) }),
+      ]).catch(console.error);
+    }
+
+    // Fire automations in background for scheduled reminders (best effort)
     triggerAutomations({
       name,
       email,
