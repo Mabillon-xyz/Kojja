@@ -31,31 +31,31 @@ function GeneratingOverlay({ elapsed }: { elapsed: number }) {
   const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2, '0')}` : `${secs}s`
 
   return (
-    <div className="fixed inset-0 bg-[#191919]/90 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex items-center justify-center">
       <div className="w-full max-w-sm px-8 text-center">
         <div className="relative w-16 h-16 mx-auto mb-8">
           <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-            <circle cx="32" cy="32" r="28" fill="none" stroke="#383838" strokeWidth="4" />
+            <circle cx="32" cy="32" r="28" fill="none" stroke="var(--color-border)" strokeWidth="4" />
             <circle
               cx="32" cy="32" r="28"
-              fill="none" stroke="#e6e6e6" strokeWidth="4" strokeLinecap="round"
+              fill="none" stroke="var(--color-foreground)" strokeWidth="4" strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 28}`}
               strokeDashoffset={`${2 * Math.PI * 28 * (1 - progress / 100)}`}
               style={{ transition: 'stroke-dashoffset 0.8s ease' }}
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-[#9b9b9b]">
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-muted-foreground">
             {Math.round(progress)}%
           </span>
         </div>
-        <h2 className="text-base font-semibold text-[#e6e6e6] mb-2">Generating your proposal</h2>
-        <p className="text-sm text-[#9b9b9b] mb-6 min-h-[20px] transition-all duration-500">
+        <h2 className="text-base font-semibold text-foreground mb-2">Generating your proposal</h2>
+        <p className="text-sm text-muted-foreground mb-6 min-h-[20px] transition-all duration-500">
           {currentStep.label}
         </p>
-        <div className="w-full bg-[#383838] rounded-full h-1.5 overflow-hidden mb-4">
-          <div className="h-full bg-[#e6e6e6] rounded-full" style={{ width: `${progress}%`, transition: 'width 0.8s ease' }} />
+        <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden mb-4">
+          <div className="h-full bg-foreground rounded-full" style={{ width: `${progress}%`, transition: 'width 0.8s ease' }} />
         </div>
-        <p className="text-xs text-[#666]">{timeStr} elapsed · usually takes 15–25s</p>
+        <p className="text-xs text-muted-foreground/70">{timeStr} elapsed · usually takes 15–25s</p>
       </div>
     </div>
   )
@@ -127,20 +127,20 @@ export default function NewProposalPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="text-sm text-[#666] hover:text-[#e6e6e6] mb-4 block"
+              className="text-sm text-muted-foreground hover:text-foreground mb-4 block"
             >
               ← Back
             </button>
             <h1 className="text-2xl font-semibold tracking-tight">New proposal</h1>
-            <p className="text-sm text-[#9b9b9b] mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Fill in the details — AI will write the full proposal.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Client */}
-            <div className="bg-[#252525] rounded-xl border border-[#383838] p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-[#d4d4d4]">Client</h2>
+            <div className="bg-muted rounded-xl border border-border p-6 space-y-4">
+              <h2 className="text-sm font-semibold text-foreground/85">Client</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="clientName">Name</Label>
@@ -177,8 +177,8 @@ export default function NewProposalPage() {
             </div>
 
             {/* Proposal details */}
-            <div className="bg-[#252525] rounded-xl border border-[#383838] p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-[#d4d4d4]">Proposal details</h2>
+            <div className="bg-muted rounded-xl border border-border p-6 space-y-4">
+              <h2 className="text-sm font-semibold text-foreground/85">Proposal details</h2>
               <div className="space-y-1.5">
                 <Label htmlFor="title">Title</Label>
                 <Input
@@ -206,7 +206,7 @@ export default function NewProposalPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="expiresAt">
                     Expiry date{' '}
-                    <span className="text-[#666] font-normal">(optional)</span>
+                    <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
                   <Input
                     id="expiresAt"
@@ -220,10 +220,10 @@ export default function NewProposalPage() {
             </div>
 
             {/* Description */}
-            <div className="bg-[#252525] rounded-xl border border-[#383838] p-6 space-y-3">
+            <div className="bg-muted rounded-xl border border-border p-6 space-y-3">
               <div>
-                <h2 className="text-sm font-semibold text-[#d4d4d4]">Project description</h2>
-                <p className="text-xs text-[#666] mt-0.5">
+                <h2 className="text-sm font-semibold text-foreground/85">Project description</h2>
+                <p className="text-xs text-muted-foreground/70 mt-0.5">
                   Describe what you&apos;re delivering. The AI will use this to write the full proposal.
                 </p>
               </div>

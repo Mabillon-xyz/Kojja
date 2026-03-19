@@ -33,29 +33,29 @@ export default function FlowsList({ events }: { events: WebhookEvent[] }) {
   return (
     <div className="p-4 md:p-8">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-[#e6e6e6]">⚡ Flows</h1>
-        <p className="mt-0.5 text-sm text-[#666]">
+        <h1 className="text-xl font-semibold text-foreground">⚡ Flows</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
           {events.length} run{events.length > 1 ? "s" : ""} reçu{events.length > 1 ? "s" : ""}
         </p>
       </div>
 
-      <div className="bg-[#252525] rounded-xl border border-[#383838] overflow-hidden overflow-x-auto">
+      <div className="bg-muted rounded-xl border border-border overflow-hidden overflow-x-auto">
         <table className="w-full text-sm min-w-[500px]">
           <thead>
-            <tr className="border-b border-[#383838] bg-[#2f2f2f]">
-              <th className="px-5 py-3 text-left text-xs font-medium text-[#666] uppercase tracking-wide w-8" />
-              <th className="px-5 py-3 text-left text-xs font-medium text-[#666] uppercase tracking-wide">Client</th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-[#666] uppercase tracking-wide">Campagne</th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-[#666] uppercase tracking-wide">Leads</th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-[#666] uppercase tracking-wide">Envoyé</th>
+            <tr className="border-b border-border bg-secondary">
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide w-8" />
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Client</th>
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Campagne</th>
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Leads</th>
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Envoyé</th>
             </tr>
           </thead>
           <tbody>
             {events.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-5 py-16 text-center text-sm text-[#666]">
+                <td colSpan={5} className="px-5 py-16 text-center text-sm text-muted-foreground">
                   Aucun flow reçu pour l&apos;instant.
-                  <span className="block mt-1 text-xs text-[#444]">POST → /api/webhook/n8n</span>
+                  <span className="block mt-1 text-xs text-muted-foreground/60">POST → /api/webhook/n8n</span>
                 </td>
               </tr>
             ) : (
@@ -67,49 +67,47 @@ export default function FlowsList({ events }: { events: WebhookEvent[] }) {
 
                 return (
                   <Fragment key={ev.id}>
-                    {/* Summary row */}
                     <tr
                       onClick={() => setExpanded(isOpen ? null : ev.id)}
-                      className={`border-b border-[#2f2f2f] cursor-pointer transition-colors ${isOpen ? "bg-[#2f2f2f]" : "hover:bg-[#2a2a2a]"}`}
+                      className={`border-b border-border cursor-pointer transition-colors ${isOpen ? "bg-secondary" : "hover:bg-secondary/60"}`}
                     >
-                      <td className="pl-5 py-3.5 text-[#555]">
+                      <td className="pl-5 py-3.5 text-muted-foreground">
                         <ChevronDown
                           size={14}
                           className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                         />
                       </td>
-                      <td className="px-5 py-3.5 font-medium text-[#e6e6e6]">{client}</td>
-                      <td className="px-5 py-3.5 text-[#9b9b9b]">{campaign}</td>
+                      <td className="px-5 py-3.5 font-medium text-foreground">{client}</td>
+                      <td className="px-5 py-3.5 text-muted-foreground">{campaign}</td>
                       <td className="px-5 py-3.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#383838] text-[#9b9b9b]">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-border text-muted-foreground">
                           {ev.leads_count}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-[#666] text-xs">{fmt(ev.created_at)}</td>
+                      <td className="px-5 py-3.5 text-muted-foreground text-xs">{fmt(ev.created_at)}</td>
                     </tr>
 
-                    {/* Expanded leads */}
                     {isOpen && (
                       <tr key={`${ev.id}-detail`}>
-                        <td colSpan={5} className="bg-[#2a2a2a] border-b border-[#383838] px-0 py-0">
+                        <td colSpan={5} className="bg-secondary/60 border-b border-border px-0 py-0">
                           <div className="overflow-x-auto">
                             <table className="w-full text-xs">
                               <thead>
-                                <tr className="border-b border-[#383838] bg-[#252525]">
-                                  <th className="pl-14 pr-4 py-2 text-left font-medium text-[#555] uppercase tracking-wide">Nom</th>
-                                  <th className="px-4 py-2 text-left font-medium text-[#555] uppercase tracking-wide">Entreprise</th>
-                                  <th className="px-4 py-2 text-left font-medium text-[#555] uppercase tracking-wide">Titre</th>
-                                  <th className="px-4 py-2 text-left font-medium text-[#555] uppercase tracking-wide">LinkedIn</th>
+                                <tr className="border-b border-border bg-muted">
+                                  <th className="pl-14 pr-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">Nom</th>
+                                  <th className="px-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">Entreprise</th>
+                                  <th className="px-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">Titre</th>
+                                  <th className="px-4 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide">LinkedIn</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {leads.map((lead, i) => (
-                                  <tr key={lead._id ?? i} className="border-b border-[#2f2f2f] last:border-0 hover:bg-[#2f2f2f] transition-colors">
-                                    <td className="pl-14 pr-4 py-2.5 font-medium text-[#d4d4d4] whitespace-nowrap">
+                                  <tr key={lead._id ?? i} className="border-b border-border last:border-0 hover:bg-secondary/60 transition-colors">
+                                    <td className="pl-14 pr-4 py-2.5 font-medium text-foreground/80 whitespace-nowrap">
                                       {[lead.firstName, lead.lastName].filter(Boolean).join(" ") || "—"}
                                     </td>
-                                    <td className="px-4 py-2.5 text-[#9b9b9b] whitespace-nowrap">{lead.companyName ?? "—"}</td>
-                                    <td className="px-4 py-2.5 text-[#888] max-w-xs truncate">{lead.jobTitle ?? "—"}</td>
+                                    <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{lead.companyName ?? "—"}</td>
+                                    <td className="px-4 py-2.5 text-muted-foreground max-w-xs truncate">{lead.jobTitle ?? "—"}</td>
                                     <td className="px-4 py-2.5">
                                       {lead.linkedinUrl ? (
                                         <a

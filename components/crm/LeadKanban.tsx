@@ -10,7 +10,7 @@ type Props = { leads: Lead[] }
 const PRIORITY_DOT: Record<'red' | 'yellow' | 'gray', string> = {
   red: 'bg-red-500',
   yellow: 'bg-yellow-400',
-  gray: 'bg-neutral-300',
+  gray: 'bg-neutral-300 dark:bg-muted-foreground/40',
 }
 
 export default function LeadKanban({ leads }: Props) {
@@ -61,10 +61,10 @@ export default function LeadKanban({ leads }: Props) {
             >
               {/* Column header */}
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-neutral-500 dark:text-muted-foreground uppercase tracking-wider">
                   {STAGE_LABELS[stage]}
                 </h3>
-                <span className="text-xs text-neutral-400 bg-neutral-100 rounded-full px-2 py-0.5">
+                <span className="text-xs text-neutral-400 dark:text-muted-foreground bg-neutral-100 dark:bg-muted rounded-full px-2 py-0.5">
                   {stageLeads.length}
                 </span>
               </div>
@@ -86,8 +86,8 @@ export default function LeadKanban({ leads }: Props) {
                   </div>
                 ))}
                 {stageLeads.length === 0 && (
-                  <div className="h-20 border-2 border-dashed border-neutral-200 rounded-lg flex items-center justify-center">
-                    <span className="text-xs text-neutral-300">Déposer ici</span>
+                  <div className="h-20 border-2 border-dashed border-neutral-200 dark:border-border rounded-lg flex items-center justify-center">
+                    <span className="text-xs text-neutral-300 dark:text-muted-foreground/60">Déposer ici</span>
                   </div>
                 )}
               </div>

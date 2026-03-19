@@ -35,7 +35,7 @@ export default function EditProposalPage() {
   if (!proposal || !content) {
     return (
       <div className="px-8 py-8">
-        <div className="text-sm text-[#666] py-20 text-center">Loading…</div>
+        <div className="text-sm text-muted-foreground py-20 text-center">Loading…</div>
       </div>
     )
   }
@@ -45,7 +45,7 @@ export default function EditProposalPage() {
       <div className="px-8 py-8">
         <div className="max-w-lg py-20">
           <h1 className="text-xl font-semibold mb-2">Proposal is locked</h1>
-          <p className="text-sm text-[#9b9b9b] mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             This proposal has been signed and cannot be edited.
           </p>
           <Button variant="outline" onClick={() => router.back()}>Go back</Button>
@@ -179,22 +179,22 @@ export default function EditProposalPage() {
         <div className="mb-8">
           <button
             onClick={() => router.back()}
-            className="text-sm text-[#666] hover:text-[#e6e6e6] mb-4 block"
+            className="text-sm text-muted-foreground hover:text-foreground mb-4 block"
           >
             ← Back
           </button>
           <h1 className="text-2xl font-semibold tracking-tight">Edit proposal</h1>
-          <p className="text-sm text-[#9b9b9b] mt-1">{proposal.title}</p>
+          <p className="text-sm text-muted-foreground mt-1">{proposal.title}</p>
         </div>
 
         <div className="space-y-4">
           {/* Language */}
-          <div className="bg-[#252525] rounded-xl border border-[#383838] p-6">
-            <Label className="text-xs uppercase tracking-widest text-[#9b9b9b] font-semibold mb-3 block">
+          <div className="bg-muted rounded-xl border border-border p-6">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3 block">
               Language
             </Label>
             <div className="flex items-center gap-3">
-              <div className="inline-flex rounded-lg border border-[#383838] p-0.5 bg-[#2f2f2f]">
+              <div className="inline-flex rounded-lg border border-border p-0.5 bg-secondary">
                 {(['en', 'fr'] as ProposalLanguage[]).map((l) => (
                   <button
                     key={l}
@@ -202,8 +202,8 @@ export default function EditProposalPage() {
                     disabled={isLocked}
                     className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all disabled:cursor-wait ${
                       lang === l
-                        ? 'bg-[#252525] text-[#e6e6e6] shadow-sm'
-                        : 'text-[#666] hover:text-[#9b9b9b]'
+                        ? 'bg-muted text-foreground shadow-sm'
+                        : 'text-muted-foreground/70 hover:text-muted-foreground'
                     }`}
                   >
                     {l === 'en' ? 'English' : 'Français'}
@@ -211,8 +211,8 @@ export default function EditProposalPage() {
                 ))}
               </div>
               {translating && (
-                <span className="text-xs text-[#666] flex items-center gap-1.5">
-                  <svg className="animate-spin h-3 w-3 text-[#666]" viewBox="0 0 24 24" fill="none">
+                <span className="text-xs text-muted-foreground/70 flex items-center gap-1.5">
+                  <svg className="animate-spin h-3 w-3 text-muted-foreground/70" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
@@ -220,12 +220,12 @@ export default function EditProposalPage() {
                 </span>
               )}
             </div>
-            <p className="text-xs text-[#666] mt-2">Translates all content and switches document labels.</p>
+            <p className="text-xs text-muted-foreground/70 mt-2">Translates all content and switches document labels.</p>
           </div>
 
           {/* Introduction */}
-          <div className="bg-[#252525] rounded-xl border border-[#383838] p-6 space-y-3">
-            <Label className="text-xs uppercase tracking-widest text-[#9b9b9b] font-semibold block">
+          <div className="bg-muted rounded-xl border border-border p-6 space-y-3">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold block">
               Introduction
             </Label>
             <Textarea
@@ -238,39 +238,39 @@ export default function EditProposalPage() {
           </div>
 
           {/* Scope of Work */}
-          <div className="bg-[#252525] rounded-xl border border-[#383838] p-6 space-y-3">
+          <div className="bg-muted rounded-xl border border-border p-6 space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-xs uppercase tracking-widest text-[#9b9b9b] font-semibold block">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold block">
                 Scope of Work
               </Label>
-              <div className="grid grid-cols-2 gap-2 text-xs text-[#9b9b9b] mr-8 flex-1 max-w-xs ml-4">
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mr-8 flex-1 max-w-xs ml-4">
                 <span>Challenge</span>
                 <span>Deliverable</span>
               </div>
             </div>
             <div className="space-y-2">
               {content.challenges.map((item, i) => (
-                <div key={i} className="flex items-center gap-2 bg-[#2f2f2f] rounded-lg border border-[#383838] px-3 py-2.5">
+                <div key={i} className="flex items-center gap-2 bg-secondary rounded-lg border border-border px-3 py-2.5">
                   <div className="grid grid-cols-2 gap-2 flex-1">
                     <Input
                       placeholder="Challenge"
                       value={item.challenge}
                       disabled={isLocked}
                       onChange={(e) => updateChallenge(i, 'challenge', e.target.value)}
-                      className="bg-[#252525]"
+                      className="bg-muted"
                     />
                     <Input
                       placeholder="Deliverable"
                       value={item.deliverable}
                       disabled={isLocked}
                       onChange={(e) => updateChallenge(i, 'deliverable', e.target.value)}
-                      className="bg-[#252525]"
+                      className="bg-muted"
                     />
                   </div>
                   <button
                     onClick={() => removeChallenge(i)}
                     disabled={isLocked}
-                    className="text-[#555] hover:text-red-400 transition-colors shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="text-muted-foreground/70 hover:text-red-400 transition-colors shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Remove row"
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -283,19 +283,19 @@ export default function EditProposalPage() {
             <button
               onClick={addChallenge}
               disabled={isLocked}
-              className="text-xs text-[#9b9b9b] hover:text-[#e6e6e6] transition-colors disabled:opacity-40 flex items-center gap-1"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 flex items-center gap-1"
             >
               <span className="text-base leading-none">+</span> Add row
             </button>
           </div>
 
           {/* Pricing */}
-          <div className="bg-[#252525] rounded-xl border border-[#383838] p-6 space-y-3">
+          <div className="bg-muted rounded-xl border border-border p-6 space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-xs uppercase tracking-widest text-[#9b9b9b] font-semibold block">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold block">
                 Pricing
               </Label>
-              <div className="grid grid-cols-[2fr_1fr_1fr] gap-2 text-xs text-[#9b9b9b] mr-8 flex-1 max-w-xs ml-4">
+              <div className="grid grid-cols-[2fr_1fr_1fr] gap-2 text-xs text-muted-foreground mr-8 flex-1 max-w-xs ml-4">
                 <span>Service</span>
                 <span>Price</span>
                 <span>Qty</span>
@@ -303,14 +303,14 @@ export default function EditProposalPage() {
             </div>
             <div className="space-y-2">
               {content.pricing.lineItems.map((item, i) => (
-                <div key={i} className="flex items-center gap-2 bg-[#2f2f2f] rounded-lg border border-[#383838] px-3 py-2.5">
+                <div key={i} className="flex items-center gap-2 bg-secondary rounded-lg border border-border px-3 py-2.5">
                   <div className="grid grid-cols-[2fr_1fr_1fr] gap-2 flex-1">
                     <Input
                       placeholder="Service"
                       value={item.product}
                       disabled={isLocked}
                       onChange={(e) => updateLineItem(i, 'product', e.target.value)}
-                      className="bg-[#252525]"
+                      className="bg-muted"
                     />
                     <Input
                       type="number"
@@ -322,7 +322,7 @@ export default function EditProposalPage() {
                         updateLineItem(i, 'price', p)
                         updateLineItem(i, 'total', p * item.quantity)
                       }}
-                      className="bg-[#252525]"
+                      className="bg-muted"
                     />
                     <Input
                       type="number"
@@ -334,13 +334,13 @@ export default function EditProposalPage() {
                         updateLineItem(i, 'quantity', q)
                         updateLineItem(i, 'total', item.price * q)
                       }}
-                      className="bg-[#252525]"
+                      className="bg-muted"
                     />
                   </div>
                   <button
                     onClick={() => removeLineItem(i)}
                     disabled={isLocked || content.pricing.lineItems.length <= 1}
-                    className="text-[#555] hover:text-red-400 transition-colors shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="text-muted-foreground/70 hover:text-red-400 transition-colors shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Remove row"
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -353,19 +353,19 @@ export default function EditProposalPage() {
             <button
               onClick={addLineItem}
               disabled={isLocked}
-              className="text-xs text-[#9b9b9b] hover:text-[#e6e6e6] transition-colors disabled:opacity-40 flex items-center gap-1"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 flex items-center gap-1"
             >
               <span className="text-base leading-none">+</span> Add row
             </button>
           </div>
 
           {/* Payment Schedule */}
-          <div className="bg-[#252525] rounded-xl border border-[#383838] p-6 space-y-3">
+          <div className="bg-muted rounded-xl border border-border p-6 space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-xs uppercase tracking-widest text-[#9b9b9b] font-semibold block">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold block">
                 Payment Schedule
               </Label>
-              <div className="grid grid-cols-3 gap-2 text-xs text-[#9b9b9b] mr-8 flex-1 max-w-xs ml-4">
+              <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground mr-8 flex-1 max-w-xs ml-4">
                 <span>Description</span>
                 <span>Due date</span>
                 <span>Amount</span>
@@ -373,21 +373,21 @@ export default function EditProposalPage() {
             </div>
             <div className="space-y-2">
               {content.paymentSchedule.map((item, i) => (
-                <div key={i} className="flex items-center gap-2 bg-[#2f2f2f] rounded-lg border border-[#383838] px-3 py-2.5">
+                <div key={i} className="flex items-center gap-2 bg-secondary rounded-lg border border-border px-3 py-2.5">
                   <div className="grid grid-cols-3 gap-2 flex-1">
                     <Input
                       placeholder="Description"
                       value={item.description}
                       disabled={isLocked}
                       onChange={(e) => updatePaymentSchedule(i, 'description', e.target.value)}
-                      className="bg-[#252525]"
+                      className="bg-muted"
                     />
                     <Input
                       placeholder="Due date"
                       value={item.date}
                       disabled={isLocked}
                       onChange={(e) => updatePaymentSchedule(i, 'date', e.target.value)}
-                      className="bg-[#252525]"
+                      className="bg-muted"
                     />
                     <Input
                       type="number"
@@ -395,13 +395,13 @@ export default function EditProposalPage() {
                       value={item.amount}
                       disabled={isLocked}
                       onChange={(e) => updatePaymentSchedule(i, 'amount', parseFloat(e.target.value) || 0)}
-                      className="bg-[#252525]"
+                      className="bg-muted"
                     />
                   </div>
                   <button
                     onClick={() => removePaymentScheduleItem(i)}
                     disabled={isLocked || content.paymentSchedule.length <= 1}
-                    className="text-[#555] hover:text-red-400 transition-colors shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="text-muted-foreground/70 hover:text-red-400 transition-colors shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Remove row"
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -414,7 +414,7 @@ export default function EditProposalPage() {
             <button
               onClick={addPaymentScheduleItem}
               disabled={isLocked}
-              className="text-xs text-[#9b9b9b] hover:text-[#e6e6e6] transition-colors disabled:opacity-40 flex items-center gap-1"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 flex items-center gap-1"
             >
               <span className="text-base leading-none">+</span> Add row
             </button>

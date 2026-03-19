@@ -28,10 +28,10 @@ export default function LeadQueue({ leads }: Props) {
   if (leads.length === 0) {
     return (
       <div className="text-center py-16">
-        <p className="text-sm text-neutral-400">Aucun lead pour l&apos;instant.</p>
-        <p className="text-sm text-neutral-400 mt-1">
+        <p className="text-sm text-neutral-400 dark:text-muted-foreground">Aucun lead pour l&apos;instant.</p>
+        <p className="text-sm text-neutral-400 dark:text-muted-foreground mt-1">
           Partagez le lien{' '}
-          <a href="/book" target="_blank" className="text-neutral-700 underline underline-offset-2 hover:text-neutral-900">
+          <a href="/book" target="_blank" className="text-neutral-700 dark:text-foreground/80 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-foreground">
             /book
           </a>{' '}
           pour recevoir vos premiers leads.

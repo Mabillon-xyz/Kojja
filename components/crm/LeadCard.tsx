@@ -12,7 +12,7 @@ type Props = {
 const PRIORITY_DOT: Record<'red' | 'yellow' | 'gray', string> = {
   red: 'bg-red-500',
   yellow: 'bg-yellow-400',
-  gray: 'bg-neutral-300',
+  gray: 'bg-neutral-300 dark:bg-muted-foreground/40',
 }
 
 const PRIORITY_LABEL: Record<Lead['stage'], (lead: Lead) => string> = {
@@ -55,7 +55,7 @@ export default function LeadCard({ lead, onOpen, onStageChange, draggable = fals
 
   return (
     <div
-      className="group bg-white border border-neutral-200 rounded-lg px-4 py-3.5 hover:border-neutral-300 hover:shadow-sm transition-all cursor-pointer"
+      className="group bg-white dark:bg-card border border-neutral-200 dark:border-border rounded-lg px-4 py-3.5 hover:border-neutral-300 dark:hover:border-border/80 hover:shadow-sm transition-all cursor-pointer"
       draggable={draggable}
       onDragStart={draggable && onDragStart ? (e) => onDragStart(e, lead.id) : undefined}
       onClick={() => onOpen(lead)}
@@ -64,35 +64,35 @@ export default function LeadCard({ lead, onOpen, onStageChange, draggable = fals
         <div className="flex items-start gap-2.5 min-w-0">
           <div className={`mt-1.5 flex-shrink-0 w-2 h-2 rounded-full ${PRIORITY_DOT[priority]}`} />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-neutral-900 truncate">
+            <p className="text-sm font-medium text-neutral-900 dark:text-foreground truncate">
               {lead.first_name} {lead.last_name}
             </p>
             {lead.company_name && (
-              <p className="text-xs text-neutral-500 truncate">
+              <p className="text-xs text-neutral-500 dark:text-muted-foreground truncate">
                 {lead.company_name}{lead.city ? ` · ${lead.city}` : ''}
               </p>
             )}
-            <p className="text-xs text-neutral-400 mt-0.5 truncate">{subtitle}</p>
+            <p className="text-xs text-neutral-400 dark:text-muted-foreground mt-0.5 truncate">{subtitle}</p>
           </div>
         </div>
         <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
-          <span className="text-xs px-2 py-0.5 bg-neutral-100 text-neutral-500 rounded-full whitespace-nowrap">
+          <span className="text-xs px-2 py-0.5 bg-neutral-100 dark:bg-muted text-neutral-500 dark:text-muted-foreground rounded-full whitespace-nowrap">
             {STAGE_LABELS[lead.stage]}
           </span>
-          <span className="text-xs text-neutral-400">
+          <span className="text-xs text-neutral-400 dark:text-muted-foreground">
             {formatRelativeDate(lead.call_booked_at)}
           </span>
         </div>
       </div>
 
       {nextStep && onStageChange && (
-        <div className="mt-3 pt-3 border-t border-neutral-100">
+        <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-border">
           <button
             onClick={(e) => {
               e.stopPropagation()
               onStageChange(lead.id, nextStep.stage)
             }}
-            className="text-xs font-medium text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 px-2 py-1 rounded-md transition-colors"
+            className="text-xs font-medium text-neutral-700 dark:text-foreground/80 hover:text-neutral-900 dark:hover:text-foreground hover:bg-neutral-50 dark:hover:bg-muted/50 px-2 py-1 rounded-md transition-colors"
           >
             {nextStep.label} →
           </button>

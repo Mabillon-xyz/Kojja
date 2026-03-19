@@ -56,22 +56,22 @@ export default function LeadDrawer({ lead, onClose }: Props) {
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col overflow-hidden">
+      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-card shadow-xl z-50 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-border">
           <div>
-            <h2 className="font-semibold text-neutral-900">
+            <h2 className="font-semibold text-neutral-900 dark:text-foreground">
               {lead.first_name} {lead.last_name}
             </h2>
             {lead.company_name && (
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-neutral-500 dark:text-muted-foreground">
                 {lead.company_name}{lead.city ? ` · ${lead.city}` : ''}
               </p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-400 hover:text-neutral-600 transition-colors"
+            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-muted rounded-md text-neutral-400 dark:text-muted-foreground hover:text-neutral-600 dark:hover:text-foreground/70 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -96,7 +96,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
 
           {/* Stage selector */}
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Stade</p>
+            <p className="text-xs font-medium text-neutral-500 dark:text-muted-foreground uppercase tracking-wider mb-2">Stade</p>
             <div className="flex flex-wrap gap-2">
               {STAGES.map((s) => (
                 <button
@@ -105,8 +105,8 @@ export default function LeadDrawer({ lead, onClose }: Props) {
                   disabled={isPending}
                   className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                     lead.stage === s
-                      ? 'bg-neutral-900 text-white border-neutral-900'
-                      : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
+                      ? 'bg-neutral-900 dark:bg-foreground text-white dark:text-background border-neutral-900 dark:border-foreground'
+                      : 'bg-white dark:bg-card text-neutral-600 dark:text-foreground/70 border-neutral-200 dark:border-border hover:border-neutral-400 dark:hover:border-muted-foreground'
                   }`}
                 >
                   {STAGE_LABELS[s]}
@@ -117,36 +117,36 @@ export default function LeadDrawer({ lead, onClose }: Props) {
 
           {/* Next action */}
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Prochaine action</p>
+            <p className="text-xs font-medium text-neutral-500 dark:text-muted-foreground uppercase tracking-wider mb-2">Prochaine action</p>
             <input
               value={nextAction}
               onChange={(e) => setNextAction(e.target.value)}
               placeholder="Ex : Envoyer la proposition..."
-              className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
+              className="w-full px-3 py-2 text-sm bg-transparent dark:bg-muted/30 text-neutral-900 dark:text-foreground placeholder-neutral-400 dark:placeholder-muted-foreground border border-neutral-200 dark:border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-foreground focus:border-transparent"
             />
             <input
               type="date"
               value={nextActionDate}
               onChange={(e) => setNextActionDate(e.target.value)}
-              className="mt-2 w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
+              className="mt-2 w-full px-3 py-2 text-sm bg-transparent dark:bg-muted/30 text-neutral-900 dark:text-foreground border border-neutral-200 dark:border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-foreground focus:border-transparent"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Notes</p>
+            <p className="text-xs font-medium text-neutral-500 dark:text-muted-foreground uppercase tracking-wider mb-2">Notes</p>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={5}
               placeholder="Informations sur ce coach..."
-              className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 text-sm bg-transparent dark:bg-muted/30 text-neutral-900 dark:text-foreground placeholder-neutral-400 dark:placeholder-muted-foreground border border-neutral-200 dark:border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-foreground focus:border-transparent resize-none"
             />
           </div>
 
           {/* Timeline */}
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Timeline</p>
+            <p className="text-xs font-medium text-neutral-500 dark:text-muted-foreground uppercase tracking-wider mb-2">Timeline</p>
             <div className="space-y-2">
               <TimelineEvent
                 label="Demande de call reçue"
@@ -169,7 +169,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-neutral-100 dark:border-border flex items-center justify-between">
           <button
             onClick={() => setShowDeleteConfirm(true)}
             className="text-xs text-red-500 hover:text-red-700 transition-colors"
@@ -179,7 +179,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
           <button
             onClick={handleSave}
             disabled={isPending}
-            className="text-sm font-medium bg-neutral-900 text-white px-4 py-2 rounded-lg hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+            className="text-sm font-medium bg-neutral-900 dark:bg-foreground text-white dark:text-background px-4 py-2 rounded-lg hover:bg-neutral-700 dark:hover:bg-foreground/90 disabled:opacity-50 transition-colors"
           >
             {saved ? 'Sauvegardé ✓' : isPending ? 'Sauvegarde...' : 'Sauvegarder'}
           </button>
@@ -189,15 +189,15 @@ export default function LeadDrawer({ lead, onClose }: Props) {
       {/* Delete confirmation */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/40 z-60 flex items-center justify-center px-4">
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="font-semibold text-neutral-900 mb-2">Supprimer ce lead ?</h3>
-            <p className="text-sm text-neutral-500 mb-5">
+          <div className="bg-white dark:bg-card rounded-xl p-6 max-w-sm w-full shadow-xl">
+            <h3 className="font-semibold text-neutral-900 dark:text-foreground mb-2">Supprimer ce lead ?</h3>
+            <p className="text-sm text-neutral-500 dark:text-muted-foreground mb-5">
               {lead.first_name} {lead.last_name} sera définitivement supprimé du CRM.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2 text-sm border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+                className="flex-1 py-2 text-sm border border-neutral-200 dark:border-border text-neutral-700 dark:text-foreground/80 rounded-lg hover:bg-neutral-50 dark:hover:bg-muted/50 transition-colors"
               >
                 Annuler
               </button>
@@ -219,13 +219,13 @@ export default function LeadDrawer({ lead, onClose }: Props) {
 function InfoRow({ label, value, href }: { label: string; value: string; href?: string }) {
   return (
     <div className="flex gap-3 text-sm">
-      <span className="text-neutral-400 w-20 flex-shrink-0">{label}</span>
+      <span className="text-neutral-400 dark:text-muted-foreground w-20 flex-shrink-0">{label}</span>
       {href ? (
-        <a href={href} className="text-neutral-700 hover:text-neutral-900 underline underline-offset-2 truncate">
+        <a href={href} className="text-neutral-700 dark:text-foreground/80 hover:text-neutral-900 dark:hover:text-foreground underline underline-offset-2 truncate">
           {value}
         </a>
       ) : (
-        <span className="text-neutral-700">{value}</span>
+        <span className="text-neutral-700 dark:text-foreground/80">{value}</span>
       )}
     </div>
   )
@@ -234,10 +234,10 @@ function InfoRow({ label, value, href }: { label: string; value: string; href?: 
 function TimelineEvent({ label, date }: { label: string; date: string }) {
   return (
     <div className="flex items-start gap-3 text-sm">
-      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-neutral-300 flex-shrink-0" />
+      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-muted-foreground/40 flex-shrink-0" />
       <div>
-        <span className="text-neutral-700">{label}</span>
-        <span className="text-neutral-400 ml-2 text-xs">
+        <span className="text-neutral-700 dark:text-foreground/80">{label}</span>
+        <span className="text-neutral-400 dark:text-muted-foreground ml-2 text-xs">
           {new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
         </span>
       </div>

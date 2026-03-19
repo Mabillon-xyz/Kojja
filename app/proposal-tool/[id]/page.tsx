@@ -44,12 +44,12 @@ export default async function ProposalPreviewPage({
         <div className="flex items-center gap-2.5">
           <Link
             href="/proposal-tool"
-            className="text-sm text-[#666] hover:text-[#e6e6e6] transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Proposals
           </Link>
-          <span className="text-[#555]">/</span>
-          <span className="text-sm font-medium text-[#e6e6e6] truncate max-w-xs">
+          <span className="text-muted-foreground/70">/</span>
+          <span className="text-sm font-medium text-foreground truncate max-w-xs">
             {proposal.title}
           </span>
           <ProposalStatusBadge status={proposal.status} />
@@ -69,7 +69,7 @@ export default async function ProposalPreviewPage({
       <ShareUrlPanel url={publicUrl} proposalId={id} currentStatus={proposal.status} />
 
       {/* Proposal preview */}
-      <div className="mt-6 bg-[#252525] rounded-2xl border border-[#383838] shadow-sm overflow-hidden">
+      <div className="mt-6 bg-muted rounded-2xl border border-border shadow-sm overflow-hidden">
         <ProposalDocument proposal={proposal} mode="preview" />
       </div>
     </div>

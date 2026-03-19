@@ -17,15 +17,15 @@ function StatCard({
   accent?: boolean
 }) {
   return (
-    <div className={`rounded-xl border p-5 ${accent ? 'bg-[#5865f2] border-[#5865f2]' : 'bg-[#252525] border-[#383838]'}`}>
-      <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-3">
+    <div className={`rounded-xl border p-5 ${accent ? 'bg-[#5865f2] border-[#5865f2]' : 'bg-muted border-border'}`}>
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
         {label}
       </p>
-      <p className={`text-3xl font-bold tracking-tight ${accent ? 'text-white' : 'text-[#e6e6e6]'}`}>
+      <p className={`text-3xl font-bold tracking-tight ${accent ? 'text-white' : 'text-foreground'}`}>
         {value}
       </p>
       {sub && (
-        <p className="text-xs mt-1.5 text-neutral-400">{sub}</p>
+        <p className="text-xs mt-1.5 text-muted-foreground">{sub}</p>
       )}
     </div>
   )
@@ -73,7 +73,6 @@ export default async function DashboardPage() {
     toExpire.find((e) => e.id === p.id) ? { ...p, status: 'expired' } : p
   ) as Proposal[]
 
-  // Computed stats
   const paid = all.filter((p) => p.status === 'paid')
   const pending = all.filter((p) => ['sent', 'signed'].includes(p.status))
   const draft = all.filter((p) => p.status === 'draft')
@@ -101,7 +100,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">📝 Proposals</h1>
-          <p className="text-sm text-[#9b9b9b] mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             {all.length} proposal{all.length !== 1 ? 's' : ''} total
           </p>
         </div>
@@ -138,8 +137,8 @@ export default async function DashboardPage() {
       {/* Status breakdown + Recent activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Breakdown */}
-        <div className="bg-[#252525] rounded-xl border border-[#383838] p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#9b9b9b] mb-5">
+        <div className="bg-muted rounded-xl border border-border p-5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-5">
             📊 By status
           </p>
           <div className="space-y-3.5">
@@ -153,16 +152,16 @@ export default async function DashboardPage() {
               <div key={label} className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-                  <span className="text-sm text-[#c0c0c0]">{label}</span>
+                  <span className="text-sm text-foreground/70">{label}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-24 bg-[#383838] rounded-full h-1.5 overflow-hidden">
+                  <div className="w-24 bg-border rounded-full h-1.5 overflow-hidden">
                     <div
                       className={`h-full rounded-full ${dot}`}
                       style={{ width: all.length > 0 ? `${(count / all.length) * 100}%` : '0%' }}
                     />
                   </div>
-                  <span className="text-sm font-medium text-[#e6e6e6] w-4 text-right">{count}</span>
+                  <span className="text-sm font-medium text-foreground w-4 text-right">{count}</span>
                 </div>
               </div>
             ))}
@@ -170,12 +169,12 @@ export default async function DashboardPage() {
         </div>
 
         {/* Recent activity */}
-        <div className="lg:col-span-2 bg-[#252525] rounded-xl border border-[#383838] p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#9b9b9b] mb-4">
+        <div className="lg:col-span-2 bg-muted rounded-xl border border-border p-5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
             🕐 Recent activity
           </p>
           {recent.length === 0 ? (
-            <p className="text-sm text-[#666] py-8 text-center">
+            <p className="text-sm text-muted-foreground py-8 text-center">
               No proposals yet — create your first one.
             </p>
           ) : (
@@ -183,21 +182,21 @@ export default async function DashboardPage() {
               {recent.map((p, i) => (
                 <div
                   key={p.id}
-                  className={`flex items-start gap-3 py-3 ${i < recent.length - 1 ? 'border-b border-[#383838]' : ''}`}
+                  className={`flex items-start gap-3 py-3 ${i < recent.length - 1 ? 'border-b border-border' : ''}`}
                 >
                   <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${STATUS_DOT[p.status]}`} />
                   <div className="flex-1 min-w-0">
                     <Link
                       href={`/proposal-tool/${p.id}`}
-                      className="text-sm font-medium text-[#e6e6e6] hover:underline truncate block"
+                      className="text-sm font-medium text-foreground hover:underline truncate block"
                     >
                       {p.title}
                     </Link>
-                    <p className="text-xs text-[#666] mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {STATUS_VERB[p.status]} · {p.client_company}
                     </p>
                   </div>
-                  <span className="text-sm font-medium text-[#c0c0c0] shrink-0">
+                  <span className="text-sm font-medium text-foreground/70 shrink-0">
                     {formatCurrency(Number(p.price), p.currency)}
                   </span>
                 </div>
@@ -209,7 +208,7 @@ export default async function DashboardPage() {
 
       {/* All proposals table */}
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#9b9b9b] mb-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
           📋 All proposals
         </p>
         <ProposalTable proposals={all} />

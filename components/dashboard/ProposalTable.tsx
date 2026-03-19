@@ -49,22 +49,22 @@ export default function ProposalTable({ proposals }: ProposalTableProps) {
 
   if (proposals.length === 0) {
     return (
-      <div className="text-center py-20 text-[#555]">
+      <div className="text-center py-20 text-muted-foreground">
         <p className="text-sm">No proposals yet. Create your first one above.</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-[#252525] rounded-xl border border-[#383838] overflow-hidden overflow-x-auto">
+    <div className="bg-muted rounded-xl border border-border overflow-hidden overflow-x-auto">
       <Table className="min-w-[560px]">
         <TableHeader>
-          <TableRow className="bg-[#2f2f2f] border-b border-[#383838] hover:bg-[#2f2f2f]">
-            <TableHead className="font-medium text-[#888]">Proposal</TableHead>
-            <TableHead className="font-medium text-[#888] hidden sm:table-cell">Client</TableHead>
-            <TableHead className="font-medium text-[#888]">Status</TableHead>
-            <TableHead className="font-medium text-[#888]">Value</TableHead>
-            <TableHead className="font-medium text-[#888] hidden md:table-cell">Expires</TableHead>
+          <TableRow className="bg-secondary border-b border-border hover:bg-secondary">
+            <TableHead className="font-medium text-muted-foreground">Proposal</TableHead>
+            <TableHead className="font-medium text-muted-foreground hidden sm:table-cell">Client</TableHead>
+            <TableHead className="font-medium text-muted-foreground">Status</TableHead>
+            <TableHead className="font-medium text-muted-foreground">Value</TableHead>
+            <TableHead className="font-medium text-muted-foreground hidden md:table-cell">Expires</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -72,43 +72,43 @@ export default function ProposalTable({ proposals }: ProposalTableProps) {
           {proposals.map((proposal) => {
             const canEdit = proposal.status === 'draft' || proposal.status === 'sent'
             return (
-              <TableRow key={proposal.id} className="border-b border-[#2f2f2f] hover:bg-[#2a2a2a]">
+              <TableRow key={proposal.id} className="border-b border-border hover:bg-secondary/60">
                 <TableCell>
                   <Link
                     href={`/proposal-tool/${proposal.id}`}
-                    className="font-medium text-sm text-[#e6e6e6] hover:text-white hover:underline"
+                    className="font-medium text-sm text-foreground hover:underline"
                   >
                     {proposal.title}
                   </Link>
-                  <p className="text-xs text-[#555] mt-0.5">{formatDate(proposal.created_at)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{formatDate(proposal.created_at)}</p>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
-                  <p className="text-sm text-[#c0c0c0]">{proposal.client_name}</p>
-                  <p className="text-xs text-[#666]">{proposal.client_company}</p>
+                  <p className="text-sm text-foreground/70">{proposal.client_name}</p>
+                  <p className="text-xs text-muted-foreground">{proposal.client_company}</p>
                 </TableCell>
                 <TableCell>
                   <ProposalStatusBadge status={proposal.status} />
                 </TableCell>
-                <TableCell className="text-sm font-medium text-[#e6e6e6]">
+                <TableCell className="text-sm font-medium text-foreground">
                   {formatCurrency(proposal.price, proposal.currency)}
                 </TableCell>
-                <TableCell className="text-sm text-[#666] hidden md:table-cell">
+                <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                   {formatDate(proposal.expires_at)}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1 justify-end">
-                    <Button variant="ghost" size="sm" asChild className="text-[#888] hover:text-[#e6e6e6] hover:bg-[#383838]">
+                    <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground hover:bg-muted">
                       <Link href={`/proposal-tool/${proposal.id}`}>View</Link>
                     </Button>
                     {canEdit && (
-                      <Button variant="ghost" size="sm" asChild className="text-[#888] hover:text-[#e6e6e6] hover:bg-[#383838]">
+                      <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground hover:bg-muted">
                         <Link href={`/proposal-tool/${proposal.id}/edit`}>Edit</Link>
                       </Button>
                     )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="hidden sm:inline-flex text-[#888] hover:text-[#e6e6e6] hover:bg-[#383838]"
+                      className="hidden sm:inline-flex text-muted-foreground hover:text-foreground hover:bg-muted"
                       onClick={() => copyLink(proposal.slug)}
                     >
                       Copy link
