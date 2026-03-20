@@ -34,6 +34,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
   const [saved, setSaved] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   function handleSave() {
     if (!lead) return
@@ -65,10 +66,11 @@ export default function LeadDrawer({ lead, onClose }: Props) {
     })
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!lead) return
     setDeleteError(null)
-    startTransition(async () => {
+    setIsDeleting(true)
+    try {
       const res = await fetch(`/api/leads?id=${lead.id}`, { method: 'DELETE' })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
@@ -77,7 +79,11 @@ export default function LeadDrawer({ lead, onClose }: Props) {
         router.refresh()
         onClose()
       }
-    })
+    } catch (e) {
+      setDeleteError(String(e))
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   function toggleContactMean(val: string) {
@@ -299,10 +305,10 @@ export default function LeadDrawer({ lead, onClose }: Props) {
               </button>
               <button
                 onClick={handleDelete}
-                disabled={isPending}
+                disabled={isDeleting}
                 className="flex-1 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                {isPending ? 'Deleting...' : 'Delete'}
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>
