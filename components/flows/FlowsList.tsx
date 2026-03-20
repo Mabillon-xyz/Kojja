@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react";
 import { ChevronDown, ExternalLink, Zap } from "lucide-react";
 import FlowsDailyChart from "./FlowsDailyChart";
+import LemlistStats from "./LemlistStats";
 
 type Lead = {
   _id?: string;
@@ -32,22 +33,37 @@ function fmt(iso: string) {
 
 export default function FlowsList({ events, chartData = [] }: { events: WebhookEvent[]; chartData?: DailyCount[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [tab, setTab] = useState<"flows" | "lemlist">("flows");
 
   return (
     <div className="max-w-5xl">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Flows</h1>
-          <p className="mt-1 text-sm text-neutral-500">
-            {events.length} run{events.length !== 1 ? "s" : ""} received
-          </p>
-        </div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-neutral-900">Campaigns</h1>
         <div className="flex items-center gap-2 bg-violet-50 border border-violet-100 text-violet-700 text-xs font-semibold px-3 py-1.5 rounded-full">
           <Zap className="w-3.5 h-3.5" />
           Live
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 bg-neutral-100 rounded-lg p-1 mb-6 w-fit">
+        <button
+          onClick={() => setTab("flows")}
+          className={`text-xs px-4 py-1.5 rounded-md font-semibold transition-all ${tab === "flows" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}
+        >
+          Flow runs
+        </button>
+        <button
+          onClick={() => setTab("lemlist")}
+          className={`text-xs px-4 py-1.5 rounded-md font-semibold transition-all ${tab === "lemlist" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}
+        >
+          Lemlist
+        </button>
+      </div>
+
+      {tab === "lemlist" && <LemlistStats />}
+
+      {tab === "flows" && <>
       <div className="mb-6">
         <FlowsDailyChart chartData={chartData} />
       </div>
@@ -152,6 +168,7 @@ export default function FlowsList({ events, chartData = [] }: { events: WebhookE
           </tbody>
         </table>
       </div>
+      </>}
     </div>
   );
 }
