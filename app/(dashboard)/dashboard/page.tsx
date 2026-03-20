@@ -2,6 +2,9 @@ import { readLeads } from '@/lib/read-leads'
 import HomeClient from '@/components/dashboard/HomeClient'
 import NextActions from '@/components/dashboard/NextActions'
 import DailyCallsChart, { type DayData } from '@/components/dashboard/DailyCallsChart'
+import FlowsDailyChart from '@/components/flows/FlowsDailyChart'
+import { createClient } from '@/lib/supabase/server'
+import type { DailyCount } from '@/components/flows/FlowsList'
 import { TrendingUp, Users, BarChart2, Target } from 'lucide-react'
 
 const PRIX_CLIENT = 1750
@@ -39,8 +42,34 @@ function buildDailyData(leads: Awaited<ReturnType<typeof readLeads>>): DayData[]
   })
 }
 
+async function buildFlowsChartData(): Promise<DailyCount[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('webhook_events')
+    .select('created_at')
+    .order('created_at', { ascending: true })
+
+  const byDay: Record<string, number> = {}
+  for (const ev of data ?? []) {
+    const day = (ev.created_at as string).slice(0, 10)
+    byDay[day] = (byDay[day] ?? 0) + 1
+  }
+
+  const days = Object.keys(byDay)
+  if (days.length === 0) return []
+
+  const result: DailyCount[] = []
+  const start = new Date(days[0])
+  const end = new Date()
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const key = d.toISOString().slice(0, 10)
+    result.push({ date: key, count: byDay[key] ?? 0 })
+  }
+  return result
+}
+
 export default async function DashboardPage() {
-  const leads = await readLeads()
+  const [leads, flowsChartData] = await Promise.all([readLeads(), buildFlowsChartData()])
 
   const totalLeads = leads.length
   const customers = leads.filter((l) => l.stage === 'customer').length
@@ -109,6 +138,9 @@ export default async function DashboardPage() {
 
       {/* Daily calls chart — full width */}
       <DailyCallsChart data={dailyData} />
+
+      {/* Flows per day chart */}
+      <FlowsDailyChart chartData={flowsChartData} />
 
       {/* Next actions + tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

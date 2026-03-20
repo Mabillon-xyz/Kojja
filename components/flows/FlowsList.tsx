@@ -2,15 +2,7 @@
 
 import { Fragment, useState } from "react";
 import { ChevronDown, ExternalLink, Zap } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from "recharts";
+import FlowsDailyChart from "./FlowsDailyChart";
 
 type Lead = {
   _id?: string;
@@ -38,15 +30,8 @@ function fmt(iso: string) {
   return `${d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-function fmtDay(iso: string) {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
-
 export default function FlowsList({ events, chartData = [] }: { events: WebhookEvent[]; chartData?: DailyCount[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
-
-  // Only label every Nth tick to avoid overcrowding
-  const tickInterval = Math.max(1, Math.floor(chartData.length / 10));
 
   return (
     <div className="max-w-5xl">
@@ -63,42 +48,9 @@ export default function FlowsList({ events, chartData = [] }: { events: WebhookE
         </div>
       </div>
 
-      {chartData.length > 0 && (
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm px-6 pt-5 pb-4 mb-6">
-          <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-4">Flows per day</p>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={chartData} barCategoryGap="30%">
-              <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis
-                dataKey="date"
-                tickFormatter={(v, i) => (i % tickInterval === 0 ? fmtDay(v) : "")}
-                tick={{ fontSize: 11, fill: "#a3a3a3" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                allowDecimals={false}
-                tick={{ fontSize: 11, fill: "#a3a3a3" }}
-                axisLine={false}
-                tickLine={false}
-                width={24}
-              />
-              <Tooltip
-                cursor={{ fill: "#f5f5f5" }}
-                content={({ active, payload, label }) =>
-                  active && payload?.length ? (
-                    <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-xs shadow-sm">
-                      <p className="font-semibold text-neutral-700">{label ? fmtDay(String(label)) : ""}</p>
-                      <p className="text-violet-600 font-bold">{payload[0].value} flow{Number(payload[0].value) !== 1 ? "s" : ""}</p>
-                    </div>
-                  ) : null
-                }
-              />
-              <Bar dataKey="count" fill="#7c3aed" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      <div className="mb-6">
+        <FlowsDailyChart chartData={chartData} />
+      </div>
 
       <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-sm overflow-x-auto">
         <table className="w-full text-sm min-w-[500px]">
