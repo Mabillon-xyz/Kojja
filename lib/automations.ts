@@ -1,5 +1,12 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import type { AutomationStep, Automation } from "@/lib/automation-types";
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // Re-export so existing imports from this file still work
 export type { AutomationStep, Automation };
@@ -78,12 +85,7 @@ export function buildEmailHtml(body: string, ctx: BookingContext): string {
 // ── Core trigger function ─────────────────────────────────────────────────────
 export async function triggerAutomations(ctx: BookingContext): Promise<void> {
 
-  let supabase: Awaited<ReturnType<typeof createServiceClient>>;
-  try {
-    supabase = await createServiceClient();
-  } catch {
-    return;
-  }
+  const supabase = getSupabase();
 
   const { data: automations } = await supabase
     .from("automations")
