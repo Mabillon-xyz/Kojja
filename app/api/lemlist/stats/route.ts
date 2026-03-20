@@ -7,8 +7,16 @@ export async function GET() {
     return NextResponse.json({ error: "LEMLIST_API_KEY not configured" }, { status: 500 });
   }
 
+  const startDate = "2020-01-01T00:00:00.000Z";
+  const endDate = new Date().toISOString();
+  const params = new URLSearchParams({
+    access_token: process.env.LEMLIST_API_KEY,
+    startDate,
+    endDate,
+  });
+
   const res = await fetch(
-    `https://api.lemlist.com/api/campaigns/${CAMPAIGN_ID}/stats?access_token=${process.env.LEMLIST_API_KEY}`,
+    `https://api.lemlist.com/api/v2/campaigns/${CAMPAIGN_ID}/stats?${params}`,
     { next: { revalidate: 300 } }
   );
 
