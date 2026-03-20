@@ -20,7 +20,7 @@ export async function GET() {
   if (!res.ok) {
     const text = await res.text();
     console.error("[lemlist] API error:", res.status, text);
-    return NextResponse.json({ error: `Lemlist API error ${res.status}` }, { status: res.status });
+    return NextResponse.json({ error: `Lemlist API error ${res.status}`, detail: text }, { status: res.status });
   }
 
   const data = await res.json();
