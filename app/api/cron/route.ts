@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 
+export const maxDuration = 60;
+
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,6 +43,8 @@ export async function GET() {
     console.error("[cron] Failed to fetch scheduled emails:", fetchError.message);
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
+
+  console.log(`[cron] ${pending?.length ?? 0} email(s) due at`, new Date().toISOString());
 
   if (!pending || pending.length === 0) {
     return NextResponse.json({ sent: 0, message: "No emails due" });
