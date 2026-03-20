@@ -70,23 +70,16 @@ export default function LeadDrawer({ lead, onClose }: Props) {
     if (!lead) return
     setDeleteError(null)
     setIsDeleting(true)
-    console.log('[delete] lead.id =', lead.id)
     try {
-      const url = `/api/leads?id=${lead.id}`
-      console.log('[delete] fetching', url)
-      const res = await fetch(url, { method: 'DELETE' })
-      console.log('[delete] status =', res.status, res.ok)
+      const res = await fetch(`/api/leads?id=${lead.id}`, { method: 'DELETE' })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        console.log('[delete] error body =', body)
         setDeleteError(body.error ?? 'Delete failed')
       } else {
-        console.log('[delete] success — refreshing')
         router.refresh()
         onClose()
       }
     } catch (e) {
-      console.error('[delete] exception =', e)
       setDeleteError(String(e))
     } finally {
       setIsDeleting(false)
