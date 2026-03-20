@@ -10,7 +10,9 @@ export async function GET() {
   const res = await fetch(
     `https://api.lemlist.com/api/v2/campaigns/${CAMPAIGN_ID}/stats`,
     {
-      headers: { Authorization: `Bearer ${process.env.LEMLIST_API_KEY}` },
+      headers: {
+        Authorization: `Basic ${Buffer.from(`:${process.env.LEMLIST_API_KEY}`).toString("base64")}`,
+      },
       next: { revalidate: 300 }, // cache 5 min
     }
   );
