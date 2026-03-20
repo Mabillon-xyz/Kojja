@@ -294,7 +294,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
 
       {/* Delete confirmation */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 z-60 flex items-center justify-center px-4">
+        <div className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center px-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
             <h3 className="font-semibold text-neutral-900 mb-2">Delete this lead?</h3>
             <p className="text-sm text-neutral-500 mb-5">
