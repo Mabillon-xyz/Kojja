@@ -8,13 +8,8 @@ export async function GET() {
   }
 
   const res = await fetch(
-    `https://api.lemlist.com/api/v2/campaigns/${CAMPAIGN_ID}/stats`,
-    {
-      headers: {
-        Authorization: `Basic ${Buffer.from(`:${process.env.LEMLIST_API_KEY}`).toString("base64")}`,
-      },
-      next: { revalidate: 300 }, // cache 5 min
-    }
+    `https://api.lemlist.com/api/campaigns/${CAMPAIGN_ID}/stats?access_token=${process.env.LEMLIST_API_KEY}`,
+    { next: { revalidate: 300 } }
   );
 
   if (!res.ok) {
