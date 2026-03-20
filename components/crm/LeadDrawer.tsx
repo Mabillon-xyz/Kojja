@@ -2,7 +2,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lead, STAGE_LABELS, STAGES, formatRelativeDate } from '@/lib/lead-types'
-import { updateLead, updateLeadStage, deleteLead } from '@/app/actions/leads'
+import { updateLead, updateLeadStage } from '@/app/actions/leads'
 
 type Props = {
   lead: Lead | null
@@ -69,9 +69,10 @@ export default function LeadDrawer({ lead, onClose }: Props) {
     if (!lead) return
     setDeleteError(null)
     startTransition(async () => {
-      const result = await deleteLead(lead.id)
-      if (result.error) {
-        setDeleteError(result.error)
+      const res = await fetch(`/api/leads?id=${lead.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setDeleteError(body.error ?? 'Delete failed')
       } else {
         router.refresh()
         onClose()

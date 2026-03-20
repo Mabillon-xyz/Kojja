@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 
 // Public endpoint — used by /book form (no auth required)
@@ -27,6 +27,19 @@ function buildGCalLink(callDate: string, leadName: string): string {
   const end = d.toISOString().replace(/[-:]/g, '').slice(0, 15)
   const title = encodeURIComponent(`Call Koj²a — ${leadName}`)
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}`
+}
+
+export async function DELETE(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 })
+
+  const { error } = await supabase.from('leads').delete().eq('id', id)
+  if (error) {
+    console.error('DELETE /api/leads error:', error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  return NextResponse.json({ deleted: true })
 }
 
 export async function POST(request: Request) {
