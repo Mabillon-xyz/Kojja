@@ -105,14 +105,18 @@ export async function updateLead(
   revalidatePath('/crm')
 }
 
-export async function deleteLead(id: string) {
+export async function deleteLead(id: string): Promise<{ error?: string }> {
   // Use service role to bypass RLS — delete requires elevated permissions
   const supabase = createDirectClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
   const { error } = await supabase.from('leads').delete().eq('id', id)
-  if (error) throw new Error(`deleteLead: ${error.message}`)
+  if (error) {
+    console.error('deleteLead error:', error.message)
+    return { error: error.message }
+  }
   revalidatePath('/crm')
   revalidatePath('/dashboard')
+  return {}
 }

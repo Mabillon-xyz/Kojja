@@ -69,12 +69,12 @@ export default function LeadDrawer({ lead, onClose }: Props) {
     if (!lead) return
     setDeleteError(null)
     startTransition(async () => {
-      try {
-        await deleteLead(lead.id)
-        onClose()
+      const result = await deleteLead(lead.id)
+      if (result.error) {
+        setDeleteError(result.error)
+      } else {
         router.refresh()
-      } catch (e) {
-        setDeleteError(e instanceof Error ? e.message : 'Delete failed')
+        onClose()
       }
     })
   }
