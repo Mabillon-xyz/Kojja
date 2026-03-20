@@ -87,12 +87,14 @@ export async function triggerAutomations(ctx: BookingContext): Promise<void> {
 
   const supabase = getSupabase();
 
-  const { data: automations } = await supabase
+  const { data: automations, error: autoError } = await supabase
     .from("automations")
     .select("*")
     .eq("enabled", true)
     .eq("trigger", "call_booked");
 
+  if (autoError) { console.error("[automations] fetch error:", autoError.message); return; }
+  console.log("[automations] found", automations?.length ?? 0, "active automation(s)");
   if (!automations?.length) return;
 
   const bookingTime = new Date();
@@ -123,7 +125,7 @@ export async function triggerAutomations(ctx: BookingContext): Promise<void> {
         if (sendAt <= bookingTime) continue;
 
         for (const to of recipients) {
-          await supabase.from("scheduled_emails").insert({
+          const { error: insertError } = await supabase.from("scheduled_emails").insert({
             automation_id: automation.id,
             send_at: sendAt.toISOString(),
             to_email: to,
@@ -131,6 +133,8 @@ export async function triggerAutomations(ctx: BookingContext): Promise<void> {
             body_html: bodyHtml,
             context: ctx,
           });
+          if (insertError) console.error("[automations] insert error:", insertError.message);
+          else console.log("[automations] scheduled email for", to, "at", sendAt.toISOString());
         }
       }
     }

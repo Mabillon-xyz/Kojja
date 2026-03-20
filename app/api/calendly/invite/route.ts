@@ -133,16 +133,20 @@ export async function POST(req: NextRequest) {
       ]);
     }
 
-    // Fire automations in background for scheduled reminders (best effort)
-    triggerAutomations({
-      name,
-      email,
-      date,
-      time,
-      meetLink,
-      calLink: ev?.htmlLink ?? null,
-      eventStartIso: startDT.toISOString(),
-    }).catch(() => { /* best effort */ });
+    // Schedule reminder emails via automations
+    try {
+      await triggerAutomations({
+        name,
+        email,
+        date,
+        time,
+        meetLink,
+        calLink: ev?.htmlLink ?? null,
+        eventStartIso: startDT.toISOString(),
+      });
+    } catch (e) {
+      console.error("[invite] triggerAutomations failed:", String(e));
+    }
 
     return NextResponse.json({
       eventId: ev?.id,
