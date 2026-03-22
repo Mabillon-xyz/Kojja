@@ -37,7 +37,7 @@ export async function GET() {
     .from("scheduled_emails")
     .select("*")
     .lte("send_at", new Date().toISOString())
-    .or("sent.eq.false,sent.is.null")
+    .not("sent", "is", true)
     .limit(50);
 
   if (fetchError) {
