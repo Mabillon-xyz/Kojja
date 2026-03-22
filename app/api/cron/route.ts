@@ -50,6 +50,7 @@ export async function GET() {
     .from("scheduled_emails")
     .select("id, send_at, sent, sent_at, to_email")
     .lte("send_at", new Date().toISOString())
+    .order("send_at", { ascending: false })
     .limit(20);
   console.log("[cron] allDue (ignoring sent filter):", JSON.stringify(allDue));
 
