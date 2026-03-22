@@ -9,10 +9,8 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   // Verify secret
   const secret = req.headers.get("x-webhook-secret");
-  const expected = process.env.N8N_WEBHOOK_SECRET;
-  console.log("[webhook] secret_received:", secret?.slice(0, 5), "| expected:", expected?.slice(0, 5), "| match:", secret === expected);
-  if (!expected || secret !== expected) {
-    return NextResponse.json({ error: "Unauthorized", debug: { received_len: secret?.length, expected_len: expected?.length, received_end: JSON.stringify(secret?.slice(-5)), expected_end: JSON.stringify(expected?.slice(-5)), match: secret === expected } }, { status: 401 });
+  if (!process.env.N8N_WEBHOOK_SECRET || secret !== process.env.N8N_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let body: Record<string, unknown>;
