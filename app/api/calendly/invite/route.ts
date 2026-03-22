@@ -154,6 +154,14 @@ export async function POST(req: NextRequest) {
       ]);
     }
 
+    // Delete any existing unsent future reminders for this lead (handles re-bookings)
+    const { error: deleteError } = await getSupabase()
+      .from("scheduled_emails")
+      .delete()
+      .eq("to_email", email)
+      .gt("send_at", new Date().toISOString());
+    if (deleteError) console.error("[invite] delete old reminders failed:", deleteError.message);
+
     // Schedule reminders: 24h + 1h before (direct insert, no automations table dependency)
     const now = new Date();
     const reminderCtx = { name, email, date, time, meetLink, calLink: ev?.htmlLink ?? null, eventStartIso: startDT.toISOString() };
