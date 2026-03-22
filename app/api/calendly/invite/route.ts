@@ -67,6 +67,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid date/time" }, { status: 400 });
   const endDT = new Date(startDT.getTime() + 30 * 60 * 1000);
 
+  // Local Paris time strings for Composio (it treats datetime as local, not UTC)
+  const [th, tm] = time.split(":").map(Number);
+  const endMins = th * 60 + tm + 30;
+  const endTimeLocal = `${String(Math.floor(endMins / 60)).padStart(2, "0")}:${String(endMins % 60).padStart(2, "0")}`;
+
   try {
     const result = await getComposio().tools.execute("GOOGLECALENDAR_CREATE_EVENT", {
       userId: USER_ID,
@@ -74,8 +79,8 @@ export async function POST(req: NextRequest) {
       arguments: {
         summary: `Discovery Call — ${name}`,
         description: `30-minute discovery call with ${name} (${email}).`,
-        start_datetime: startDT.toISOString(),
-        end_datetime: endDT.toISOString(),
+        start_datetime: `${date}T${time}:00`,
+        end_datetime: `${date}T${endTimeLocal}:00`,
         timezone: "Europe/Paris",
         calendar_id: PERSONAL_CAL_ID,
         attendees: [email],
@@ -120,8 +125,8 @@ export async function POST(req: NextRequest) {
       console.error("Email skipped: GMAIL_USER or GMAIL_APP_PASSWORD not set in env");
     } else {
       const from = `${ORGANIZER_NAME} <${process.env.GMAIL_USER}>`;
-      const dateFR = formatDateFR(startDT);
-      const timeFR = formatTimeFR(startDT);
+      const dateFR = formatDateFR(new Date(`${date}T12:00:00Z`));
+      const timeFR = time; // already Paris local time "HH:MM"
       const ctx = { name, email, date, time: timeFR, meetLink, calLink: ev?.htmlLink ?? null, eventStartIso: startDT.toISOString() };
       const transporter = getTransporter();
 
