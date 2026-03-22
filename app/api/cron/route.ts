@@ -73,6 +73,7 @@ export async function GET() {
   const from = `Clément Guiraud <${process.env.GMAIL_USER}>`;
   let sent = 0;
   let failed = 0;
+  const results: { id: string; to: string; subject: string; updateError?: string; verifyAfter?: unknown }[] = [];
 
   for (const row of pending) {
     try {
@@ -83,16 +84,32 @@ export async function GET() {
         html: row.body_html,
       });
 
+      const sentAt = new Date().toISOString();
       const { error: updateError } = await supabase
         .from("scheduled_emails")
-        .update({ sent_at: new Date().toISOString(), sent: true })
+        .update({ sent_at: sentAt, sent: true })
         .eq("id", row.id);
 
+      // Verify the update actually persisted
+      const { data: verify } = await supabase
+        .from("scheduled_emails")
+        .select("id, sent, sent_at")
+        .eq("id", row.id)
+        .single();
+
+      results.push({
+        id: row.id,
+        to: row.to_email,
+        subject: row.subject,
+        updateError: updateError?.message,
+        verifyAfter: verify,
+      });
+
       if (updateError) console.error(`[cron] Update failed for ${row.id}:`, updateError.message);
+      console.log(`[cron] Sent ${row.id}, verify:`, JSON.stringify(verify));
 
       await logEmail({ to_email: row.to_email, subject: row.subject, status: "success", source: "cron" });
       sent++;
-      console.log(`[cron] Sent email ${row.id} → ${row.to_email}`);
     } catch (e) {
       failed++;
       const errMsg = String(e);
@@ -102,8 +119,9 @@ export async function GET() {
         .from("scheduled_emails")
         .update({ error: errMsg })
         .eq("id", row.id);
+      results.push({ id: row.id, to: row.to_email, subject: row.subject, updateError: errMsg });
     }
   }
 
-  return NextResponse.json({ sent, failed, total: pending.length });
+  return NextResponse.json({ sent, failed, total: pending.length, results });
 }
