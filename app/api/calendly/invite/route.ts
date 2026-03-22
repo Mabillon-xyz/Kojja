@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
       ev?.hangoutLink ??
       ev?.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ??
       null;
+    console.log("[invite] hangoutLink:", ev?.hangoutLink, "meetLink:", meetLink);
 
     // Create CRM lead
     const nameParts = name.trim().split(' ');
@@ -127,7 +128,10 @@ export async function POST(req: NextRequest) {
       const transporter = getTransporter();
 
       // Email to lead
-      const leadBody = `Bonjour ${name},\n\nVotre discovery call de 30 minutes avec Clément Guiraud est confirmé.\n\n📅 ${dateFR} à ${timeFR} (heure de Paris)\n🎥 Rejoindre le Meet : ${meetLink ?? "(lien partagé avant le call)"}\n\nÀ très vite,\nClément`;
+      const meetLine = meetLink
+        ? `Rejoindre Google Meet :\n${meetLink}`
+        : "(Le lien Google Meet sera partagé avant le call)";
+      const leadBody = `Bonjour ${name},\n\nVotre discovery call de 30 minutes avec Clément Guiraud est confirmé.\n\n📅 ${dateFR} à ${timeFR} (heure de Paris)\n\n${meetLine}\n\nÀ très vite,\nClément`;
       // Email to organizer
       const orgBody = `Nouveau call réservé — ${name} (${email})\n\n📅 ${dateFR} à ${timeFR}\n📧 ${email}${meetLink ? `\n🎥 ${meetLink}` : ""}${ev?.htmlLink ? `\n📆 ${ev.htmlLink}` : ""}`;
 
