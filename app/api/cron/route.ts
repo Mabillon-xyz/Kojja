@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { logEmail } from "@/lib/email-log";
 
+export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 function getSupabase() {
