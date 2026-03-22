@@ -24,17 +24,71 @@ export async function POST(req: NextRequest) {
   const workflow = (body.workflow as string) ?? null;
   const leads = Array.isArray(body.leads) ? body.leads : [];
 
-  const { error } = await supabase.from("webhook_events").insert({
+  // Log the event
+  await supabase.from("webhook_events").insert({
     source,
     workflow,
     leads_count: leads.length,
     payload: body,
   });
 
-  if (error) {
-    console.error("[webhook/n8n] insert error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  // Upsert leads by email
+  const today = new Date().toISOString().split("T")[0];
+  const interactionNote = `[${today}] Contacted via ${source}${workflow ? ` — ${workflow}` : ""}`;
+
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const lead of leads) {
+    const raw = lead as Record<string, unknown>;
+    const email = (raw.email as string | undefined)?.toLowerCase().trim();
+
+    if (!email) {
+      skipped++;
+      continue;
+    }
+
+    // Check if lead already exists
+    const { data: existing } = await supabase
+      .from("leads")
+      .select("id, notes, linkedin_url")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existing) {
+      // Append to notes, update linkedin_url if not yet set
+      const updatedNotes = existing.notes
+        ? `${existing.notes}\n${interactionNote}`
+        : interactionNote;
+
+      await supabase
+        .from("leads")
+        .update({
+          notes: updatedNotes,
+          ...(!existing.linkedin_url && raw.linkedinUrl
+            ? { linkedin_url: raw.linkedinUrl as string }
+            : {}),
+        })
+        .eq("id", existing.id);
+
+      updated++;
+    } else {
+      // Create new lead
+      await supabase.from("leads").insert({
+        first_name: (raw.firstName as string) ?? "",
+        last_name: (raw.lastName as string) ?? "",
+        email,
+        company_name: (raw.companyName as string) ?? null,
+        linkedin_url: (raw.linkedinUrl as string) ?? null,
+        stage: "call_scheduled",
+        notes: interactionNote,
+        call_booked_at: new Date().toISOString(),
+      });
+
+      created++;
+    }
   }
 
-  return NextResponse.json({ ok: true, leads_count: leads.length });
+  return NextResponse.json({ ok: true, created, updated, skipped });
 }
