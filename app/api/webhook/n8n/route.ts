@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   // Verify secret
   const secret = req.headers.get("x-webhook-secret");
-  if (!process.env.N8N_Webhook_Secret || secret !== process.env.N8N_Webhook_Secret) {
+  if (!process.env.N8N_WEBHOOK_SECRET || secret !== process.env.N8N_WEBHOOK_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
