@@ -56,6 +56,8 @@ export async function GET() {
   let failed = 0;
 
   for (const row of pending) {
+    // Extra guard: skip rows already sent (belt-and-suspenders)
+    if (row.sent_at !== null) continue;
     try {
       await transporter.sendMail({
         from,
