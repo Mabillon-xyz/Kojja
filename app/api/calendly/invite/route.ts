@@ -87,10 +87,11 @@ export async function POST(req: NextRequest) {
     if (!result.successful)
       return NextResponse.json({ error: result.error ?? "Failed to create event" }, { status: 500 });
 
-    console.log("[invite] full result.data:", JSON.stringify(result.data, null, 2));
+    const raw = result.data as Record<string, unknown>;
+    console.log("[invite] result.data keys:", Object.keys(raw ?? {}));
+    console.log("[invite] result.data sample:", JSON.stringify(raw).slice(0, 500));
 
     // Composio may nest the event under different keys depending on version
-    const raw = result.data as Record<string, unknown>;
     const ev = (raw?.event ?? raw?.data ?? raw) as {
       id?: string;
       htmlLink?: string;
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest) {
       ev?.hangoutLink ??
       ev?.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ??
       null;
-    console.log("[invite] ev keys:", Object.keys(raw ?? {}), "| hangoutLink:", ev?.hangoutLink, "| meetLink:", meetLink);
+    console.log("[invite] hangoutLink:", ev?.hangoutLink, "| meetLink:", meetLink);
 
     // Create CRM lead
     const nameParts = name.trim().split(' ');
