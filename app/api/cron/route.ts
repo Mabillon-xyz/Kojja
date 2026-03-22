@@ -32,26 +32,26 @@ export async function GET() {
 
   const supabase = getSupabase();
 
-  // Fetch all rows due (broad query — PostgREST null/bool filters unreliable on this table)
-  // Filter unsent rows in JS where === is guaranteed correct
-  const { data: allDue, error: fetchError } = await supabase
+  // Fetch ALL rows — zero PostgREST filters (all filtering/comparison done in JS)
+  const { data: allRows, error: fetchError } = await supabase
     .from("scheduled_emails")
-    .select("*")
-    .lte("send_at", new Date().toISOString())
-    .order("send_at", { ascending: true })
-    .limit(100);
+    .select("*");
 
   if (fetchError) {
     console.error("[cron] Failed to fetch scheduled emails:", fetchError.message);
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
-  // JS filter: sent_at must be null AND sent must not be true
-  const pending = (allDue ?? []).filter(
-    (row) => row.sent_at === null && row.sent !== true
-  );
+  const nowMs = Date.now();
+  const pending = (allRows ?? []).filter((row) => {
+    const sendAtMs = new Date(row.send_at).getTime();
+    const isDue = sendAtMs <= nowMs;
+    const isUnsent = row.sent_at === null && row.sent !== true;
+    return isDue && isUnsent;
+  });
 
-  console.log(`[cron] ${allDue?.length ?? 0} rows due, ${pending.length} unsent at`, new Date().toISOString());
+  console.log(`[cron] total=${allRows?.length ?? 0} rows, pending=${pending.length} at`, new Date().toISOString());
+  console.log("[cron] pending ids:", pending.map((r) => r.id).join(", ") || "none");
 
   if (pending.length === 0) {
     return NextResponse.json({ sent: 0, message: "No emails due" });
