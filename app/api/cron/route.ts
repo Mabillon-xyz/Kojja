@@ -32,22 +32,28 @@ export async function GET() {
 
   const supabase = getSupabase();
 
-  // Fetch pending emails due now — filter by sent_at IS NULL (canonical unsent marker)
-  const { data: pending, error: fetchError } = await supabase
+  // Fetch all rows due (broad query — PostgREST null/bool filters unreliable on this table)
+  // Filter unsent rows in JS where === is guaranteed correct
+  const { data: allDue, error: fetchError } = await supabase
     .from("scheduled_emails")
     .select("*")
     .lte("send_at", new Date().toISOString())
-    .is("sent_at", null)
-    .limit(50);
+    .order("send_at", { ascending: true })
+    .limit(100);
 
   if (fetchError) {
     console.error("[cron] Failed to fetch scheduled emails:", fetchError.message);
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
-  console.log(`[cron] ${pending?.length ?? 0} email(s) due at`, new Date().toISOString());
+  // JS filter: sent_at must be null AND sent must not be true
+  const pending = (allDue ?? []).filter(
+    (row) => row.sent_at === null && row.sent !== true
+  );
 
-  if (!pending || pending.length === 0) {
+  console.log(`[cron] ${allDue?.length ?? 0} rows due, ${pending.length} unsent at`, new Date().toISOString());
+
+  if (pending.length === 0) {
     return NextResponse.json({ sent: 0, message: "No emails due" });
   }
 
