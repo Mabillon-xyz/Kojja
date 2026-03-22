@@ -25,9 +25,6 @@ function formatDateFR(date: Date) {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 }
-function formatTimeFR(date: Date) {
-  return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-}
 
 function getSupabase() {
   return createClient(
@@ -65,7 +62,6 @@ export async function POST(req: NextRequest) {
   const startDT = new Date(`${date}T${time}:00${parisOffset}`);
   if (isNaN(startDT.getTime()))
     return NextResponse.json({ error: "Invalid date/time" }, { status: 400 });
-  const endDT = new Date(startDT.getTime() + 30 * 60 * 1000);
 
   // Local Paris time strings for Composio (it treats datetime as local, not UTC)
   const [th, tm] = time.split(":").map(Number);
