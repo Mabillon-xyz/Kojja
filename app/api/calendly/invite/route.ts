@@ -53,13 +53,15 @@ export async function POST(req: NextRequest) {
   if (!name || !email || !date || !time)
     return NextResponse.json({ error: "name, email, date and time are required" }, { status: 400 });
 
-  // Parse date+time as Europe/Paris local time (handles CET/CEST automatically)
-  const probe = new Date(`${date}T12:00:00Z`);
-  const parisHour = Number(
-    new Intl.DateTimeFormat("en", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }).format(probe)
-  );
-  const offsetHours = parisHour - 12; // 1 for CET, 2 for CEST
-  const parisOffset = `${offsetHours >= 0 ? "+" : "-"}${String(Math.abs(offsetHours)).padStart(2, "0")}:00`;
+  // Parse date+time as Europe/Paris local time (CET=+01:00, CEST=+02:00)
+  // DST: starts last Sunday of March, ends last Sunday of October
+  const [y, mo, d] = date.split("-").map(Number);
+  const lastSundayMarch = new Date(y, 2, 31);
+  while (lastSundayMarch.getDay() !== 0) lastSundayMarch.setDate(lastSundayMarch.getDate() - 1);
+  const lastSundayOctober = new Date(y, 9, 31);
+  while (lastSundayOctober.getDay() !== 0) lastSundayOctober.setDate(lastSundayOctober.getDate() - 1);
+  const day = new Date(y, mo - 1, d);
+  const parisOffset = day >= lastSundayMarch && day < lastSundayOctober ? "+02:00" : "+01:00";
   const startDT = new Date(`${date}T${time}:00${parisOffset}`);
   if (isNaN(startDT.getTime()))
     return NextResponse.json({ error: "Invalid date/time" }, { status: 400 });
