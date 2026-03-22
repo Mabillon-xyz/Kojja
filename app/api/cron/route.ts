@@ -30,33 +30,24 @@ export async function GET() {
   }
 
   const supabase = getSupabase();
-  const now = new Date().toISOString();
-
-  // Diagnostic: fetch without filters to verify RLS/auth and check what rows exist
-  const { data: allRows, error: allErr } = await supabase
-    .from("scheduled_emails")
-    .select("id, send_at, sent_at, error")
-    .limit(10);
-
-  console.log("[cron] diagnostic all rows:", JSON.stringify(allRows), allErr?.message);
 
   // Fetch pending emails due now
   const { data: pending, error: fetchError } = await supabase
     .from("scheduled_emails")
     .select("*")
-    .lte("send_at", now)
+    .lte("send_at", new Date().toISOString())
     .is("sent_at", null)
     .limit(50);
 
   if (fetchError) {
     console.error("[cron] Failed to fetch scheduled emails:", fetchError.message);
-    return NextResponse.json({ error: fetchError.message, debug: { now, allRows } }, { status: 500 });
+    return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
-  console.log(`[cron] ${pending?.length ?? 0} email(s) due at`, now);
+  console.log(`[cron] ${pending?.length ?? 0} email(s) due at`, new Date().toISOString());
 
   if (!pending || pending.length === 0) {
-    return NextResponse.json({ sent: 0, message: "No emails due", debug: { now, allRows } });
+    return NextResponse.json({ sent: 0, message: "No emails due" });
   }
 
   const transporter = getTransporter();
