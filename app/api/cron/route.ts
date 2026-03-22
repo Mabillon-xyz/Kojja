@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import { logEmail } from "@/lib/email-log";
 
 export const maxDuration = 60;
 
@@ -71,12 +72,14 @@ export async function GET() {
         .update({ sent_at: new Date().toISOString(), sent: true })
         .eq("id", row.id);
 
+      await logEmail({ to_email: row.to_email, subject: row.subject, status: "success", source: "cron" });
       sent++;
       console.log(`[cron] Sent email ${row.id} → ${row.to_email}`);
     } catch (e) {
       failed++;
       const errMsg = String(e);
       console.error(`[cron] Failed to send email ${row.id}:`, errMsg);
+      await logEmail({ to_email: row.to_email, subject: row.subject, status: "error", error: errMsg, source: "cron" });
 
       await supabase
         .from("scheduled_emails")

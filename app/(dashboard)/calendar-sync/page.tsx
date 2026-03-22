@@ -959,12 +959,15 @@ function EmailLogsTab() {
   const [filter, setFilter] = useState<"all" | "success" | "error">("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  useEffect(() => {
+  function loadLogs() {
+    setLoading(true);
     getEmailLogs().then((data) => {
       setLogs(data);
       setLoading(false);
     });
-  }, []);
+  }
+
+  useEffect(() => { loadLogs(); }, []);
 
   function relativeTime(iso: string) {
     const diff = Date.now() - new Date(iso).getTime();
@@ -1010,6 +1013,13 @@ function EmailLogsTab() {
               {f}
             </button>
           ))}
+          <button
+            onClick={loadLogs}
+            className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
         </div>
       </div>
 
