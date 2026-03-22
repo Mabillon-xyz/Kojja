@@ -32,12 +32,12 @@ export async function GET() {
 
   const supabase = getSupabase();
 
-  // Fetch pending emails due now (filter on `sent` bool — more reliable than IS NULL)
+  // Fetch pending emails due now — catch both sent=false and sent=null (belt-and-suspenders)
   const { data: pending, error: fetchError } = await supabase
     .from("scheduled_emails")
     .select("*")
     .lte("send_at", new Date().toISOString())
-    .eq("sent", false)
+    .or("sent.eq.false,sent.is.null")
     .limit(50);
 
   if (fetchError) {
@@ -45,19 +45,10 @@ export async function GET() {
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
-  // Diagnostic: show all rows due (ignoring sent filter) to debug sent=null issue
-  const { data: allDue } = await supabase
-    .from("scheduled_emails")
-    .select("id, send_at, sent, sent_at, to_email")
-    .lte("send_at", new Date().toISOString())
-    .order("send_at", { ascending: false })
-    .limit(20);
-  console.log("[cron] allDue (ignoring sent filter):", JSON.stringify(allDue));
-
   console.log(`[cron] ${pending?.length ?? 0} email(s) due at`, new Date().toISOString());
 
   if (!pending || pending.length === 0) {
-    return NextResponse.json({ sent: 0, message: "No emails due", debug_allDue: allDue });
+    return NextResponse.json({ sent: 0, message: "No emails due" });
   }
 
   const transporter = getTransporter();

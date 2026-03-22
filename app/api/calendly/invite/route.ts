@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
-import { triggerAutomations, buildEmailHtml } from "@/lib/automations";
+import { buildEmailHtml, interpolate } from "@/lib/automations";
 import { logEmail } from "@/lib/email-log";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
@@ -147,19 +147,33 @@ export async function POST(req: NextRequest) {
       ]);
     }
 
-    // Schedule reminder emails via automations
-    try {
-      await triggerAutomations({
-        name,
-        email,
-        date,
-        time,
-        meetLink,
-        calLink: ev?.htmlLink ?? null,
-        eventStartIso: startDT.toISOString(),
+    // Schedule reminders: 24h + 1h before (direct insert, no automations table dependency)
+    const now = new Date();
+    const reminderCtx = { name, email, date, time, meetLink, calLink: ev?.htmlLink ?? null, eventStartIso: startDT.toISOString() };
+    const reminderSteps = [
+      {
+        offsetMs: 24 * 60 * 60 * 1000,
+        subject: interpolate("Rappel : votre call demain à {{time}}", reminderCtx),
+        body: `Bonjour {{name}},\n\nRappel : votre discovery call avec Clément est demain.\n\n📅 {{date}} à {{time}} (heure de Paris)\n\n{{meetLink}}\n\nÀ demain,\nClément`,
+      },
+      {
+        offsetMs: 60 * 60 * 1000,
+        subject: interpolate("Dans 1 heure : votre call à {{time}}", reminderCtx),
+        body: `Bonjour {{name}},\n\nVotre discovery call commence dans 1 heure.\n\n📅 {{date}} à {{time}} (heure de Paris)\n\n{{meetLink}}\n\nÀ tout à l'heure,\nClément`,
+      },
+    ];
+    for (const step of reminderSteps) {
+      const sendAt = new Date(startDT.getTime() - step.offsetMs);
+      if (sendAt <= now) continue;
+      const { error: reminderError } = await getSupabase().from("scheduled_emails").insert({
+        send_at: sendAt.toISOString(),
+        to_email: email,
+        subject: step.subject,
+        body_html: buildEmailHtml(step.body, reminderCtx),
+        sent: false,
       });
-    } catch (e) {
-      console.error("[invite] triggerAutomations failed:", String(e));
+      if (reminderError) console.error("[invite] reminder insert failed:", reminderError.message);
+      else console.log("[invite] scheduled reminder for", email, "at", sendAt.toISOString());
     }
 
     return NextResponse.json({
