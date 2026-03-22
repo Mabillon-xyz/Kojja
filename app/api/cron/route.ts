@@ -54,7 +54,18 @@ export async function GET() {
   console.log("[cron] pending ids:", pending.map((r) => r.id).join(", ") || "none");
 
   if (pending.length === 0) {
-    return NextResponse.json({ sent: 0, message: "No emails due" });
+    // Debug: show raw rows to diagnose filter issue
+    const debugRows = (allRows ?? []).map((r) => ({
+      id: r.id,
+      send_at: r.send_at,
+      sent: r.sent,
+      sent_at: r.sent_at,
+      sendAtMs: new Date(r.send_at).getTime(),
+      nowMs,
+      isDue: new Date(r.send_at).getTime() <= nowMs,
+      isUnsent: r.sent_at === null && r.sent !== true,
+    }));
+    return NextResponse.json({ sent: 0, message: "No emails due", totalRows: allRows?.length, debugRows });
   }
 
   const transporter = getTransporter();
