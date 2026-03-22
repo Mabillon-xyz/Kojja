@@ -45,10 +45,18 @@ export async function GET() {
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
+  // Diagnostic: show all rows due (ignoring sent filter) to debug sent=null issue
+  const { data: allDue } = await supabase
+    .from("scheduled_emails")
+    .select("id, send_at, sent, sent_at, to_email")
+    .lte("send_at", new Date().toISOString())
+    .limit(20);
+  console.log("[cron] allDue (ignoring sent filter):", JSON.stringify(allDue));
+
   console.log(`[cron] ${pending?.length ?? 0} email(s) due at`, new Date().toISOString());
 
   if (!pending || pending.length === 0) {
-    return NextResponse.json({ sent: 0, message: "No emails due" });
+    return NextResponse.json({ sent: 0, message: "No emails due", debug_allDue: allDue });
   }
 
   const transporter = getTransporter();
