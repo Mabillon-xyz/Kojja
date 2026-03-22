@@ -88,22 +88,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: result.error ?? "Failed to create event" }, { status: 500 });
 
     const raw = result.data as Record<string, unknown>;
-    console.log("[invite] result.data keys:", Object.keys(raw ?? {}));
-    console.log("[invite] result.data sample:", JSON.stringify(raw).slice(0, 500));
-
-    // Composio may nest the event under different keys depending on version
-    const ev = (raw?.event ?? raw?.data ?? raw) as {
+    // Composio wraps the Google Calendar event under response_data
+    const ev = (raw?.response_data ?? raw) as {
       id?: string;
       htmlLink?: string;
       hangoutLink?: string;
-      conferenceData?: { entryPoints?: { uri: string; entryPointType: string }[] };
+      conferenceData?: {
+        conferenceId?: string;
+        entryPoints?: { uri: string; entryPointType: string }[];
+      };
     };
 
     const meetLink =
       ev?.hangoutLink ??
       ev?.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ??
-      null;
-    console.log("[invite] hangoutLink:", ev?.hangoutLink, "| meetLink:", meetLink);
+      (ev?.conferenceData?.conferenceId
+        ? `https://meet.google.com/${ev.conferenceData.conferenceId}`
+        : null);
+    console.log("[invite] meetLink:", meetLink);
 
     // Create CRM lead
     const nameParts = name.trim().split(' ');
