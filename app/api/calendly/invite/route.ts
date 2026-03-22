@@ -183,12 +183,12 @@ export async function POST(req: NextRequest) {
       ]);
     }
 
-    // Delete any existing unsent future reminders for this lead (handles re-bookings)
+    // Delete ALL scheduled_emails rows for this lead before inserting new reminders.
+    // Handles re-bookings and clears accumulated test rows. History lives in email_logs.
     const { error: deleteError } = await getSupabase()
       .from("scheduled_emails")
       .delete()
-      .eq("to_email", email)
-      .gt("send_at", new Date().toISOString());
+      .eq("to_email", email);
     if (deleteError) console.error("[invite] delete old reminders failed:", deleteError.message);
 
     // Schedule reminders: 24h + 1h before (direct insert, no automations table dependency)
