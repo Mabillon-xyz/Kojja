@@ -61,25 +61,13 @@ export async function GET() {
   console.log("[cron] pending ids:", pending.map((r) => r.id).join(", ") || "none");
 
   if (pending.length === 0) {
-    // Debug: show raw rows to diagnose filter issue
-    const debugRows = (allRows ?? []).map((r) => ({
-      id: r.id,
-      send_at: r.send_at,
-      sent: r.sent,
-      sent_at: r.sent_at,
-      sendAtMs: new Date(r.send_at).getTime(),
-      nowMs,
-      isDue: new Date(r.send_at).getTime() <= nowMs,
-      isUnsent: r.sent_at === null && r.sent !== true,
-    }));
-    return NextResponse.json({ sent: 0, message: "No emails due", totalRows: allRows?.length, debugRows });
+    return NextResponse.json({ sent: 0, message: "No emails due" });
   }
 
   const transporter = getTransporter();
   const from = `Clément Guiraud <${process.env.GMAIL_USER}>`;
   let sent = 0;
   let failed = 0;
-  const results: { id: string; to: string; subject: string; updateError?: string; verifyAfter?: unknown }[] = [];
 
   for (const row of pending) {
     try {
@@ -90,29 +78,12 @@ export async function GET() {
         html: row.body_html,
       });
 
-      const sentAt = new Date().toISOString();
       const { error: updateError } = await supabase
         .from("scheduled_emails")
-        .update({ sent_at: sentAt, sent: true })
+        .update({ sent_at: new Date().toISOString(), sent: true })
         .eq("id", row.id);
 
-      // Verify the update actually persisted
-      const { data: verify } = await supabase
-        .from("scheduled_emails")
-        .select("id, sent, sent_at")
-        .eq("id", row.id)
-        .single();
-
-      results.push({
-        id: row.id,
-        to: row.to_email,
-        subject: row.subject,
-        updateError: updateError?.message,
-        verifyAfter: verify,
-      });
-
       if (updateError) console.error(`[cron] Update failed for ${row.id}:`, updateError.message);
-      console.log(`[cron] Sent ${row.id}, verify:`, JSON.stringify(verify));
 
       await logEmail({ to_email: row.to_email, subject: row.subject, status: "success", source: "cron" });
       sent++;
@@ -125,9 +96,8 @@ export async function GET() {
         .from("scheduled_emails")
         .update({ error: errMsg })
         .eq("id", row.id);
-      results.push({ id: row.id, to: row.to_email, subject: row.subject, updateError: errMsg });
     }
   }
 
-  return NextResponse.json({ sent, failed, total: pending.length, results });
+  return NextResponse.json({ sent, failed, total: pending.length });
 }
