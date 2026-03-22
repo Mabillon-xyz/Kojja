@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     const { data: existingLead } = await getSupabase()
       .from('leads')
-      .select('id, notes')
+      .select('id, notes, first_name, last_name')
       .eq('email', normalizedEmail)
       .maybeSingle();
 
@@ -130,6 +130,9 @@ export async function POST(req: NextRequest) {
           call_booked_at: new Date().toISOString(),
           stage: 'call_scheduled',
           notes: updatedNotes,
+          // Only fill name if currently empty
+          ...(!existingLead.first_name ? { first_name } : {}),
+          ...(!existingLead.last_name ? { last_name } : {}),
           ...(phone ? { phone } : {}),
           ...(message ? { message } : {}),
         })
