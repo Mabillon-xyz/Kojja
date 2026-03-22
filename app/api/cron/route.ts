@@ -32,12 +32,12 @@ export async function GET() {
 
   const supabase = getSupabase();
 
-  // Fetch pending emails due now — catch both sent=false and sent=null (belt-and-suspenders)
+  // Fetch pending emails due now — filter by sent_at IS NULL (canonical unsent marker)
   const { data: pending, error: fetchError } = await supabase
     .from("scheduled_emails")
     .select("*")
     .lte("send_at", new Date().toISOString())
-    .not("sent", "is", true)
+    .is("sent_at", null)
     .limit(50);
 
   if (fetchError) {
