@@ -31,12 +31,12 @@ export async function GET() {
 
   const supabase = getSupabase();
 
-  // Fetch pending emails due now
+  // Fetch pending emails due now (filter on `sent` bool — more reliable than IS NULL)
   const { data: pending, error: fetchError } = await supabase
     .from("scheduled_emails")
     .select("*")
     .lte("send_at", new Date().toISOString())
-    .is("sent_at", null)
+    .eq("sent", false)
     .limit(50);
 
   if (fetchError) {
@@ -66,7 +66,7 @@ export async function GET() {
 
       await supabase
         .from("scheduled_emails")
-        .update({ sent_at: new Date().toISOString() })
+        .update({ sent_at: new Date().toISOString(), sent: true })
         .eq("id", row.id);
 
       sent++;
