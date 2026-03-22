@@ -53,7 +53,14 @@ export async function POST(req: NextRequest) {
   if (!name || !email || !date || !time)
     return NextResponse.json({ error: "name, email, date and time are required" }, { status: 400 });
 
-  const startDT = new Date(`${date}T${time}:00`);
+  // Parse date+time as Europe/Paris local time (handles CET/CEST automatically)
+  const probe = new Date(`${date}T12:00:00Z`);
+  const parisHour = Number(
+    new Intl.DateTimeFormat("en", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }).format(probe)
+  );
+  const offsetHours = parisHour - 12; // 1 for CET, 2 for CEST
+  const parisOffset = `${offsetHours >= 0 ? "+" : "-"}${String(Math.abs(offsetHours)).padStart(2, "0")}:00`;
+  const startDT = new Date(`${date}T${time}:00${parisOffset}`);
   if (isNaN(startDT.getTime()))
     return NextResponse.json({ error: "Invalid date/time" }, { status: 400 });
   const endDT = new Date(startDT.getTime() + 30 * 60 * 1000);
