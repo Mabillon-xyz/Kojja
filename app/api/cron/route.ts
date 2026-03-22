@@ -75,8 +75,25 @@ export async function GET() {
   let failed = 0;
 
   for (const row of pending) {
-    // Extra guard: skip rows already sent (belt-and-suspenders)
-    if (row.sent_at !== null) continue;
+    // Atomic claim: update FIRST with a guard on sent_at IS NULL.
+    // If another cron run already claimed this row, 0 rows are updated and we skip.
+    const sentAt = new Date().toISOString();
+    const { data: claimed, error: claimError } = await supabase
+      .from("scheduled_emails")
+      .update({ sent_at: sentAt, sent: true })
+      .eq("id", row.id)
+      .is("sent_at", null)
+      .select("id");
+
+    if (claimError) {
+      console.error(`[cron] Claim failed for ${row.id}:`, claimError.message);
+      continue;
+    }
+    if (!claimed?.length) {
+      console.log(`[cron] Row ${row.id} already claimed by another run, skipping`);
+      continue;
+    }
+
     try {
       await transporter.sendMail({
         from,
@@ -84,11 +101,6 @@ export async function GET() {
         subject: row.subject,
         html: row.body_html,
       });
-
-      await supabase
-        .from("scheduled_emails")
-        .update({ sent_at: new Date().toISOString(), sent: true })
-        .eq("id", row.id);
 
       await logEmail({ to_email: row.to_email, subject: row.subject, status: "success", source: "cron" });
       sent++;
@@ -98,10 +110,9 @@ export async function GET() {
       const errMsg = String(e);
       console.error(`[cron] Failed to send email ${row.id}:`, errMsg);
       await logEmail({ to_email: row.to_email, subject: row.subject, status: "error", error: errMsg, source: "cron" });
-
       await supabase
         .from("scheduled_emails")
-        .update({ error: errMsg })
+        .update({ error: errMsg, sent_at: null, sent: false })
         .eq("id", row.id);
     }
   }
