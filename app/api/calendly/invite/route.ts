@@ -107,22 +107,48 @@ export async function POST(req: NextRequest) {
         : null);
     console.log("[invite] meetLink:", meetLink);
 
-    // Create CRM lead
+    // Upsert CRM lead by email
     const nameParts = name.trim().split(' ');
     const first_name = nameParts[0] ?? name;
     const last_name = nameParts.slice(1).join(' ') || '';
-    const { error: leadError } = await getSupabase().from('leads').insert({
-      first_name,
-      last_name,
-      email: email.toLowerCase(),
-      call_date: startDT.toISOString(),
-      call_booked_at: new Date().toISOString(),
-      stage: 'call_scheduled',
-      notes: '',
-      phone: phone ?? null,
-      message: message ?? null,
-    });
-    if (leadError) console.error('Lead insert failed:', leadError.message);
+    const normalizedEmail = email.toLowerCase();
+
+    const { data: existingLead } = await getSupabase()
+      .from('leads')
+      .select('id, notes')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (existingLead) {
+      const today = new Date().toISOString().split('T')[0];
+      const appendNote = `[${today}] New call booked — ${startDT.toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' })}`;
+      const updatedNotes = existingLead.notes ? `${existingLead.notes}\n${appendNote}` : appendNote;
+      const { error: updateError } = await getSupabase()
+        .from('leads')
+        .update({
+          call_date: startDT.toISOString(),
+          call_booked_at: new Date().toISOString(),
+          stage: 'call_scheduled',
+          notes: updatedNotes,
+          ...(phone ? { phone } : {}),
+          ...(message ? { message } : {}),
+        })
+        .eq('id', existingLead.id);
+      if (updateError) console.error('Lead update failed:', updateError.message);
+    } else {
+      const { error: insertError } = await getSupabase().from('leads').insert({
+        first_name,
+        last_name,
+        email: normalizedEmail,
+        call_date: startDT.toISOString(),
+        call_booked_at: new Date().toISOString(),
+        stage: 'call_scheduled',
+        notes: '',
+        phone: phone ?? null,
+        message: message ?? null,
+      });
+      if (insertError) console.error('Lead insert failed:', insertError.message);
+    }
 
     // Send guaranteed confirmation emails (always fires, regardless of automations)
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
