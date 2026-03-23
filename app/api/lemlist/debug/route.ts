@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { Composio } from "@composio/core";
 import { getAccount } from "@/lib/lemlist-accounts";
 
-const CAMPAIGN_ID = process.env.LEMLIST_CAMPAIGN_ID ?? "cam_JC7mjRSoLg4MACxR6";
-
 let composioClient: Composio | null = null;
 function getComposio() {
   if (!composioClient) composioClient = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
@@ -15,28 +13,36 @@ export async function GET(req: NextRequest) {
   const accountId = req.nextUrl.searchParams.get("account") ?? "clement";
   const account = getAccount(accountId);
 
-  // --- Option A: list available Lemlist actions in Composio ---
-  if (req.nextUrl.searchParams.get("list") === "1") {
-    const actions = await getComposio().tools.list({ apps: ["lemlist"], limit: 50 });
-    return NextResponse.json({ actions });
-  }
-
-  // --- Option B: try Composio Lemlist action with connected account ---
+  // --- Option A: try Composio with connected account ---
   if (req.nextUrl.searchParams.get("composio") === "1") {
-    const connectedAccountId = req.nextUrl.searchParams.get("connectedAccountId") ?? "ca_CyIWe9XIOGTM";
-    const campaignId = account?.campaignId() ?? CAMPAIGN_ID;
-    try {
-      const result = await getComposio().tools.execute("LEMLIST_LIST_LEADS_IN_A_CAMPAIGN", {
-        connectedAccountId,
-        arguments: { campaign_id: campaignId },
-      });
-      return NextResponse.json({ result });
-    } catch (e) {
-      return NextResponse.json({ error: String(e) }, { status: 500 });
+    const connectedAccountId = req.nextUrl.searchParams.get("cid") ?? "ca_CyIWe9XIOGTM";
+    const campaignId = account?.campaignId() ?? "cam_QRLG9eJkNdBC2t8wT";
+
+    // Try several likely action names until one works
+    const actionNames = [
+      "LEMLIST_LIST_LEADS_IN_A_CAMPAIGN",
+      "LEMLIST_GET_CAMPAIGN_LEADS",
+      "LEMLIST_FETCH_LEADS",
+      "LEMLIST_LIST_LEADS",
+    ];
+
+    const results: Record<string, unknown> = {};
+    for (const action of actionNames) {
+      try {
+        const r = await getComposio().tools.execute(action, {
+          connectedAccountId,
+          arguments: { campaign_id: campaignId },
+        });
+        results[action] = r;
+        if ((r as { successful?: boolean }).successful) break;
+      } catch (e) {
+        results[action] = { error: String(e) };
+      }
     }
+    return NextResponse.json({ results });
   }
 
-  // --- Default: test direct Basic Auth ---
+  // --- Default: test direct Basic Auth + show env var state ---
   if (!account) return NextResponse.json({ error: "Unknown account" }, { status: 400 });
   const apiKey = account.apiKey();
   const campaignId = account.campaignId();
