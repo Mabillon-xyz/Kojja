@@ -1,9 +1,10 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { ChevronDown, ExternalLink, Zap, Send, Users } from "lucide-react";
+import { ChevronDown, ExternalLink, Zap, Send, Users, Mail, CheckCircle, XCircle } from "lucide-react";
 import FlowsDailyChart from "./FlowsDailyChart";
 import LemlistStats from "./LemlistStats";
+import type { EmailLog } from "@/app/actions/email-logs";
 
 type Lead = {
   _id?: string;
@@ -36,11 +37,11 @@ const lemlistAccounts = [
   { id: "sandro", label: "Sandro" },
 ];
 
-type Tab = "flows" | `lemlist-${string}`;
+type Tab = "flows" | "email-logs" | `lemlist-${string}`;
 
 type LeadsKpi = { count: number; updated_at: string } | null
 
-export default function FlowsList({ events, chartData = [], leadsYetToContact = {} }: { events: WebhookEvent[]; chartData?: DailyCount[]; leadsYetToContact?: Record<string, LeadsKpi> }) {
+export default function FlowsList({ events, chartData = [], leadsYetToContact = {}, emailLogs = [] }: { events: WebhookEvent[]; chartData?: DailyCount[]; leadsYetToContact?: Record<string, LeadsKpi>; emailLogs?: EmailLog[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("flows");
 
@@ -61,6 +62,19 @@ export default function FlowsList({ events, chartData = [], leadsYetToContact = 
               <Zap className="w-3.5 h-3.5 flex-shrink-0" />
               Flow Runs
               {tab === "flows" && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500" />}
+            </button>
+
+            <button
+              onClick={() => setTab("email-logs")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all text-left ${
+                tab === "email-logs"
+                  ? "bg-blue-50 text-blue-700 font-semibold"
+                  : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800"
+              }`}
+            >
+              <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+              Email Logs
+              {tab === "email-logs" && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500" />}
             </button>
 
             <div className="pt-2 pb-1 px-3">
@@ -123,6 +137,52 @@ export default function FlowsList({ events, chartData = [], leadsYetToContact = 
         })()}
 
         {tab.startsWith("lemlist-") && <LemlistStats account={tab.replace("lemlist-", "")} />}
+
+        {tab === "email-logs" && (
+          <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-sm overflow-x-auto">
+            <table className="w-full text-sm min-w-[600px]">
+              <thead>
+                <tr className="border-b border-neutral-200 bg-neutral-50">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider w-8" />
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">To</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">Subject</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">Source</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">Sent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emailLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-20 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <Mail className="w-8 h-8 text-neutral-200" />
+                        <p className="text-sm font-medium text-neutral-400">No email logs yet</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  emailLogs.map((log) => (
+                    <tr key={log.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors">
+                      <td className="pl-5 py-3.5">
+                        {log.status === "success"
+                          ? <CheckCircle className="w-4 h-4 text-emerald-500" />
+                          : <XCircle className="w-4 h-4 text-red-400" />
+                        }
+                      </td>
+                      <td className="px-5 py-3.5 text-neutral-700 font-medium">{log.to_email}</td>
+                      <td className="px-5 py-3.5 text-neutral-500 max-w-xs truncate">
+                        {log.subject}
+                        {log.error && <span className="block text-xs text-red-400 mt-0.5 truncate">{log.error}</span>}
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-neutral-400">{log.source ?? "—"}</td>
+                      <td className="px-5 py-3.5 text-xs text-neutral-400">{fmt(log.sent_at)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {tab === "flows" && (
           <>
