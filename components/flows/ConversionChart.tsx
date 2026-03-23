@@ -20,7 +20,7 @@ export default function ConversionChart({ snapshots }: { snapshots: Snapshot[] }
   if (snapshots.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-neutral-200 shadow-sm px-6 py-10 text-center">
-        <p className="text-sm text-neutral-400">No history yet — click "Sync CRM" to record the first data point.</p>
+        <p className="text-sm text-neutral-400">No history yet — click &ldquo;Sync CRM&rdquo; to record the first data point.</p>
       </div>
     );
   }
