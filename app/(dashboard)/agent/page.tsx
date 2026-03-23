@@ -4,9 +4,27 @@ import { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Loader2, ChevronDown } from 'lucide-react'
 
 const MODELS = [
-  { id: 'claude-sonnet-4-6', label: 'Sonnet 4.6', description: 'Fast · Smart' },
-  { id: 'claude-opus-4-6', label: 'Opus 4.6', description: 'Most capable' },
-  { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', description: 'Fastest' },
+  {
+    id: 'claude-sonnet-4-6',
+    label: 'Sonnet 4.6',
+    speed:  '⭐⭐⭐⭐',
+    depth:  '⭐⭐⭐⭐',
+    cost:   '⭐⭐⭐',
+  },
+  {
+    id: 'claude-opus-4-6',
+    label: 'Opus 4.6',
+    speed:  '⭐⭐',
+    depth:  '⭐⭐⭐⭐⭐',
+    cost:   '⭐⭐⭐⭐⭐',
+  },
+  {
+    id: 'claude-haiku-4-5-20251001',
+    label: 'Haiku 4.5',
+    speed:  '⭐⭐⭐⭐⭐',
+    depth:  '⭐⭐',
+    cost:   '⭐',
+  },
 ]
 
 type Message = { role: 'user' | 'assistant'; content: string }
@@ -108,26 +126,38 @@ export default function AgentPage() {
             className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border border-neutral-200 hover:border-neutral-300 transition-colors text-neutral-700"
           >
             <span className="font-medium">{selectedModel.label}</span>
-            <span className="text-neutral-400 text-xs">{selectedModel.description}</span>
             <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
           </button>
 
           {modelOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setModelOpen(false)} />
-              <div className="absolute right-0 top-10 z-20 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden w-52">
+              <div className="absolute right-0 top-10 z-20 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden w-64">
                 {MODELS.map((m) => (
                   <button
                     key={m.id}
                     onClick={() => { setModel(m.id); setModelOpen(false) }}
-                    className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
+                    className={`w-full flex flex-col gap-1.5 px-4 py-3 text-sm transition-colors text-left ${
                       m.id === model
                         ? 'bg-blue-50 text-blue-700'
                         : 'text-neutral-700 hover:bg-neutral-50'
                     }`}
                   >
-                    <span className="font-medium">{m.label}</span>
-                    <span className="text-xs text-neutral-400">{m.description}</span>
+                    <span className="font-semibold">{m.label}</span>
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-neutral-400 w-20">Speed</span>
+                        <span className="text-xs leading-none">{m.speed}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-neutral-400 w-20">Depth</span>
+                        <span className="text-xs leading-none">{m.depth}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-neutral-400 w-20">Cost</span>
+                        <span className="text-xs leading-none">{m.cost}</span>
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
