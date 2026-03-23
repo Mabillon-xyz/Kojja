@@ -11,7 +11,7 @@ function getSupabase() {
 }
 
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
-const USER_ID = "pg-test-de8a1257-28de-42e5-9d1d-edc298569d44";
+const USER_ID = "pg-test-aa13515c-f26c-44f3-aa7a-9d87bab3072a";
 
 let composioClient: Composio | null = null;
 function getComposio() {
