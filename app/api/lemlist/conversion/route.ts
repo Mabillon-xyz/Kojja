@@ -24,6 +24,54 @@ export type ConversionData = {
   conversionRate: string;
 };
 
+/** Parse a CSV string into LemlistLead objects, handling quoted fields. */
+function parseCsv(text: string): LemlistLead[] {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+
+  // Parse a single CSV line respecting double-quoted fields
+  function splitLine(line: string): string[] {
+    const fields: string[] = [];
+    let cur = "";
+    let inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuote && line[i + 1] === '"') { cur += '"'; i++; }
+        else inQuote = !inQuote;
+      } else if (ch === "," && !inQuote) {
+        fields.push(cur); cur = "";
+      } else {
+        cur += ch;
+      }
+    }
+    fields.push(cur);
+    return fields;
+  }
+
+  const headers = splitLine(lines[0]).map((h) => h.toLowerCase().trim());
+
+  // Map common Lemlist CSV column name variants
+  const col = (row: string[], ...keys: string[]) => {
+    for (const k of keys) {
+      const idx = headers.indexOf(k);
+      if (idx !== -1) return row[idx]?.trim() || undefined;
+    }
+    return undefined;
+  };
+
+  return lines.slice(1).map((line) => {
+    const row = splitLine(line);
+    return {
+      email: col(row, "email"),
+      firstName: col(row, "firstname", "first_name", "first name"),
+      lastName: col(row, "lastname", "last_name", "last name"),
+      companyName: col(row, "companyname", "company_name", "company"),
+      linkedinUrl: col(row, "linkedinurl", "linkedin_url", "linkedin"),
+    };
+  }).filter((l) => l.email);  // drop rows with no email
+}
+
 export async function GET() {
   if (!process.env.LEMLIST_API_KEY) {
     return NextResponse.json({ error: "LEMLIST_API_KEY not configured" }, { status: 500 });
@@ -50,23 +98,28 @@ export async function GET() {
     );
   }
 
-  // Parse safely — endpoint may return empty body or non-JSON (e.g. CSV)
-  let raw: unknown = [];
+  // Parse response — may be JSON or CSV
+  let lemlistLeads: LemlistLead[] = [];
+
   if (bodyText.trim()) {
-    try {
-      raw = JSON.parse(bodyText);
-    } catch {
-      return NextResponse.json(
-        { error: "Lemlist returned non-JSON response", detail: bodyText.slice(0, 300) },
-        { status: 502 }
-      );
+    const contentType = lemlistRes.headers.get("content-type") ?? "";
+    const looksLikeJson = bodyText.trimStart().startsWith("[") || bodyText.trimStart().startsWith("{");
+
+    if (looksLikeJson && !contentType.includes("text/csv")) {
+      try {
+        const raw = JSON.parse(bodyText);
+        lemlistLeads = Array.isArray(raw) ? raw : (raw.leads ?? []);
+      } catch {
+        return NextResponse.json(
+          { error: "Lemlist returned non-JSON response", detail: bodyText.slice(0, 300) },
+          { status: 502 }
+        );
+      }
+    } else {
+      // Parse CSV — map column names case-insensitively
+      lemlistLeads = parseCsv(bodyText);
     }
   }
-
-  // The endpoint may return an array or { leads: [...] }
-  const lemlistLeads: LemlistLead[] = Array.isArray(raw)
-    ? (raw as LemlistLead[])
-    : ((raw as { leads?: LemlistLead[] }).leads ?? []);
 
   // 2. Fetch CRM leads (email, linkedin_url, stage only)
   const supabase = await createClient();

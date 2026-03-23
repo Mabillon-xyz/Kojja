@@ -89,10 +89,14 @@ export default function LemlistStats() {
       const [statsData, convData] = await Promise.all([parseJson(statsRes), parseJson(convRes)]);
 
       if (!statsRes.ok) {
-        throw new Error(statsData?.error ?? `Stats error ${statsRes.status}`);
+        const msg = statsData?.error ?? `Stats error ${statsRes.status}`;
+        const detail = statsData?.detail ? ` — ${statsData.detail}` : "";
+        throw new Error(msg + detail);
       }
       if (!convRes.ok) {
-        throw new Error(convData?.error ?? `Conversion error ${convRes.status}`);
+        const msg = convData?.error ?? `Conversion error ${convRes.status}`;
+        const detail = convData?.detail ? ` — ${convData.detail}` : "";
+        throw new Error(msg + detail);
       }
       setData(statsData);
       setConv(convData);
