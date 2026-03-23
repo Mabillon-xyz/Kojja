@@ -30,28 +30,34 @@ export async function GET() {
   }
 
   // 1. Fetch leads from Lemlist campaign export
+  // v1 API uses HTTP Basic Auth: any username, API key as password
+  const basicAuth = Buffer.from(`anystring:${process.env.LEMLIST_API_KEY}`).toString("base64");
   const lemlistRes = await fetch(
-    `https://api.lemlist.com/api/campaigns/${CAMPAIGN_ID}/export/leads?access_token=${process.env.LEMLIST_API_KEY}`,
-    { cache: "no-store", headers: { Accept: "application/json" } }
+    `https://api.lemlist.com/api/campaigns/${CAMPAIGN_ID}/export/leads`,
+    {
+      cache: "no-store",
+      headers: { Accept: "application/json", Authorization: `Basic ${basicAuth}` },
+    }
   );
 
+  const bodyText = await lemlistRes.text();
+  console.log("[lemlist/conversion] status:", lemlistRes.status, "body[:100]:", bodyText.slice(0, 100));
+
   if (!lemlistRes.ok) {
-    const text = await lemlistRes.text();
     return NextResponse.json(
-      { error: `Lemlist API error ${lemlistRes.status}`, detail: text },
+      { error: `Lemlist API error ${lemlistRes.status}`, detail: bodyText.slice(0, 300) },
       { status: lemlistRes.status }
     );
   }
 
-  // Parse safely — endpoint may return empty body or non-JSON
-  const bodyText = await lemlistRes.text();
+  // Parse safely — endpoint may return empty body or non-JSON (e.g. CSV)
   let raw: unknown = [];
   if (bodyText.trim()) {
     try {
       raw = JSON.parse(bodyText);
     } catch {
       return NextResponse.json(
-        { error: "Lemlist returned unexpected response", detail: bodyText.slice(0, 200) },
+        { error: "Lemlist returned non-JSON response", detail: bodyText.slice(0, 300) },
         { status: 502 }
       );
     }

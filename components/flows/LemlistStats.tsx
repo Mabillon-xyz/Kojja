@@ -116,8 +116,9 @@ export default function LemlistStats() {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-100 rounded-xl px-5 py-4 text-sm text-red-600">
-        {error}
+      <div className="bg-red-50 border border-red-100 rounded-xl px-5 py-4 text-sm text-red-600 space-y-1">
+        <p className="font-semibold">{error.split(":")[0]}</p>
+        <p className="font-mono text-xs break-all opacity-80">{error}</p>
       </div>
     );
   }
