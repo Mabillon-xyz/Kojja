@@ -22,11 +22,17 @@ function formatDateFR(dateStr: string, time: string): string {
 }
 
 export default function BookPage() {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const [today, setToday] = useState(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  })
 
   const [step, setStep] = useState<Step>('date')
-  const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+  const [month, setMonth] = useState(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), 1)
+  })
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [slots, setSlots] = useState<string[]>([])
@@ -38,6 +44,15 @@ export default function BookPage() {
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  // Fix SSR timezone mismatch: server renders in UTC, browser uses local time.
+  // Force today/month to correct client-side values after hydration.
+  useEffect(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    setToday(d)
+    setMonth(new Date(d.getFullYear(), d.getMonth(), 1))
+  }, [])
 
   useEffect(() => {
     if (!selectedDate) return
