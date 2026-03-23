@@ -38,9 +38,9 @@ const lemlistAccounts = [
 
 type Tab = "flows" | `lemlist-${string}`;
 
-type LeadsYetToContact = { count: number; updated_at: string } | null
+type LeadsKpi = { count: number; updated_at: string } | null
 
-export default function FlowsList({ events, chartData = [], leadsYetToContact = null }: { events: WebhookEvent[]; chartData?: DailyCount[]; leadsYetToContact?: LeadsYetToContact }) {
+export default function FlowsList({ events, chartData = [], leadsYetToContact = {} }: { events: WebhookEvent[]; chartData?: DailyCount[]; leadsYetToContact?: Record<string, LeadsKpi> }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("flows");
 
@@ -100,22 +100,27 @@ export default function FlowsList({ events, chartData = [], leadsYetToContact = 
           </div>
         </div>
 
-        {tab === "lemlist-clement" && leadsYetToContact && (
-          <div className="mb-6">
-            <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm inline-flex gap-4 items-start min-w-[220px]">
-              <div className="p-2 rounded-lg bg-blue-100">
-                <Users className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Sales Nav — remaining</p>
-                <p className="text-3xl font-bold text-neutral-900">{leadsYetToContact.count.toLocaleString("en-GB")}</p>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Updated {new Date(leadsYetToContact.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                </p>
+        {tab.startsWith("lemlist-") && (() => {
+          const accountId = tab.replace("lemlist-", "")
+          const kpi = leadsYetToContact[accountId]
+          if (!kpi) return null
+          return (
+            <div className="mb-6">
+              <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm inline-flex gap-4 items-start min-w-[220px]">
+                <div className="p-2 rounded-lg bg-blue-100">
+                  <Users className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Sales Nav — remaining</p>
+                  <p className="text-3xl font-bold text-neutral-900">{kpi.count.toLocaleString("en-GB")}</p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    Updated {new Date(kpi.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {tab.startsWith("lemlist-") && <LemlistStats account={tab.replace("lemlist-", "")} />}
 

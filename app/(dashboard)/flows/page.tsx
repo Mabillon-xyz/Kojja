@@ -4,7 +4,7 @@ import FlowsList, { type WebhookEvent, type DailyCount } from '@/components/flow
 export default async function FlowsPage() {
   const supabase = await createClient()
 
-  const [{ data }, { data: allRaw }, { data: kpiClement }] = await Promise.all([
+  const [{ data }, { data: allRaw }, { data: kpiClement }, { data: kpiSandro }] = await Promise.all([
     supabase
       .from('webhook_events')
       .select('id, created_at, source, workflow, leads_count, payload')
@@ -19,9 +19,18 @@ export default async function FlowsPage() {
       .select('value')
       .eq('key', 'leads_yet_to_contact_clement')
       .maybeSingle(),
+    supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'leads_yet_to_contact_sandro')
+      .maybeSingle(),
   ])
 
-  const leadsYetToContact = kpiClement?.value as { count: number; updated_at: string } | null
+  type LeadsKpi = { count: number; updated_at: string } | null
+  const leadsYetToContact: Record<string, LeadsKpi> = {
+    clement: kpiClement?.value as LeadsKpi ?? null,
+    sandro:  kpiSandro?.value  as LeadsKpi ?? null,
+  }
 
   // Aggregate by day
   const byDay: Record<string, number> = {}
@@ -43,4 +52,5 @@ export default async function FlowsPage() {
   }
 
   return <FlowsList events={(data ?? []) as WebhookEvent[]} chartData={chartData} leadsYetToContact={leadsYetToContact} />
+
 }
