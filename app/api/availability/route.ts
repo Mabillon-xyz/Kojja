@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
       const slotStart = sh * 60 + sm;
       const slotEnd = slotStart + SLOT_DURATION;
 
-      if (date === todayParis && slotStart <= nowParisMins + 60) return false;
+      if (date === todayParis && slotStart < nowParisMins) return false;
 
       return !busyRanges.some(({ startMins, endMins }) =>
         slotStart < endMins && slotEnd > startMins
