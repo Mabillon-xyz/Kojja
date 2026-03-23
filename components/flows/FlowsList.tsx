@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { ChevronDown, ExternalLink, Zap, Send } from "lucide-react";
+import { ChevronDown, ExternalLink, Zap, Send, Users } from "lucide-react";
 import FlowsDailyChart from "./FlowsDailyChart";
 import LemlistStats from "./LemlistStats";
 
@@ -38,7 +38,9 @@ const lemlistAccounts = [
 
 type Tab = "flows" | `lemlist-${string}`;
 
-export default function FlowsList({ events, chartData = [] }: { events: WebhookEvent[]; chartData?: DailyCount[] }) {
+type LeadsYetToContact = { count: number; updated_at: string } | null
+
+export default function FlowsList({ events, chartData = [], leadsYetToContact = null }: { events: WebhookEvent[]; chartData?: DailyCount[]; leadsYetToContact?: LeadsYetToContact }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("flows");
 
@@ -97,6 +99,23 @@ export default function FlowsList({ events, chartData = [] }: { events: WebhookE
             Live
           </div>
         </div>
+
+        {tab === "lemlist-clement" && leadsYetToContact && (
+          <div className="mb-6">
+            <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm inline-flex gap-4 items-start min-w-[220px]">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <Users className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Sales Nav — remaining</p>
+                <p className="text-3xl font-bold text-neutral-900">{leadsYetToContact.count.toLocaleString("en-GB")}</p>
+                <p className="text-xs text-neutral-400 mt-1">
+                  Updated {new Date(leadsYetToContact.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {tab.startsWith("lemlist-") && <LemlistStats account={tab.replace("lemlist-", "")} />}
 

@@ -32,6 +32,22 @@ export async function POST(req: NextRequest) {
     payload: body,
   });
 
+  // Persist leads_yet_to_contact KPI if present
+  if (typeof body.leads_yet_to_contact === "number") {
+    const clientKey = ((body.client as string) ?? "unknown")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "_");
+    await supabase.from("settings").upsert(
+      {
+        key: `leads_yet_to_contact_${clientKey}`,
+        value: { count: body.leads_yet_to_contact, updated_at: new Date().toISOString() },
+      },
+      { onConflict: "key" }
+    );
+  }
+
   // Upsert leads by email
   const today = new Date().toISOString().split("T")[0];
   const interactionNote = `[${today}] Contacted via ${source}${workflow ? ` — ${workflow}` : ""}`;
