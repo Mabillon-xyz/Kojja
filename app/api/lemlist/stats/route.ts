@@ -20,12 +20,23 @@ export async function GET() {
     { next: { revalidate: 300 } }
   );
 
+  const bodyText = await res.text();
+
   if (!res.ok) {
-    const text = await res.text();
-    console.error("[lemlist] API error:", res.status, text);
-    return NextResponse.json({ error: `Lemlist API error ${res.status}`, detail: text }, { status: res.status });
+    console.error("[lemlist] API error:", res.status, bodyText);
+    return NextResponse.json({ error: `Lemlist API error ${res.status}`, detail: bodyText }, { status: res.status });
   }
 
-  const data = await res.json();
+  if (!bodyText.trim()) {
+    return NextResponse.json({ error: "Lemlist returned an empty response" }, { status: 502 });
+  }
+
+  let data: unknown;
+  try {
+    data = JSON.parse(bodyText);
+  } catch {
+    return NextResponse.json({ error: "Lemlist returned non-JSON response", detail: bodyText.slice(0, 200) }, { status: 502 });
+  }
+
   return NextResponse.json(data);
 }

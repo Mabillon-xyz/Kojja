@@ -79,7 +79,11 @@ export default function LemlistStats() {
       async function parseJson(res: Response) {
         const text = await res.text();
         if (!text.trim()) return null;
-        return JSON.parse(text);
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error(`Invalid JSON from ${res.url} (${res.status}): ${text.slice(0, 100)}`);
+        }
       }
 
       const [statsData, convData] = await Promise.all([parseJson(statsRes), parseJson(convRes)]);
