@@ -953,11 +953,14 @@ function AutomationsTab() {
 }
 
 // ── Email Logs Tab ─────────────────────────────────────────────
+const EMAIL_LOGS_PAGE_SIZE = 20;
+
 function EmailLogsTab() {
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "success" | "error">("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   function loadLogs() {
     setLoading(true);
@@ -968,6 +971,12 @@ function EmailLogsTab() {
   }
 
   useEffect(() => { loadLogs(); }, []);
+
+  function handleFilterChange(f: "all" | "success" | "error") {
+    setFilter(f);
+    setPage(1);
+    setExpanded(null);
+  }
 
   function relativeTime(iso: string) {
     const diff = Date.now() - new Date(iso).getTime();
@@ -982,6 +991,8 @@ function EmailLogsTab() {
 
   const filtered = filter === "all" ? logs : logs.filter((l) => l.status === filter);
   const errorCount = logs.filter((l) => l.status === "error").length;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / EMAIL_LOGS_PAGE_SIZE));
+  const paged = filtered.slice((page - 1) * EMAIL_LOGS_PAGE_SIZE, page * EMAIL_LOGS_PAGE_SIZE);
 
   return (
     <div className="max-w-4xl">
@@ -999,7 +1010,7 @@ function EmailLogsTab() {
           {(["all", "success", "error"] as const).map((f) => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => handleFilterChange(f)}
               className={`text-xs px-3 py-1.5 rounded-full border transition-colors capitalize ${
                 filter === f
                   ? f === "error"
@@ -1030,76 +1041,105 @@ function EmailLogsTab() {
           {filter === "all" ? "No emails logged yet." : `No ${filter} emails.`}
         </div>
       ) : (
-        <div className="border border-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">To</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Subject</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Source</th>
-                <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Sent</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((log) => (
-                <>
-                  <tr
-                    key={log.id}
-                    onClick={() => setExpanded(expanded === log.id ? null : log.id)}
-                    className="border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
-                  >
-                    <td className="px-4 py-3 text-foreground font-mono text-xs truncate max-w-[180px]">{log.to_email}</td>
-                    <td className="px-4 py-3 text-foreground truncate max-w-[220px]">{log.subject}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
-                        log.status === "success"
-                          ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
-                          : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${log.status === "success" ? "bg-green-500" : "bg-red-500"}`} />
-                        {log.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs capitalize">{log.source ?? "—"}</td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs text-right whitespace-nowrap">{relativeTime(log.sent_at)}</td>
-                  </tr>
-                  {expanded === log.id && (
-                    <tr key={`${log.id}-detail`} className="border-b border-border last:border-0 bg-muted/20">
-                      <td colSpan={5} className="px-4 py-3">
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">To</span>
-                            <p className="font-mono text-foreground mt-0.5">{log.to_email}</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Sent at</span>
-                            <p className="text-foreground mt-0.5">
-                              {new Date(log.sent_at).toLocaleString("en-GB", {
-                                day: "numeric", month: "short", year: "numeric",
-                                hour: "2-digit", minute: "2-digit",
-                              })}
-                            </p>
-                          </div>
-                          <div className="col-span-2">
-                            <span className="text-muted-foreground">Subject</span>
-                            <p className="text-foreground mt-0.5">{log.subject}</p>
-                          </div>
-                          {log.error && (
-                            <div className="col-span-2">
-                              <span className="text-muted-foreground">Error</span>
-                              <p className="font-mono text-red-600 dark:text-red-400 mt-0.5 whitespace-pre-wrap break-all">{log.error}</p>
-                            </div>
-                          )}
-                        </div>
+        <>
+          <div className="border border-border rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">To</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Subject</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Source</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Sent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.map((log) => (
+                  <>
+                    <tr
+                      key={log.id}
+                      onClick={() => setExpanded(expanded === log.id ? null : log.id)}
+                      className="border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                    >
+                      <td className="px-4 py-3 text-foreground font-mono text-xs truncate max-w-[180px]">{log.to_email}</td>
+                      <td className="px-4 py-3 text-foreground truncate max-w-[220px]">{log.subject}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                          log.status === "success"
+                            ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
+                            : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${log.status === "success" ? "bg-green-500" : "bg-red-500"}`} />
+                          {log.status}
+                        </span>
                       </td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs capitalize">{log.source ?? "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs text-right whitespace-nowrap">{relativeTime(log.sent_at)}</td>
                     </tr>
-                  )}
-                </>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    {expanded === log.id && (
+                      <tr key={`${log.id}-detail`} className="border-b border-border last:border-0 bg-muted/20">
+                        <td colSpan={5} className="px-4 py-3">
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                            <div>
+                              <span className="text-muted-foreground">To</span>
+                              <p className="font-mono text-foreground mt-0.5">{log.to_email}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Sent at</span>
+                              <p className="text-foreground mt-0.5">
+                                {new Date(log.sent_at).toLocaleString("en-GB", {
+                                  day: "numeric", month: "short", year: "numeric",
+                                  hour: "2-digit", minute: "2-digit",
+                                })}
+                              </p>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-muted-foreground">Subject</span>
+                              <p className="text-foreground mt-0.5">{log.subject}</p>
+                            </div>
+                            {log.error && (
+                              <div className="col-span-2">
+                                <span className="text-muted-foreground">Error</span>
+                                <p className="font-mono text-red-600 dark:text-red-400 mt-0.5 whitespace-pre-wrap break-all">{log.error}</p>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-xs text-muted-foreground">
+                {(page - 1) * EMAIL_LOGS_PAGE_SIZE + 1}–{Math.min(page * EMAIL_LOGS_PAGE_SIZE, filtered.length)} of {filtered.length}
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-xs text-muted-foreground px-2 min-w-[60px] text-center">
+                  Page {page} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

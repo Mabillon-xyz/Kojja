@@ -1,11 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import FlowsList, { type WebhookEvent, type DailyCount } from '@/components/flows/FlowsList'
-import { getEmailLogs, type EmailLog } from '@/app/actions/email-logs'
 
 export default async function FlowsPage() {
   const supabase = await createClient()
 
-  const [{ data }, { data: allRaw }, { data: kpiClement }, { data: kpiSandro }, emailLogs] = await Promise.all([
+  const [{ data }, { data: allRaw }, { data: kpiClement }, { data: kpiSandro }] = await Promise.all([
     supabase
       .from('webhook_events')
       .select('id, created_at, source, workflow, leads_count, payload')
@@ -25,7 +24,6 @@ export default async function FlowsPage() {
       .select('value')
       .eq('key', 'leads_yet_to_contact_sandro')
       .maybeSingle(),
-    getEmailLogs(),
   ])
 
   type LeadsKpi = { count: number; updated_at: string } | null
@@ -53,6 +51,6 @@ export default async function FlowsPage() {
     }
   }
 
-  return <FlowsList events={(data ?? []) as WebhookEvent[]} chartData={chartData} leadsYetToContact={leadsYetToContact} emailLogs={emailLogs as EmailLog[]} />
+  return <FlowsList events={(data ?? []) as WebhookEvent[]} chartData={chartData} leadsYetToContact={leadsYetToContact} />
 
 }
