@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getCachedConversion, syncLemlistConversion } from "@/lib/lemlist-sync";
+import { getAccount, type AccountId } from "@/lib/lemlist-accounts";
 
 export type LemlistLead = {
   email?: string;
@@ -22,36 +23,30 @@ export type ConversionData = {
   conversionRate: string;
 };
 
-/** Fast read — returns cached data (populated by cron or manual sync). */
-export async function GET() {
-  const cached = await getCachedConversion();
+const EMPTY: ConversionData & { updatedAt: null } = {
+  leads: [], total: 0, inCrm: 0, customers: 0, conversionRate: "0%", updatedAt: null,
+};
 
-  if (!cached) {
-    // No cache yet — return empty state, not an error
-    return NextResponse.json({
-      leads: [],
-      total: 0,
-      inCrm: 0,
-      customers: 0,
-      conversionRate: "0%",
-      updatedAt: null,
-    });
-  }
+/** Fast read — returns cached data. */
+export async function GET(req: NextRequest) {
+  const accountId = (req.nextUrl.searchParams.get("account") ?? "clement") as AccountId;
+  if (!getAccount(accountId)) return NextResponse.json({ error: "Unknown account" }, { status: 400 });
 
-  return NextResponse.json(cached);
+  const cached = await getCachedConversion(accountId);
+  return NextResponse.json(cached ?? EMPTY);
 }
 
-/** Slow write — re-fetches from Lemlist, rebuilds cache, returns fresh data. */
-export async function POST() {
-  if (!process.env.LEMLIST_API_KEY) {
-    return NextResponse.json({ error: "LEMLIST_API_KEY not configured" }, { status: 500 });
-  }
+/** Slow write — re-fetches from Lemlist, rebuilds cache. */
+export async function POST(req: NextRequest) {
+  const accountId = (req.nextUrl.searchParams.get("account") ?? "clement") as AccountId;
+  const account = getAccount(accountId);
+  if (!account) return NextResponse.json({ error: "Unknown account" }, { status: 400 });
+  if (!account.apiKey()) return NextResponse.json({ error: `API key not configured for ${accountId}` }, { status: 500 });
 
   try {
-    const result = await syncLemlistConversion();
+    const result = await syncLemlistConversion(accountId);
     return NextResponse.json(result);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: msg }, { status: 502 });
+    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 502 });
   }
 }

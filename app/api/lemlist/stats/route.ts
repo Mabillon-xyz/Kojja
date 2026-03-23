@@ -1,29 +1,28 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getAccount } from "@/lib/lemlist-accounts";
 
-const CAMPAIGN_ID = process.env.LEMLIST_CAMPAIGN_ID ?? "cam_JC7mjRSoLg4MACxR6";
+export async function GET(req: NextRequest) {
+  const accountId = req.nextUrl.searchParams.get("account") ?? "clement";
+  const account = getAccount(accountId);
+  if (!account) return NextResponse.json({ error: "Unknown account" }, { status: 400 });
 
-export async function GET() {
-  if (!process.env.LEMLIST_API_KEY) {
-    return NextResponse.json({ error: "LEMLIST_API_KEY not configured" }, { status: 500 });
-  }
+  const apiKey = account.apiKey();
+  if (!apiKey) return NextResponse.json({ error: `LEMLIST_API_KEY not configured for ${accountId}` }, { status: 500 });
 
+  const campaignId = account.campaignId();
   const startDate = "2020-01-01T00:00:00.000Z";
   const endDate = new Date().toISOString();
-  const params = new URLSearchParams({
-    access_token: process.env.LEMLIST_API_KEY,
-    startDate,
-    endDate,
-  });
+  const params = new URLSearchParams({ access_token: apiKey, startDate, endDate });
 
   const res = await fetch(
-    `https://api.lemlist.com/api/v2/campaigns/${CAMPAIGN_ID}/stats?${params}`,
+    `https://api.lemlist.com/api/v2/campaigns/${campaignId}/stats?${params}`,
     { next: { revalidate: 300 } }
   );
 
   const bodyText = await res.text();
 
   if (!res.ok) {
-    console.error("[lemlist] API error:", res.status, bodyText);
+    console.error("[lemlist/stats] API error:", res.status, bodyText);
     return NextResponse.json({ error: `Lemlist API error ${res.status}`, detail: bodyText }, { status: res.status });
   }
 

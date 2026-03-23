@@ -1,8 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { ConversionData, EnrichedLead, LemlistLead } from "@/app/api/lemlist/conversion/route";
-
-const CAMPAIGN_ID = process.env.LEMLIST_CAMPAIGN_ID ?? "cam_JC7mjRSoLg4MACxR6";
-const CACHE_KEY = "lemlist_conversion";
+import { getAccount, ALL_ACCOUNT_IDS, type AccountId } from "@/lib/lemlist-accounts";
 
 function getServiceClient() {
   return createClient(
@@ -12,15 +10,14 @@ function getServiceClient() {
   );
 }
 
-async function fetchAllLemlistLeads(): Promise<LemlistLead[]> {
-  const apiKey = process.env.LEMLIST_API_KEY!;
+async function fetchAllLemlistLeads(apiKey: string, campaignId: string): Promise<LemlistLead[]> {
   const basicAuth = Buffer.from(`anystring:${apiKey}`).toString("base64");
   const all: LemlistLead[] = [];
   let offset = 0;
   const limit = 100;
 
   while (true) {
-    const url = `https://api.lemlist.com/api/campaigns/${CAMPAIGN_ID}/leads?limit=${limit}&offset=${offset}`;
+    const url = `https://api.lemlist.com/api/campaigns/${campaignId}/leads?limit=${limit}&offset=${offset}`;
     const res = await fetch(url, {
       cache: "no-store",
       headers: { Authorization: `Basic ${basicAuth}` },
@@ -46,12 +43,19 @@ async function fetchAllLemlistLeads(): Promise<LemlistLead[]> {
   return all;
 }
 
-export async function syncLemlistConversion(): Promise<ConversionData & { updatedAt: string }> {
+export async function syncLemlistConversion(accountId: AccountId): Promise<ConversionData & { updatedAt: string }> {
+  const account = getAccount(accountId);
+  if (!account) throw new Error(`Unknown Lemlist account: ${accountId}`);
+
+  const apiKey = account.apiKey();
+  const campaignId = account.campaignId();
+  if (!apiKey) throw new Error(`API key not configured for account: ${accountId}`);
+
   const supabase = getServiceClient();
 
   // Fetch Lemlist leads + CRM leads in parallel
   const [lemlistLeads, { data: crmLeads, error }] = await Promise.all([
-    fetchAllLemlistLeads(),
+    fetchAllLemlistLeads(apiKey, campaignId),
     supabase.from("leads").select("email, linkedin_url, stage"),
   ]);
 
@@ -100,24 +104,38 @@ export async function syncLemlistConversion(): Promise<ConversionData & { update
   await Promise.all([
     supabase.from("campaign_snapshots").insert({
       snapshotted_at: updatedAt,
-      campaign_id: CAMPAIGN_ID,
+      campaign_id: campaignId,
       total_leads: total,
       booked_leads: inCrm,
       conversion_rate: total > 0 ? Math.round((inCrm / total) * 100 * 100) / 100 : 0,
       stage_breakdown: stageBreakdown,
     }),
-    supabase.from("app_cache").upsert({ key: CACHE_KEY, value: payload, updated_at: updatedAt }),
+    supabase.from("app_cache").upsert({ key: account.cacheKey, value: payload, updated_at: updatedAt }),
   ]);
 
   return payload;
 }
 
-export async function getCachedConversion(): Promise<(ConversionData & { updatedAt: string }) | null> {
+export async function syncAllAccounts() {
+  const results = await Promise.allSettled(
+    ALL_ACCOUNT_IDS.map((id) => syncLemlistConversion(id))
+  );
+  return ALL_ACCOUNT_IDS.map((id, i) => ({
+    account: id,
+    ok: results[i].status === "fulfilled",
+    error: results[i].status === "rejected" ? (results[i] as PromiseRejectedResult).reason?.message : undefined,
+  }));
+}
+
+export async function getCachedConversion(accountId: AccountId): Promise<(ConversionData & { updatedAt: string }) | null> {
+  const account = getAccount(accountId);
+  if (!account) return null;
+
   const supabase = getServiceClient();
   const { data } = await supabase
     .from("app_cache")
     .select("value")
-    .eq("key", CACHE_KEY)
+    .eq("key", account.cacheKey)
     .maybeSingle();
   return data?.value ?? null;
 }

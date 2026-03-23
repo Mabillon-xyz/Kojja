@@ -33,6 +33,7 @@ function fmt(iso: string) {
 
 const lemlistAccounts = [
   { id: "clement", label: "Clément" },
+  { id: "sandro", label: "Sandro" },
 ];
 
 type Tab = "flows" | `lemlist-${string}`;
@@ -97,7 +98,7 @@ export default function FlowsList({ events, chartData = [] }: { events: WebhookE
           </div>
         </div>
 
-        {tab.startsWith("lemlist-") && <LemlistStats />}
+        {tab.startsWith("lemlist-") && <LemlistStats account={tab.replace("lemlist-", "")} />}
 
         {tab === "flows" && (
           <>

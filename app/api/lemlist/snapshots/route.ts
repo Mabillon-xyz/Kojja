@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-
-const CAMPAIGN_ID = process.env.LEMLIST_CAMPAIGN_ID ?? "cam_JC7mjRSoLg4MACxR6";
+import { getAccount } from "@/lib/lemlist-accounts";
 
 export type Snapshot = {
   id: string;
@@ -18,7 +17,11 @@ export type Snapshot = {
   } | null;
 };
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const accountId = req.nextUrl.searchParams.get("account") ?? "clement";
+  const account = getAccount(accountId);
+  if (!account) return NextResponse.json({ error: "Unknown account" }, { status: 400 });
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -28,12 +31,10 @@ export async function GET() {
   const { data, error } = await supabase
     .from("campaign_snapshots")
     .select("id, snapshotted_at, total_leads, booked_leads, conversion_rate, stage_breakdown")
-    .eq("campaign_id", CAMPAIGN_ID)
+    .eq("campaign_id", account.campaignId())
     .order("snapshotted_at", { ascending: true });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json(data as Snapshot[]);
 }

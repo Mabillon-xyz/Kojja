@@ -72,7 +72,7 @@ async function parseJson(res: Response) {
   }
 }
 
-export default function LemlistStats() {
+export default function LemlistStats({ account = "clement" }: { account?: string }) {
   const [data, setData] = useState<LemlistStatsData | null>(null);
   const [conv, setConv] = useState<(ConversionData & { updatedAt?: string | null }) | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
@@ -81,15 +81,17 @@ export default function LemlistStats() {
   const [syncing, setSyncing] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
+  const q = `?account=${account}`;
+
   // Fast load — reads from cache
   async function load() {
     setLoading(true);
     setError(null);
     try {
       const [statsRes, convRes, snapshotsRes] = await Promise.all([
-        fetch("/api/lemlist/stats"),
-        fetch("/api/lemlist/conversion"),
-        fetch("/api/lemlist/snapshots"),
+        fetch(`/api/lemlist/stats${q}`),
+        fetch(`/api/lemlist/conversion${q}`),
+        fetch(`/api/lemlist/snapshots${q}`),
       ]);
 
       const [statsData, convData, snapshotsData] = await Promise.all([
@@ -123,12 +125,12 @@ export default function LemlistStats() {
     setSyncing(true);
     setError(null);
     try {
-      const res = await fetch("/api/lemlist/conversion", { method: "POST" });
+      const res = await fetch(`/api/lemlist/conversion${q}`, { method: "POST" });
       const d = await parseJson(res);
       if (!res.ok) throw new Error(d?.error ?? `Sync error ${res.status}`);
       setConv(d);
       // Refresh snapshot history after sync
-      const snapshotsRes = await fetch("/api/lemlist/snapshots");
+      const snapshotsRes = await fetch(`/api/lemlist/snapshots${q}`);
       const snapshotsData = await parseJson(snapshotsRes);
       setSnapshots(Array.isArray(snapshotsData) ? snapshotsData : []);
     } catch (e) {
@@ -138,7 +140,8 @@ export default function LemlistStats() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [account]);
 
   if (loading) {
     return (
