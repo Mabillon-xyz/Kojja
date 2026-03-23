@@ -232,6 +232,7 @@ Be concise, direct, and helpful. Answer in the same language as the user's messa
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   let currentMessages = [...messages] as Anthropic.MessageParam[]
+  let totalTokens = 0
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -242,6 +243,8 @@ Be concise, direct, and helpful. Answer in the same language as the user's messa
       tools: [WEB_SEARCH_TOOL, QUERY_DATABASE_TOOL],
       messages: currentMessages,
     })
+
+    totalTokens += (response.usage?.input_tokens ?? 0) + (response.usage?.output_tokens ?? 0)
 
     if (response.stop_reason !== 'tool_use') {
       const finalText = response.content
@@ -261,6 +264,8 @@ Be concise, direct, and helpful. Answer in the same language as the user's messa
           'Content-Type': 'text/plain; charset=utf-8',
           'Transfer-Encoding': 'chunked',
           'X-Accel-Buffering': 'no',
+          'X-Tokens-Used': String(totalTokens),
+          'Access-Control-Expose-Headers': 'X-Tokens-Used',
         },
       })
     }

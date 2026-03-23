@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Bot, User, Loader2, ChevronDown, Plus, Trash2, MessageSquare, PanelLeft, X, History, MessagesSquare } from 'lucide-react'
+import { Send, Bot, User, Loader2, ChevronDown, Plus, Trash2, MessageSquare, PanelLeft, X, Zap } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
@@ -34,76 +34,104 @@ const mdComponents: Components = {
 }
 
 const MODELS = [
-  {
-    id: 'claude-sonnet-4-6',
-    label: 'Sonnet 4.6',
-    speed: '⭐⭐⭐⭐',
-    depth: '⭐⭐⭐⭐',
-    cost:  '⭐⭐⭐',
-  },
-  {
-    id: 'claude-opus-4-6',
-    label: 'Opus 4.6',
-    speed: '⭐⭐',
-    depth: '⭐⭐⭐⭐⭐',
-    cost:  '⭐⭐⭐⭐⭐',
-  },
-  {
-    id: 'claude-haiku-4-5-20251001',
-    label: 'Haiku 4.5',
-    speed: '⭐⭐⭐⭐⭐',
-    depth: '⭐⭐',
-    cost:  '⭐',
-  },
+  { id: 'claude-sonnet-4-6',        label: 'Sonnet 4.6', speed: '⭐⭐⭐⭐',  depth: '⭐⭐⭐⭐',  cost: '⭐⭐⭐' },
+  { id: 'claude-opus-4-6',          label: 'Opus 4.6',   speed: '⭐⭐',      depth: '⭐⭐⭐⭐⭐', cost: '⭐⭐⭐⭐⭐' },
+  { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', speed: '⭐⭐⭐⭐⭐', depth: '⭐⭐',      cost: '⭐' },
 ]
 
-type Message = { role: 'user' | 'assistant'; content: string }
+type Message    = { role: 'user' | 'assistant'; content: string }
 type ConvSummary = { id: string; title: string; model: string; updated_at: string }
 
+// ─── Token tracking (localStorage, rolling 1h) ───────────────────────────────
+
+const TOKEN_KEY = 'koja_token_usage'
+
+function getHourlyTokens(): number {
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY)
+    if (!raw) return 0
+    const entries: { tokens: number; ts: number }[] = JSON.parse(raw)
+    const cutoff = Date.now() - 3_600_000
+    return entries.filter((e) => e.ts > cutoff).reduce((s, e) => s + e.tokens, 0)
+  } catch { return 0 }
+}
+
+function recordTokens(tokens: number) {
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY)
+    const entries: { tokens: number; ts: number }[] = raw ? JSON.parse(raw) : []
+    const cutoff = Date.now() - 3_600_000
+    const pruned = entries.filter((e) => e.ts > cutoff)
+    pruned.push({ tokens, ts: Date.now() })
+    localStorage.setItem(TOKEN_KEY, JSON.stringify(pruned))
+  } catch { /* ignore */ }
+}
+
+function formatTokens(n: number): string {
+  if (n === 0) return '0 tok'
+  if (n < 1000) return `${n} tok`
+  return `${(n / 1000).toFixed(1)}k tok`
+}
+
+// ─── Sidebar grouping ────────────────────────────────────────────────────────
+
 function groupByDate(convs: ConvSummary[]) {
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const yesterday = new Date(today.getTime() - 86400000)
-  const weekAgo = new Date(today.getTime() - 7 * 86400000)
+  const now   = new Date()
+  const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today.getTime() - 86_400_000)
+  const weekAgo   = new Date(today.getTime() - 7 * 86_400_000)
 
   const groups: { label: string; items: ConvSummary[] }[] = [
-    { label: 'Today', items: [] },
+    { label: 'Today',     items: [] },
     { label: 'Yesterday', items: [] },
     { label: 'This week', items: [] },
-    { label: 'Earlier', items: [] },
+    { label: 'Earlier',   items: [] },
   ]
 
   for (const c of convs) {
     const d = new Date(c.updated_at)
-    if (d >= today) groups[0].items.push(c)
+    if (d >= today)     groups[0].items.push(c)
     else if (d >= yesterday) groups[1].items.push(c)
-    else if (d >= weekAgo) groups[2].items.push(c)
-    else groups[3].items.push(c)
+    else if (d >= weekAgo)   groups[2].items.push(c)
+    else                     groups[3].items.push(c)
   }
 
   return groups.filter((g) => g.items.length > 0)
 }
 
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function AgentPage() {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
-  const [model, setModel] = useState(MODELS[0].id)
-  const [loading, setLoading] = useState(false)
-  const [modelOpen, setModelOpen] = useState(false)
+  const [messages, setMessages]           = useState<Message[]>([])
+  const [input, setInput]                 = useState('')
+  const [model, setModel]                 = useState(MODELS[0].id)
+  const [loading, setLoading]             = useState(false)
+  const [modelOpen, setModelOpen]         = useState(false)
   const [conversations, setConversations] = useState<ConvSummary[]>([])
   const [conversationId, setConversationId] = useState<string | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [view, setView] = useState<'chat' | 'history'>('chat')
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const [deletingId, setDeletingId]       = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen]     = useState(false)
+  const [hourlyTokens, setHourlyTokens]   = useState(0)
+  const bottomRef   = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // ── Load conversations + auto-open most recent ──────────────────────────
   const loadConversations = useCallback(async () => {
     const res = await fetch('/api/conversations')
-    if (res.ok) setConversations(await res.json())
+    if (!res.ok) return []
+    const data: ConvSummary[] = await res.json()
+    setConversations(data)
+    return data
   }, [])
 
-  useEffect(() => { loadConversations() }, [loadConversations])
+  useEffect(() => {
+    setHourlyTokens(getHourlyTokens())
+    loadConversations().then((data) => {
+      if (data.length > 0) openConversation(data[0].id)
+    })
+  // openConversation is stable (no deps that change), safe to ignore lint here
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadConversations])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -116,6 +144,7 @@ export default function AgentPage() {
     el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }, [input])
 
+  // ── Conversation actions ─────────────────────────────────────────────────
   async function openConversation(id: string) {
     const res = await fetch(`/api/conversations/${id}`)
     if (!res.ok) return
@@ -140,6 +169,7 @@ export default function AgentPage() {
     setDeletingId(null)
   }
 
+  // ── Send ─────────────────────────────────────────────────────────────────
   async function send() {
     const text = input.trim()
     if (!text || loading) return
@@ -148,7 +178,6 @@ export default function AgentPage() {
     setMessages(newMessages)
     setInput('')
     setLoading(true)
-
     setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
 
     let full = ''
@@ -168,9 +197,11 @@ export default function AgentPage() {
         return
       }
 
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
+      // Track token usage from response header
+      const tokensUsed = parseInt(res.headers.get('X-Tokens-Used') ?? '0', 10)
 
+      const reader  = res.body.getReader()
+      const decoder = new TextDecoder()
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -179,6 +210,11 @@ export default function AgentPage() {
           ...prev.slice(0, -1),
           { role: 'assistant', content: full },
         ])
+      }
+
+      if (tokensUsed > 0) {
+        recordTokens(tokensUsed)
+        setHourlyTokens(getHourlyTokens())
       }
     } catch (e) {
       setMessages((prev) => [
@@ -190,7 +226,7 @@ export default function AgentPage() {
       setLoading(false)
     }
 
-    // Persist after stream completes
+    // Persist conversation
     const finalMessages: Message[] = [...newMessages, { role: 'assistant', content: full }]
     if (!conversationId) {
       const title = text.slice(0, 60)
@@ -228,21 +264,10 @@ export default function AgentPage() {
     }
   }
 
-  function formatRelative(iso: string) {
-    const d = new Date(iso)
-    const now = new Date()
-    const diffMs = now.getTime() - d.getTime()
-    const diffDays = Math.floor(diffMs / 86400000)
-    if (diffDays === 0) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays}d ago`
-    return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
-  }
-
   const selectedModel = MODELS.find((m) => m.id === model) ?? MODELS[0]
-  const groups = groupByDate(conversations)
+  const groups        = groupByDate(conversations)
 
-  // Sidebar content reused for both desktop and mobile drawer
+  // ── Sidebar ──────────────────────────────────────────────────────────────
   const sidebarContent = (
     <>
       <div className="px-3 py-3 border-b border-neutral-100 flex items-center gap-2">
@@ -304,17 +329,14 @@ export default function AgentPage() {
     </>
   )
 
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
-    // Escape the layout's padding so the chat fills the full available area
     <div className="-mx-6 -mt-6 -mb-28 md:-mb-8 lg:-mx-8 lg:-mt-8 h-[calc(100vh-48px)] flex bg-white overflow-hidden">
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <>
-          <div
-            className="md:hidden fixed inset-0 bg-black/40 z-40"
-            onClick={() => setSidebarOpen(false)}
-          />
+          <div className="md:hidden fixed inset-0 bg-black/40 z-40" onClick={() => setSidebarOpen(false)} />
           <aside className="md:hidden fixed left-0 top-0 h-full w-72 z-50 bg-white border-r border-neutral-100 flex flex-col shadow-xl">
             {sidebarContent}
           </aside>
@@ -328,10 +350,10 @@ export default function AgentPage() {
 
       {/* Main chat area */}
       <div className="flex flex-col flex-1 min-w-0">
+
         {/* Header */}
         <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-neutral-100 gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Mobile sidebar toggle */}
             <button
               onClick={() => setSidebarOpen(true)}
               className="md:hidden flex-shrink-0 p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
@@ -344,170 +366,65 @@ export default function AgentPage() {
             </div>
           </div>
 
-          {/* Chat / History toggle + model selector */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex items-center bg-neutral-100 rounded-lg p-0.5 text-xs">
-              <button
-                onClick={() => setView('chat')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all ${
-                  view === 'chat' ? 'bg-white text-neutral-900 shadow-sm font-medium' : 'text-neutral-500 hover:text-neutral-700'
-                }`}
-              >
-                <MessagesSquare className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Chat</span>
-              </button>
-              <button
-                onClick={() => setView('history')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all ${
-                  view === 'history' ? 'bg-white text-neutral-900 shadow-sm font-medium' : 'text-neutral-500 hover:text-neutral-700'
-                }`}
-              >
-                <History className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">History</span>
-              </button>
+            {/* Token usage badge */}
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-100 text-neutral-500 text-xs"
+              title="Tokens consumed in the last hour"
+            >
+              <Zap className="w-3 h-3" />
+              <span className="font-medium tabular-nums">{formatTokens(hourlyTokens)}</span>
+              <span className="text-neutral-400">/ 1h</span>
             </div>
 
-          {/* Model selector */}
-          <div className="relative">
-            <button
-              onClick={() => setModelOpen((o) => !o)}
-              className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border border-neutral-200 hover:border-neutral-300 transition-colors text-neutral-700"
-            >
-              <span className="font-medium">{selectedModel.label}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
-            </button>
+            {/* Model selector */}
+            <div className="relative">
+              <button
+                onClick={() => setModelOpen((o) => !o)}
+                className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border border-neutral-200 hover:border-neutral-300 transition-colors text-neutral-700"
+              >
+                <span className="font-medium">{selectedModel.label}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+              </button>
 
-            {modelOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setModelOpen(false)} />
-                <div className="absolute right-0 top-10 z-20 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden w-56 sm:w-64">
-                  {MODELS.map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => { setModel(m.id); setModelOpen(false) }}
-                      className={`w-full flex flex-col gap-1.5 px-4 py-3 text-sm transition-colors text-left ${
-                        m.id === model
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-neutral-700 hover:bg-neutral-50'
-                      }`}
-                    >
-                      <span className="font-semibold">{m.label}</span>
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-neutral-400 w-20">Speed</span>
-                          <span className="text-xs leading-none">{m.speed}</span>
+              {modelOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setModelOpen(false)} />
+                  <div className="absolute right-0 top-10 z-20 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden w-56 sm:w-64">
+                    {MODELS.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => { setModel(m.id); setModelOpen(false) }}
+                        className={`w-full flex flex-col gap-1.5 px-4 py-3 text-sm transition-colors text-left ${
+                          m.id === model ? 'bg-blue-50 text-blue-700' : 'text-neutral-700 hover:bg-neutral-50'
+                        }`}
+                      >
+                        <span className="font-semibold">{m.label}</span>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-neutral-400 w-20">Speed</span>
+                            <span className="text-xs leading-none">{m.speed}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-neutral-400 w-20">Depth</span>
+                            <span className="text-xs leading-none">{m.depth}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-neutral-400 w-20">Cost</span>
+                            <span className="text-xs leading-none">{m.cost}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-neutral-400 w-20">Depth</span>
-                          <span className="text-xs leading-none">{m.depth}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-neutral-400 w-20">Cost</span>
-                          <span className="text-xs leading-none">{m.cost}</span>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* History table view */}
-        {view === 'history' && (
-          <div className="flex-1 overflow-y-auto">
-            {conversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3 py-20 text-center">
-                <MessageSquare className="w-8 h-8 text-neutral-300" />
-                <p className="text-sm text-neutral-400">No conversations yet</p>
-              </div>
-            ) : (
-              <>
-                {/* Desktop table */}
-                <table className="hidden sm:table w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-neutral-100">
-                      <th className="text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider px-6 py-3">Title</th>
-                      <th className="text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider px-4 py-3 w-32">Model</th>
-                      <th className="text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider px-4 py-3 w-28">Updated</th>
-                      <th className="w-12 px-4 py-3" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-50">
-                    {conversations.map((conv) => (
-                      <tr
-                        key={conv.id}
-                        className={`group cursor-pointer transition-colors hover:bg-neutral-50 ${
-                          conv.id === conversationId ? 'bg-blue-50/50' : ''
-                        }`}
-                        onClick={() => { openConversation(conv.id); setView('chat') }}
-                      >
-                        <td className="px-6 py-3.5">
-                          <span className={`font-medium truncate block max-w-xs ${conv.id === conversationId ? 'text-blue-700' : 'text-neutral-800'}`}>
-                            {conv.title}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <span className="text-xs text-neutral-500 bg-neutral-100 rounded-md px-2 py-0.5">{MODELS.find(m => m.id === conv.model)?.label ?? conv.model}</span>
-                        </td>
-                        <td className="px-4 py-3.5 text-xs text-neutral-400">{formatRelative(conv.updated_at)}</td>
-                        <td className="px-4 py-3.5">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50"
-                          >
-                            {deletingId === conv.id
-                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              : <Trash2 className="w-3.5 h-3.5" />
-                            }
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Mobile cards */}
-                <div className="sm:hidden divide-y divide-neutral-100">
-                  {conversations.map((conv) => (
-                    <div
-                      key={conv.id}
-                      className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer active:bg-neutral-50 ${
-                        conv.id === conversationId ? 'bg-blue-50/50' : ''
-                      }`}
-                      onClick={() => { openConversation(conv.id); setView('chat') }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${conv.id === conversationId ? 'text-blue-700' : 'text-neutral-800'}`}>
-                          {conv.title}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-neutral-400">{MODELS.find(m => m.id === conv.model)?.label ?? conv.model}</span>
-                          <span className="text-neutral-200">·</span>
-                          <span className="text-xs text-neutral-400">{formatRelative(conv.updated_at)}</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }}
-                        className="flex-shrink-0 p-1.5 rounded-lg text-neutral-300 hover:text-red-500 hover:bg-red-50 active:bg-red-50 transition-colors"
-                      >
-                        {deletingId === conv.id
-                          ? <Loader2 className="w-4 h-4 animate-spin" />
-                          : <Trash2 className="w-4 h-4" />
-                        }
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Chat view */}
-        {view === 'chat' && <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-20">
               <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center">
@@ -515,7 +432,7 @@ export default function AgentPage() {
               </div>
               <p className="text-sm font-medium text-neutral-500">Ask anything about Koj²a</p>
               <p className="text-xs text-neutral-400 max-w-xs">
-                This agent has read all your documentation and can answer questions about your strategy, ICP, workflows and more.
+                This agent has read all your documentation and can search the web and query your database.
               </p>
             </div>
           )}
@@ -549,10 +466,9 @@ export default function AgentPage() {
             </div>
           ))}
           <div ref={bottomRef} />
-        </div>}
+        </div>
 
-        {/* Input — only in chat view */}
-        {view === 'chat' &&
+        {/* Input */}
         <div className="px-4 md:px-6 pb-4 md:pb-6 pt-3 border-t border-neutral-100">
           <div className="flex items-end gap-3 bg-neutral-50 rounded-2xl border border-neutral-200 px-4 py-3 focus-within:border-neutral-300 focus-within:bg-white transition-colors">
             <textarea
@@ -576,7 +492,7 @@ export default function AgentPage() {
               }
             </button>
           </div>
-        </div>}
+        </div>
       </div>
     </div>
   )
