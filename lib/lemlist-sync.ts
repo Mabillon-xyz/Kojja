@@ -15,8 +15,9 @@ async function fetchAllLemlistLeads(apiKey: string, campaignId: string): Promise
   const all: LemlistLead[] = [];
   let offset = 0;
   const limit = 100;
+  const MAX_PAGES = 20; // safety cap — 2000 leads max
 
-  while (true) {
+  for (let p = 0; p < MAX_PAGES; p++) {
     const url = `https://api.lemlist.com/api/campaigns/${campaignId}/leads?limit=${limit}&offset=${offset}`;
     const res = await fetch(url, {
       cache: "no-store",

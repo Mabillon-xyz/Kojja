@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCachedConversion, syncLemlistConversion } from "@/lib/lemlist-sync";
 import { getAccount, type AccountId } from "@/lib/lemlist-accounts";
 
+export const maxDuration = 60;
+
 export type LemlistLead = {
   email?: string;
   firstName?: string;

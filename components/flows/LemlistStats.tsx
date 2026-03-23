@@ -124,8 +124,10 @@ export default function LemlistStats({ account = "clement" }: { account?: string
   async function sync() {
     setSyncing(true);
     setError(null);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
     try {
-      const res = await fetch(`/api/lemlist/conversion${q}`, { method: "POST" });
+      const res = await fetch(`/api/lemlist/conversion${q}`, { method: "POST", signal: controller.signal });
       const d = await parseJson(res);
       if (!res.ok) throw new Error(d?.error ?? `Sync error ${res.status}`);
       setConv(d);
@@ -134,8 +136,10 @@ export default function LemlistStats({ account = "clement" }: { account?: string
       const snapshotsData = await parseJson(snapshotsRes);
       setSnapshots(Array.isArray(snapshotsData) ? snapshotsData : []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Sync failed");
+      const msg = e instanceof Error ? e.message : "Sync failed";
+      setError(e instanceof Error && e.name === "AbortError" ? "Sync timed out — try again" : msg);
     } finally {
+      clearTimeout(timer);
       setSyncing(false);
     }
   }
