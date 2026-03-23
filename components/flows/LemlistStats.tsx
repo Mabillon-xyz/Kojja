@@ -60,6 +60,16 @@ function StageBadge({ stage }: { stage: string | null }) {
   );
 }
 
+async function parseJson(res: Response) {
+  const text = await res.text();
+  if (!text.trim()) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Invalid JSON from ${res.url} (${res.status}): ${text.slice(0, 100)}`);
+  }
+}
+
 export default function LemlistStats() {
   const [data, setData] = useState<LemlistStatsData | null>(null);
   const [conv, setConv] = useState<ConversionData | null>(null);
@@ -75,16 +85,6 @@ export default function LemlistStats() {
         fetch("/api/lemlist/stats"),
         fetch("/api/lemlist/conversion"),
       ]);
-
-      async function parseJson(res: Response) {
-        const text = await res.text();
-        if (!text.trim()) return null;
-        try {
-          return JSON.parse(text);
-        } catch {
-          throw new Error(`Invalid JSON from ${res.url} (${res.status}): ${text.slice(0, 100)}`);
-        }
-      }
 
       const [statsData, convData] = await Promise.all([parseJson(statsRes), parseJson(convRes)]);
 
