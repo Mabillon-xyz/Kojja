@@ -24,15 +24,7 @@ export async function POST(req: NextRequest) {
   const workflow = (body.workflow as string) ?? null;
   const leads = Array.isArray(body.leads) ? body.leads : [];
 
-  // Log the event
-  await supabase.from("webhook_events").insert({
-    source,
-    workflow,
-    leads_count: leads.length,
-    payload: body,
-  });
-
-  // Persist leads_yet_to_contact KPI if present
+  // Persist leads_yet_to_contact KPI if present (skip flow run logging for these)
   if (typeof body.leads_yet_to_contact === "number") {
     const clientKey = ((body.client as string) ?? "unknown")
       .toLowerCase()
@@ -46,7 +38,16 @@ export async function POST(req: NextRequest) {
       },
       { onConflict: "key" }
     );
+    return NextResponse.json({ ok: true });
   }
+
+  // Log the flow run event
+  await supabase.from("webhook_events").insert({
+    source,
+    workflow,
+    leads_count: leads.length,
+    payload: body,
+  });
 
   // Upsert leads by email
   const today = new Date().toISOString().split("T")[0];
