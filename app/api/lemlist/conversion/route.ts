@@ -32,7 +32,7 @@ export async function GET() {
   // 1. Fetch leads from Lemlist campaign export
   const lemlistRes = await fetch(
     `https://api.lemlist.com/api/campaigns/${CAMPAIGN_ID}/export/leads?access_token=${process.env.LEMLIST_API_KEY}`,
-    { cache: "no-store" }
+    { cache: "no-store", headers: { Accept: "application/json" } }
   );
 
   if (!lemlistRes.ok) {
@@ -43,9 +43,24 @@ export async function GET() {
     );
   }
 
-  const raw = await lemlistRes.json();
+  // Parse safely — endpoint may return empty body or non-JSON
+  const bodyText = await lemlistRes.text();
+  let raw: unknown = [];
+  if (bodyText.trim()) {
+    try {
+      raw = JSON.parse(bodyText);
+    } catch {
+      return NextResponse.json(
+        { error: "Lemlist returned unexpected response", detail: bodyText.slice(0, 200) },
+        { status: 502 }
+      );
+    }
+  }
+
   // The endpoint may return an array or { leads: [...] }
-  const lemlistLeads: LemlistLead[] = Array.isArray(raw) ? raw : (raw.leads ?? []);
+  const lemlistLeads: LemlistLead[] = Array.isArray(raw)
+    ? (raw as LemlistLead[])
+    : ((raw as { leads?: LemlistLead[] }).leads ?? []);
 
   // 2. Fetch CRM leads (email, linkedin_url, stage only)
   const supabase = await createClient();

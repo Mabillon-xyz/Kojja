@@ -76,16 +76,20 @@ export default function LemlistStats() {
         fetch("/api/lemlist/conversion"),
       ]);
 
-      if (!statsRes.ok) {
-        const j = await statsRes.json();
-        throw new Error(j.error ?? `Error ${statsRes.status}`);
-      }
-      if (!convRes.ok) {
-        const j = await convRes.json();
-        throw new Error(j.error ?? `Error ${convRes.status}`);
+      async function parseJson(res: Response) {
+        const text = await res.text();
+        if (!text.trim()) return null;
+        return JSON.parse(text);
       }
 
-      const [statsData, convData] = await Promise.all([statsRes.json(), convRes.json()]);
+      const [statsData, convData] = await Promise.all([parseJson(statsRes), parseJson(convRes)]);
+
+      if (!statsRes.ok) {
+        throw new Error(statsData?.error ?? `Stats error ${statsRes.status}`);
+      }
+      if (!convRes.ok) {
+        throw new Error(convData?.error ?? `Conversion error ${convRes.status}`);
+      }
       setData(statsData);
       setConv(convData);
     } catch (e) {
