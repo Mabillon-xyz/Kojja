@@ -61,7 +61,7 @@ export default async function DocumentationPage() {
               <span className="text-sm font-medium text-neutral-900 group-hover:text-black">
                 {doc.title}
               </span>
-              {doc.isSystem && (
+              {doc.isSystem && !doc.tag && (
                 <span className="text-xs text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
                   strategy
                 </span>
