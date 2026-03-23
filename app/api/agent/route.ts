@@ -35,33 +35,41 @@ async function parallelSearch(query: string): Promise<string> {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({
+        objective: query,
+        search_queries: [query],
+        mode: 'fast',
+        excerpts: { max_chars_per_result: 2000 },
+      }),
     })
 
     if (!response.ok) {
-      return `Search failed: ${response.status} ${response.statusText}`
+      const errText = await response.text().catch(() => '')
+      return `Search failed: ${response.status} ${response.statusText}${errText ? ` — ${errText}` : ''}`
     }
 
     const data = await response.json()
 
-    // Handle various Parallel API response shapes
-    if (Array.isArray(data?.results) && data.results.length > 0) {
-      return data.results
-        .slice(0, 5)
-        .map(
-          (r: { title?: string; url?: string; snippet?: string; content?: string }) =>
-            `**${r.title ?? 'Result'}**\n${r.url ?? ''}\n${r.snippet ?? r.content ?? ''}`
-        )
-        .join('\n\n')
+    // Parallel returns { results: [{ title, url, excerpts: [{ text }] }] }
+    type ParallelResult = {
+      title?: string
+      url?: string
+      excerpts?: { text?: string }[]
+      snippet?: string
+      content?: string
     }
 
-    if (Array.isArray(data) && data.length > 0) {
-      return data
+    const results: ParallelResult[] =
+      data?.results ?? (Array.isArray(data) ? data : [])
+
+    if (results.length > 0) {
+      return results
         .slice(0, 5)
-        .map(
-          (r: { title?: string; url?: string; snippet?: string; content?: string }) =>
-            `**${r.title ?? 'Result'}**\n${r.url ?? ''}\n${r.snippet ?? r.content ?? ''}`
-        )
+        .map((r) => {
+          const excerpt =
+            r.excerpts?.[0]?.text ?? r.snippet ?? r.content ?? ''
+          return `**${r.title ?? 'Result'}**\n${r.url ?? ''}\n${excerpt}`
+        })
         .join('\n\n')
     }
 
