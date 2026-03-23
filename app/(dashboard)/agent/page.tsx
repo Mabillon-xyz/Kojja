@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Bot, User, Loader2, ChevronDown, Plus, Trash2, MessageSquare } from 'lucide-react'
+import { Send, Bot, User, Loader2, ChevronDown, Plus, Trash2, MessageSquare, PanelLeft, X } from 'lucide-react'
 
 const MODELS = [
   {
@@ -63,6 +63,7 @@ export default function AgentPage() {
   const [conversations, setConversations] = useState<ConvSummary[]>([])
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -91,6 +92,7 @@ export default function AgentPage() {
     setMessages(data.messages ?? [])
     setModel(data.model ?? MODELS[0].id)
     setConversationId(id)
+    setSidebarOpen(false)
   }
 
   function newChat() {
@@ -198,70 +200,106 @@ export default function AgentPage() {
   const selectedModel = MODELS.find((m) => m.id === model) ?? MODELS[0]
   const groups = groupByDate(conversations)
 
-  return (
-    <div className="flex h-screen max-h-screen bg-white overflow-hidden">
+  // Sidebar content reused for both desktop and mobile drawer
+  const sidebarContent = (
+    <>
+      <div className="px-3 py-3 border-b border-neutral-100 flex items-center gap-2">
+        <button
+          onClick={() => { newChat(); setSidebarOpen(false) }}
+          className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-neutral-700 hover:bg-white hover:shadow-sm border border-neutral-200 transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          New chat
+        </button>
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="md:hidden p-2 rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
 
-      {/* Conversation sidebar */}
-      <aside className="hidden md:flex w-60 flex-col border-r border-neutral-100 flex-shrink-0 bg-neutral-50/50">
-        <div className="px-3 py-3 border-b border-neutral-100">
-          <button
-            onClick={newChat}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-neutral-700 hover:bg-white hover:shadow-sm border border-neutral-200 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            New chat
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto py-2">
-          {groups.length === 0 ? (
-            <div className="px-4 py-8 text-center">
-              <MessageSquare className="w-6 h-6 text-neutral-300 mx-auto mb-2" />
-              <p className="text-xs text-neutral-400">No conversations yet</p>
-            </div>
-          ) : (
-            groups.map((group) => (
-              <div key={group.label} className="mb-3">
-                <p className="px-4 py-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
-                  {group.label}
-                </p>
-                {group.items.map((conv) => (
-                  <div
-                    key={conv.id}
-                    className={`group flex items-center gap-1 mx-2 px-2 py-2 rounded-lg cursor-pointer transition-colors ${
-                      conv.id === conversationId
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-neutral-600 hover:bg-white hover:text-neutral-900'
+      <div className="flex-1 overflow-y-auto py-2">
+        {groups.length === 0 ? (
+          <div className="px-4 py-8 text-center">
+            <MessageSquare className="w-6 h-6 text-neutral-300 mx-auto mb-2" />
+            <p className="text-xs text-neutral-400">No conversations yet</p>
+          </div>
+        ) : (
+          groups.map((group) => (
+            <div key={group.label} className="mb-3">
+              <p className="px-4 py-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
+                {group.label}
+              </p>
+              {group.items.map((conv) => (
+                <div
+                  key={conv.id}
+                  className={`group flex items-center gap-1 mx-2 px-2 py-2 rounded-lg cursor-pointer transition-colors ${
+                    conv.id === conversationId
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-neutral-600 hover:bg-white hover:text-neutral-900'
+                  }`}
+                  onClick={() => openConversation(conv.id)}
+                >
+                  <span className="flex-1 text-xs truncate leading-snug">{conv.title}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }}
+                    className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity rounded p-0.5 hover:text-red-500 ${
+                      conv.id === conversationId ? 'text-blue-400' : 'text-neutral-400'
                     }`}
-                    onClick={() => openConversation(conv.id)}
                   >
-                    <span className="flex-1 text-xs truncate leading-snug">{conv.title}</span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }}
-                      className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity rounded p-0.5 hover:text-red-500 ${
-                        conv.id === conversationId ? 'text-blue-400' : 'text-neutral-400'
-                      }`}
-                    >
-                      {deletingId === conv.id
-                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                        : <Trash2 className="w-3 h-3" />
-                      }
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ))
-          )}
-        </div>
+                    {deletingId === conv.id
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <Trash2 className="w-3 h-3" />
+                    }
+                  </button>
+                </div>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  )
+
+  return (
+    // Escape the layout's padding so the chat fills the full available area
+    <div className="-mx-6 -mt-6 -mb-28 md:-mb-8 lg:-mx-8 lg:-mt-8 h-[calc(100vh-48px)] flex bg-white overflow-hidden">
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 bg-black/40 z-40"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <aside className="md:hidden fixed left-0 top-0 h-full w-72 z-50 bg-white border-r border-neutral-100 flex flex-col shadow-xl">
+            {sidebarContent}
+          </aside>
+        </>
+      )}
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-60 flex-col border-r border-neutral-100 flex-shrink-0 bg-neutral-50/50">
+        {sidebarContent}
       </aside>
 
       {/* Main chat area */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
-          <div>
-            <h1 className="text-base font-semibold text-neutral-900">Agent</h1>
-            <p className="text-xs text-neutral-400 mt-0.5">Powered by Koj²a documentation</p>
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-neutral-100">
+          <div className="flex items-center gap-3">
+            {/* Mobile sidebar toggle */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
+            >
+              <PanelLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-base font-semibold text-neutral-900">Agent</h1>
+              <p className="hidden sm:block text-xs text-neutral-400 mt-0.5">Powered by Koj²a documentation</p>
+            </div>
           </div>
 
           {/* Model selector */}
@@ -277,7 +315,7 @@ export default function AgentPage() {
             {modelOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setModelOpen(false)} />
-                <div className="absolute right-0 top-10 z-20 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden w-64">
+                <div className="absolute right-0 top-10 z-20 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden w-56 sm:w-64">
                   {MODELS.map((m) => (
                     <button
                       key={m.id}
@@ -312,7 +350,7 @@ export default function AgentPage() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-20">
               <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center">
@@ -336,7 +374,7 @@ export default function AgentPage() {
                 }
               </div>
 
-              <div className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+              <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white rounded-tr-sm'
                   : 'bg-neutral-50 text-neutral-800 rounded-tl-sm border border-neutral-100'
@@ -352,7 +390,7 @@ export default function AgentPage() {
         </div>
 
         {/* Input */}
-        <div className="px-6 pb-6 pt-3 border-t border-neutral-100">
+        <div className="px-4 md:px-6 pb-4 md:pb-6 pt-3 border-t border-neutral-100">
           <div className="flex items-end gap-3 bg-neutral-50 rounded-2xl border border-neutral-200 px-4 py-3 focus-within:border-neutral-300 focus-within:bg-white transition-colors">
             <textarea
               ref={textareaRef}
