@@ -12,11 +12,12 @@ export async function GET(req: NextRequest) {
   const campaignId = account.campaignId();
   const startDate = "2020-01-01T00:00:00.000Z";
   const endDate = new Date().toISOString();
-  const params = new URLSearchParams({ access_token: apiKey, startDate, endDate });
+  const params = new URLSearchParams({ startDate, endDate });
+  const basicAuth = Buffer.from(`anystring:${apiKey}`).toString("base64");
 
   const res = await fetch(
     `https://api.lemlist.com/api/v2/campaigns/${campaignId}/stats?${params}`,
-    { next: { revalidate: 300 } }
+    { next: { revalidate: 300 }, headers: { Authorization: `Basic ${basicAuth}` } }
   );
 
   const bodyText = await res.text();
