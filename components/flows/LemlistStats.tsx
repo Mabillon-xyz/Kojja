@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ExternalLink } from "lucide-react";
+import type { ConversionData, EnrichedLead } from "@/app/api/lemlist/conversion/route";
 
 type LemlistStatsData = {
   nbLeads?: number;
@@ -35,21 +36,58 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
   );
 }
 
+const STAGE_STYLES: Record<string, { label: string; className: string }> = {
+  call_scheduled: { label: "Call scheduled", className: "bg-blue-100 text-blue-700" },
+  call_done: { label: "Call done", className: "bg-violet-100 text-violet-700" },
+  proposal_sent: { label: "Proposal sent", className: "bg-orange-100 text-orange-700" },
+  customer: { label: "Customer", className: "bg-green-100 text-green-700" },
+  not_interested: { label: "Not interested", className: "bg-red-100 text-red-600" },
+};
+
+function StageBadge({ stage }: { stage: string | null }) {
+  if (!stage) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-400">
+        Not in CRM
+      </span>
+    );
+  }
+  const s = STAGE_STYLES[stage] ?? { label: stage, className: "bg-neutral-100 text-neutral-600" };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${s.className}`}>
+      {s.label}
+    </span>
+  );
+}
+
 export default function LemlistStats() {
   const [data, setData] = useState<LemlistStatsData | null>(null);
+  const [conv, setConv] = useState<ConversionData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/lemlist/stats");
-      if (!res.ok) {
-        const j = await res.json();
-        throw new Error(j.error ?? `Error ${res.status}`);
+      const [statsRes, convRes] = await Promise.all([
+        fetch("/api/lemlist/stats"),
+        fetch("/api/lemlist/conversion"),
+      ]);
+
+      if (!statsRes.ok) {
+        const j = await statsRes.json();
+        throw new Error(j.error ?? `Error ${statsRes.status}`);
       }
-      setData(await res.json());
+      if (!convRes.ok) {
+        const j = await convRes.json();
+        throw new Error(j.error ?? `Error ${convRes.status}`);
+      }
+
+      const [statsData, convData] = await Promise.all([statsRes.json(), convRes.json()]);
+      setData(statsData);
+      setConv(convData);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -79,6 +117,16 @@ export default function LemlistStats() {
   if (!data) return null;
 
   const launched = data.nbLeadsLaunched ?? 0;
+
+  // Leads to show in table: CRM matches first, then unmatched
+  const sortedLeads: EnrichedLead[] = conv
+    ? [...conv.leads].sort((a, b) => {
+        if (a.inCrm && !b.inCrm) return -1;
+        if (!a.inCrm && b.inCrm) return 1;
+        return 0;
+      })
+    : [];
+  const visibleLeads = showAll ? sortedLeads : sortedLeads.slice(0, 10);
 
   return (
     <div className="space-y-6">
@@ -134,6 +182,97 @@ export default function LemlistStats() {
           ))}
         </div>
       </div>
+
+      {/* CRM Conversion */}
+      {conv && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-bold text-neutral-900">CRM conversion</h3>
+            <span className="text-xs text-neutral-400 font-medium">matched against CRM leads</span>
+          </div>
+
+          {/* Summary KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Campaign leads" value={conv.total} sub="in Lemlist" />
+            <StatCard
+              label="In CRM"
+              value={conv.inCrm}
+              sub={conv.total > 0 ? Math.round((conv.inCrm / conv.total) * 100) + "% matched" : "0%"}
+            />
+            <StatCard
+              label="Customers"
+              value={conv.customers}
+              sub={conv.total > 0 ? Math.round((conv.customers / conv.total) * 100) + "% of leads" : "0%"}
+            />
+            <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
+              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Conversion rate</p>
+              <p className="text-3xl font-bold text-green-600">{conv.conversionRate}</p>
+              <p className="text-xs text-neutral-400 mt-1">leads → customers</p>
+            </div>
+          </div>
+
+          {/* Leads table */}
+          {sortedLeads.length > 0 && (
+            <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">
+                <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                  Campaign leads · {conv.total} total
+                </p>
+                <span className="text-xs text-neutral-400">{conv.inCrm} matched in CRM</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-neutral-100">
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">Name</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">Email</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">Company</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">CRM stage</th>
+                      <th className="px-5 py-3 w-10" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleLeads.map((lead, i) => (
+                      <tr key={lead.email ?? i} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors">
+                        <td className="px-5 py-3 font-medium text-neutral-900 whitespace-nowrap">
+                          {[lead.firstName, lead.lastName].filter(Boolean).join(" ") || "—"}
+                        </td>
+                        <td className="px-5 py-3 text-neutral-500 text-xs">{lead.email ?? "—"}</td>
+                        <td className="px-5 py-3 text-neutral-500 text-xs whitespace-nowrap">{lead.companyName ?? "—"}</td>
+                        <td className="px-5 py-3">
+                          <StageBadge stage={lead.crmStage} />
+                        </td>
+                        <td className="px-5 py-3">
+                          {lead.linkedinUrl && (
+                            <a
+                              href={lead.linkedinUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-neutral-300 hover:text-blue-500 transition-colors"
+                            >
+                              <ExternalLink size={13} />
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {sortedLeads.length > 10 && (
+                <div className="px-5 py-3 border-t border-neutral-100 bg-neutral-50">
+                  <button
+                    onClick={() => setShowAll((v) => !v)}
+                    className="text-xs text-neutral-500 hover:text-neutral-700 font-medium transition-colors"
+                  >
+                    {showAll ? "Show less" : `Show all ${sortedLeads.length} leads`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
