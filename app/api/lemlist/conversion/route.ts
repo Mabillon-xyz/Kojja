@@ -24,52 +24,45 @@ export type ConversionData = {
   conversionRate: string;
 };
 
-/** Parse a CSV string into LemlistLead objects, handling quoted fields. */
-function parseCsv(text: string): LemlistLead[] {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
+/** Fetch all leads from a Lemlist campaign, handling pagination. */
+async function fetchAllLemlistLeads(campaignId: string, apiKey: string): Promise<LemlistLead[]> {
+  const basicAuth = Buffer.from(`anystring:${apiKey}`).toString("base64");
+  const all: LemlistLead[] = [];
+  let offset = 0;
+  const limit = 100;
 
-  // Parse a single CSV line respecting double-quoted fields
-  function splitLine(line: string): string[] {
-    const fields: string[] = [];
-    let cur = "";
-    let inQuote = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQuote && line[i + 1] === '"') { cur += '"'; i++; }
-        else inQuote = !inQuote;
-      } else if (ch === "," && !inQuote) {
-        fields.push(cur); cur = "";
-      } else {
-        cur += ch;
-      }
+  while (true) {
+    const url = `https://api.lemlist.com/api/campaigns/${campaignId}/leads?limit=${limit}&offset=${offset}`;
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: { Authorization: `Basic ${basicAuth}` },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Lemlist API error ${res.status}: ${text.slice(0, 200)}`);
     }
-    fields.push(cur);
-    return fields;
+
+    const text = await res.text();
+    if (!text.trim()) break;
+
+    let page: unknown;
+    try {
+      page = JSON.parse(text);
+    } catch {
+      throw new Error(`Lemlist returned non-JSON: ${text.slice(0, 100)}`);
+    }
+
+    // Response may be an array or { leads: [...] }
+    const rows: LemlistLead[] = Array.isArray(page) ? page : ((page as { leads?: LemlistLead[] }).leads ?? []);
+    if (rows.length === 0) break;
+
+    all.push(...rows);
+    if (rows.length < limit) break;
+    offset += limit;
   }
 
-  const headers = splitLine(lines[0]).map((h) => h.toLowerCase().trim());
-
-  // Map common Lemlist CSV column name variants
-  const col = (row: string[], ...keys: string[]) => {
-    for (const k of keys) {
-      const idx = headers.indexOf(k);
-      if (idx !== -1) return row[idx]?.trim() || undefined;
-    }
-    return undefined;
-  };
-
-  return lines.slice(1).map((line) => {
-    const row = splitLine(line);
-    return {
-      email: col(row, "email"),
-      firstName: col(row, "firstname", "first_name", "first name"),
-      lastName: col(row, "lastname", "last_name", "last name"),
-      companyName: col(row, "companyname", "company_name", "company"),
-      linkedinUrl: col(row, "linkedinurl", "linkedin_url", "linkedin"),
-    };
-  }).filter((l) => l.email);  // drop rows with no email
+  return all;
 }
 
 export async function GET() {
@@ -77,48 +70,15 @@ export async function GET() {
     return NextResponse.json({ error: "LEMLIST_API_KEY not configured" }, { status: 500 });
   }
 
-  // 1. Fetch leads from Lemlist campaign export
-  // v1 API uses HTTP Basic Auth: any username, API key as password
-  const basicAuth = Buffer.from(`anystring:${process.env.LEMLIST_API_KEY}`).toString("base64");
-  const lemlistRes = await fetch(
-    `https://api.lemlist.com/api/campaigns/${CAMPAIGN_ID}/export/leads`,
-    {
-      cache: "no-store",
-      headers: { Accept: "application/json", Authorization: `Basic ${basicAuth}` },
-    }
-  );
-
-  const bodyText = await lemlistRes.text();
-  console.log("[lemlist/conversion] status:", lemlistRes.status, "body[:100]:", bodyText.slice(0, 100));
-
-  if (!lemlistRes.ok) {
+  // 1. Fetch all leads from Lemlist campaign
+  let lemlistLeads: LemlistLead[];
+  try {
+    lemlistLeads = await fetchAllLemlistLeads(CAMPAIGN_ID, process.env.LEMLIST_API_KEY);
+  } catch (e) {
     return NextResponse.json(
-      { error: `Lemlist API error ${lemlistRes.status}`, detail: bodyText.slice(0, 300) },
-      { status: lemlistRes.status }
+      { error: e instanceof Error ? e.message : "Failed to fetch Lemlist leads" },
+      { status: 502 }
     );
-  }
-
-  // Parse response — may be JSON or CSV
-  let lemlistLeads: LemlistLead[] = [];
-
-  if (bodyText.trim()) {
-    const contentType = lemlistRes.headers.get("content-type") ?? "";
-    const looksLikeJson = bodyText.trimStart().startsWith("[") || bodyText.trimStart().startsWith("{");
-
-    if (looksLikeJson && !contentType.includes("text/csv")) {
-      try {
-        const raw = JSON.parse(bodyText);
-        lemlistLeads = Array.isArray(raw) ? raw : (raw.leads ?? []);
-      } catch {
-        return NextResponse.json(
-          { error: "Lemlist returned non-JSON response", detail: bodyText.slice(0, 300) },
-          { status: 502 }
-        );
-      }
-    } else {
-      // Parse CSV — map column names case-insensitively
-      lemlistLeads = parseCsv(bodyText);
-    }
   }
 
   // 2. Fetch CRM leads (email, linkedin_url, stage only)
@@ -131,7 +91,7 @@ export async function GET() {
     return NextResponse.json({ error: `Supabase error: ${error.message}` }, { status: 500 });
   }
 
-  // 3. Build lookup maps
+  // 3. Build lookup maps (case-insensitive)
   const byEmail = new Map<string, string>();
   const byLinkedin = new Map<string, string>();
 
