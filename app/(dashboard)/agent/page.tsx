@@ -2,6 +2,36 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Send, Bot, User, Loader2, ChevronDown, Plus, Trash2, MessageSquare, PanelLeft, X, History, MessagesSquare } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import type { Components } from 'react-markdown'
+
+const mdComponents: Components = {
+  p:          ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+  h1:         ({ children }) => <h1 className="text-lg font-bold mb-3 mt-4 first:mt-0">{children}</h1>,
+  h2:         ({ children }) => <h2 className="text-base font-bold mb-2 mt-4 first:mt-0">{children}</h2>,
+  h3:         ({ children }) => <h3 className="text-sm font-bold mb-2 mt-3 first:mt-0">{children}</h3>,
+  ul:         ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+  ol:         ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+  li:         ({ children }) => <li className="leading-relaxed">{children}</li>,
+  strong:     ({ children }) => <strong className="font-semibold">{children}</strong>,
+  em:         ({ children }) => <em className="italic">{children}</em>,
+  blockquote: ({ children }) => <blockquote className="border-l-2 border-neutral-300 pl-3 italic text-neutral-500 mb-3">{children}</blockquote>,
+  hr:         () => <hr className="border-neutral-200 my-4" />,
+  a:          ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline text-blue-600 hover:text-blue-800">{children}</a>,
+  code:       ({ className, children }) => {
+    const isBlock = className?.startsWith('language-')
+    return isBlock
+      ? <code className="block bg-neutral-100 rounded-lg px-4 py-3 text-xs font-mono overflow-x-auto whitespace-pre">{children}</code>
+      : <code className="bg-neutral-100 text-neutral-800 rounded px-1.5 py-0.5 text-xs font-mono">{children}</code>
+  },
+  pre:        ({ children }) => <pre className="mb-3 last:mb-0 rounded-lg overflow-hidden">{children}</pre>,
+  table:      ({ children }) => <div className="overflow-x-auto mb-3"><table className="w-full text-xs border-collapse">{children}</table></div>,
+  thead:      ({ children }) => <thead className="bg-neutral-100">{children}</thead>,
+  th:         ({ children }) => <th className="text-left font-semibold px-3 py-2 border border-neutral-200">{children}</th>,
+  td:         ({ children }) => <td className="px-3 py-2 border border-neutral-200">{children}</td>,
+  tr:         ({ children }) => <tr className="even:bg-neutral-50">{children}</tr>,
+}
 
 const MODELS = [
   {
@@ -501,15 +531,20 @@ export default function AgentPage() {
                 }
               </div>
 
-              <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+              <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm ${
                 msg.role === 'user'
-                  ? 'bg-blue-600 text-white rounded-tr-sm'
+                  ? 'bg-blue-600 text-white rounded-tr-sm leading-relaxed whitespace-pre-wrap'
                   : 'bg-neutral-50 text-neutral-800 rounded-tl-sm border border-neutral-100'
               }`}>
-                {msg.content === '' && msg.role === 'assistant'
-                  ? <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
-                  : msg.content
-                }
+                {msg.content === '' && msg.role === 'assistant' ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
+                ) : msg.role === 'assistant' ? (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+                    {msg.content}
+                  </ReactMarkdown>
+                ) : (
+                  msg.content
+                )}
               </div>
             </div>
           ))}
