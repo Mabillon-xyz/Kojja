@@ -72,11 +72,13 @@ async function parseJson(res: Response) {
 
 export default function LemlistStats() {
   const [data, setData] = useState<LemlistStatsData | null>(null);
-  const [conv, setConv] = useState<ConversionData | null>(null);
+  const [conv, setConv] = useState<(ConversionData & { updatedAt?: string | null }) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
+  // Fast load — reads from cache
   async function load() {
     setLoading(true);
     setError(null);
@@ -104,6 +106,22 @@ export default function LemlistStats() {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Slow sync — re-fetches from Lemlist, rebuilds cache
+  async function sync() {
+    setSyncing(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/lemlist/conversion", { method: "POST" });
+      const d = await parseJson(res);
+      if (!res.ok) throw new Error(d?.error ?? `Sync error ${res.status}`);
+      setConv(d);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Sync failed");
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -146,14 +164,21 @@ export default function LemlistStats() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-neutral-900">Campaign stats</h2>
-          <p className="text-xs text-neutral-400 mt-0.5">{data.nbLeads ?? 0} leads total · refreshed every 5 min</p>
+          <p className="text-xs text-neutral-400 mt-0.5">
+            {data.nbLeads ?? 0} leads total
+            {conv?.updatedAt && (
+              <> · CRM synced {new Date(conv.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} at {new Date(conv.updatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</>
+            )}
+            {!conv?.updatedAt && <> · CRM not synced yet</>}
+          </p>
         </div>
         <button
-          onClick={load}
-          className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-700 border border-neutral-200 rounded-lg px-3 py-1.5 hover:bg-neutral-50 transition-colors"
+          onClick={sync}
+          disabled={syncing}
+          className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-700 border border-neutral-200 rounded-lg px-3 py-1.5 hover:bg-neutral-50 transition-colors disabled:opacity-50"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Refresh
+          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? "Syncing…" : "Sync CRM"}
         </button>
       </div>
 
