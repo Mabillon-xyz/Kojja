@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { RefreshCw, ExternalLink } from "lucide-react";
 import type { ConversionData, EnrichedLead } from "@/app/api/lemlist/conversion/route";
+import type { Snapshot } from "@/app/api/lemlist/snapshots/route";
+import ConversionChart from "./ConversionChart";
 
 type LemlistStatsData = {
   nbLeads?: number;
@@ -73,6 +75,7 @@ async function parseJson(res: Response) {
 export default function LemlistStats() {
   const [data, setData] = useState<LemlistStatsData | null>(null);
   const [conv, setConv] = useState<(ConversionData & { updatedAt?: string | null }) | null>(null);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -83,12 +86,17 @@ export default function LemlistStats() {
     setLoading(true);
     setError(null);
     try {
-      const [statsRes, convRes] = await Promise.all([
+      const [statsRes, convRes, snapshotsRes] = await Promise.all([
         fetch("/api/lemlist/stats"),
         fetch("/api/lemlist/conversion"),
+        fetch("/api/lemlist/snapshots"),
       ]);
 
-      const [statsData, convData] = await Promise.all([parseJson(statsRes), parseJson(convRes)]);
+      const [statsData, convData, snapshotsData] = await Promise.all([
+        parseJson(statsRes),
+        parseJson(convRes),
+        parseJson(snapshotsRes),
+      ]);
 
       if (!statsRes.ok) {
         const msg = statsData?.error ?? `Stats error ${statsRes.status}`;
@@ -102,6 +110,7 @@ export default function LemlistStats() {
       }
       setData(statsData);
       setConv(convData);
+      setSnapshots(Array.isArray(snapshotsData) ? snapshotsData : []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -118,6 +127,10 @@ export default function LemlistStats() {
       const d = await parseJson(res);
       if (!res.ok) throw new Error(d?.error ?? `Sync error ${res.status}`);
       setConv(d);
+      // Refresh snapshot history after sync
+      const snapshotsRes = await fetch("/api/lemlist/snapshots");
+      const snapshotsData = await parseJson(snapshotsRes);
+      setSnapshots(Array.isArray(snapshotsData) ? snapshotsData : []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sync failed");
     } finally {
@@ -220,6 +233,9 @@ export default function LemlistStats() {
           ))}
         </div>
       </div>
+
+      {/* Conversion rate chart */}
+      <ConversionChart snapshots={snapshots} />
 
       {/* CRM Conversion */}
       {conv && (

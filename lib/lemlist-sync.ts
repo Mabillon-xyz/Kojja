@@ -79,17 +79,35 @@ export async function syncLemlistConversion(): Promise<ConversionData & { update
   const customers = enriched.filter((l) => l.crmStage === "customer").length;
   const updatedAt = new Date().toISOString();
 
+  const stageBreakdown = {
+    call_scheduled: enriched.filter((l) => l.crmStage === "call_scheduled").length,
+    call_done: enriched.filter((l) => l.crmStage === "call_done").length,
+    proposal_sent: enriched.filter((l) => l.crmStage === "proposal_sent").length,
+    customer: customers,
+    not_interested: enriched.filter((l) => l.crmStage === "not_interested").length,
+  };
+
   const payload: ConversionData & { updatedAt: string } = {
     leads: enriched,
     total,
     inCrm,
     customers,
-    conversionRate: total > 0 ? Math.round((customers / total) * 100) + "%" : "0%",
+    conversionRate: total > 0 ? Math.round((inCrm / total) * 100) + "%" : "0%",
     updatedAt,
   };
 
-  // Store in app_cache
-  await supabase.from("app_cache").upsert({ key: CACHE_KEY, value: payload, updated_at: updatedAt });
+  // Write snapshot + update cache in parallel
+  await Promise.all([
+    supabase.from("campaign_snapshots").insert({
+      snapshotted_at: updatedAt,
+      campaign_id: CAMPAIGN_ID,
+      total_leads: total,
+      booked_leads: inCrm,
+      conversion_rate: total > 0 ? Math.round((inCrm / total) * 100 * 100) / 100 : 0,
+      stage_breakdown: stageBreakdown,
+    }),
+    supabase.from("app_cache").upsert({ key: CACHE_KEY, value: payload, updated_at: updatedAt }),
+  ]);
 
   return payload;
 }
