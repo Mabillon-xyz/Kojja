@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json({ error: "LEMLIST_API_KEY not configured" }, { status: 500 });
   }
 
-  const basicAuth = Buffer.from(`anystring:${process.env.LEMLIST_API_KEY}`).toString("base64");
+  const basicAuth = Buffer.from(`:${process.env.LEMLIST_API_KEY}`).toString("base64");
 
   // Try the leads endpoint (JSON)
   const leadsRes = await fetch(

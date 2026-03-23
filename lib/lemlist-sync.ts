@@ -11,7 +11,7 @@ function getServiceClient() {
 }
 
 async function fetchAllLemlistLeads(apiKey: string, campaignId: string): Promise<LemlistLead[]> {
-  const basicAuth = Buffer.from(`anystring:${apiKey}`).toString("base64");
+  const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
   const all: LemlistLead[] = [];
   let offset = 0;
   const limit = 100;
