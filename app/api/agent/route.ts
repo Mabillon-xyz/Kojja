@@ -183,25 +183,6 @@ async function queryDatabase(input: QueryInput): Promise<string> {
   }
 }
 
-// ─── Docs loader ─────────────────────────────────────────────────────────────
-
-async function loadDocs(): Promise<string> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-  const { data } = await supabase
-    .from('documents')
-    .select('title, content')
-    .order('sort_order', { ascending: true })
-
-  if (!data?.length) return ''
-
-  return data
-    .map((doc) => `## ${doc.title}\n\n${doc.content}`)
-    .join('\n\n---\n\n')
-}
-
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -217,16 +198,16 @@ export async function POST(req: NextRequest) {
 
   const selectedModel = MODELS.includes(model) ? model : 'claude-sonnet-4-6'
 
-  const docs = await loadDocs()
   const systemPrompt = `You are an expert assistant for Koj²a, a business development and sales coaching platform.
-${docs ? `\nYou have access to the following internal documentation. Use it to answer questions accurately.\n\n--- DOCUMENTATION ---\n${docs}\n--- END DOCUMENTATION ---\n` : ''}
+
 You have access to two tools:
 - web_search: search the internet for current or external information
 - query_database: read the live Koja database (SELECT only)
 
 ${DB_SCHEMA}
 
-Use query_database whenever the user asks about leads, emails, automations, or any data in the app. Use web_search for external or real-time information.
+The \`documents\` table contains all internal Koj²a documentation (strategy, ICP, workflows, etc.). Query it whenever you need product knowledge.
+Use query_database for any app data or internal docs. Use web_search for external or real-time information.
 Be concise, direct, and helpful. Answer in the same language as the user's message.`
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
