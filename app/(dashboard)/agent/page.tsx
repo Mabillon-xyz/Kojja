@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Bot, User, Loader2, ChevronDown, Plus, Trash2, MessageSquare, PanelLeft, X } from 'lucide-react'
+import { Send, Bot, User, Loader2, ChevronDown, Plus, Trash2, MessageSquare, PanelLeft, X, History, MessagesSquare } from 'lucide-react'
 
 const MODELS = [
   {
@@ -64,6 +64,7 @@ export default function AgentPage() {
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [view, setView] = useState<'chat' | 'history'>('chat')
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -197,6 +198,17 @@ export default function AgentPage() {
     }
   }
 
+  function formatRelative(iso: string) {
+    const d = new Date(iso)
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    const diffDays = Math.floor(diffMs / 86400000)
+    if (diffDays === 0) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7) return `${diffDays}d ago`
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  }
+
   const selectedModel = MODELS.find((m) => m.id === model) ?? MODELS[0]
   const groups = groupByDate(conversations)
 
@@ -287,20 +299,43 @@ export default function AgentPage() {
       {/* Main chat area */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-neutral-100">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-neutral-100 gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {/* Mobile sidebar toggle */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="md:hidden p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
+              className="md:hidden flex-shrink-0 p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
             >
               <PanelLeft className="w-5 h-5" />
             </button>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-base font-semibold text-neutral-900">Agent</h1>
               <p className="hidden sm:block text-xs text-neutral-400 mt-0.5">Powered by Koj²a documentation</p>
             </div>
           </div>
+
+          {/* Chat / History toggle + model selector */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center bg-neutral-100 rounded-lg p-0.5 text-xs">
+              <button
+                onClick={() => setView('chat')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all ${
+                  view === 'chat' ? 'bg-white text-neutral-900 shadow-sm font-medium' : 'text-neutral-500 hover:text-neutral-700'
+                }`}
+              >
+                <MessagesSquare className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Chat</span>
+              </button>
+              <button
+                onClick={() => setView('history')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all ${
+                  view === 'history' ? 'bg-white text-neutral-900 shadow-sm font-medium' : 'text-neutral-500 hover:text-neutral-700'
+                }`}
+              >
+                <History className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">History</span>
+              </button>
+            </div>
 
           {/* Model selector */}
           <div className="relative">
@@ -347,10 +382,102 @@ export default function AgentPage() {
               </>
             )}
           </div>
+          </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
+        {/* History table view */}
+        {view === 'history' && (
+          <div className="flex-1 overflow-y-auto">
+            {conversations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 py-20 text-center">
+                <MessageSquare className="w-8 h-8 text-neutral-300" />
+                <p className="text-sm text-neutral-400">No conversations yet</p>
+              </div>
+            ) : (
+              <>
+                {/* Desktop table */}
+                <table className="hidden sm:table w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-neutral-100">
+                      <th className="text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider px-6 py-3">Title</th>
+                      <th className="text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider px-4 py-3 w-32">Model</th>
+                      <th className="text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider px-4 py-3 w-28">Updated</th>
+                      <th className="w-12 px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-50">
+                    {conversations.map((conv) => (
+                      <tr
+                        key={conv.id}
+                        className={`group cursor-pointer transition-colors hover:bg-neutral-50 ${
+                          conv.id === conversationId ? 'bg-blue-50/50' : ''
+                        }`}
+                        onClick={() => { openConversation(conv.id); setView('chat') }}
+                      >
+                        <td className="px-6 py-3.5">
+                          <span className={`font-medium truncate block max-w-xs ${conv.id === conversationId ? 'text-blue-700' : 'text-neutral-800'}`}>
+                            {conv.title}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <span className="text-xs text-neutral-500 bg-neutral-100 rounded-md px-2 py-0.5">{MODELS.find(m => m.id === conv.model)?.label ?? conv.model}</span>
+                        </td>
+                        <td className="px-4 py-3.5 text-xs text-neutral-400">{formatRelative(conv.updated_at)}</td>
+                        <td className="px-4 py-3.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50"
+                          >
+                            {deletingId === conv.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <Trash2 className="w-3.5 h-3.5" />
+                            }
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Mobile cards */}
+                <div className="sm:hidden divide-y divide-neutral-100">
+                  {conversations.map((conv) => (
+                    <div
+                      key={conv.id}
+                      className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer active:bg-neutral-50 ${
+                        conv.id === conversationId ? 'bg-blue-50/50' : ''
+                      }`}
+                      onClick={() => { openConversation(conv.id); setView('chat') }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium truncate ${conv.id === conversationId ? 'text-blue-700' : 'text-neutral-800'}`}>
+                          {conv.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-neutral-400">{MODELS.find(m => m.id === conv.model)?.label ?? conv.model}</span>
+                          <span className="text-neutral-200">·</span>
+                          <span className="text-xs text-neutral-400">{formatRelative(conv.updated_at)}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }}
+                        className="flex-shrink-0 p-1.5 rounded-lg text-neutral-300 hover:text-red-500 hover:bg-red-50 active:bg-red-50 transition-colors"
+                      >
+                        {deletingId === conv.id
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <Trash2 className="w-4 h-4" />
+                        }
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Chat view */}
+        {view === 'chat' && <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-20">
               <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center">
@@ -387,9 +514,10 @@ export default function AgentPage() {
             </div>
           ))}
           <div ref={bottomRef} />
-        </div>
+        </div>}
 
-        {/* Input */}
+        {/* Input — only in chat view */}
+        {view === 'chat' &&
         <div className="px-4 md:px-6 pb-4 md:pb-6 pt-3 border-t border-neutral-100">
           <div className="flex items-end gap-3 bg-neutral-50 rounded-2xl border border-neutral-200 px-4 py-3 focus-within:border-neutral-300 focus-within:bg-white transition-colors">
             <textarea
@@ -413,7 +541,7 @@ export default function AgentPage() {
               }
             </button>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   )
