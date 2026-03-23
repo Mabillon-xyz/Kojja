@@ -13,15 +13,15 @@ export const LEMLIST_ACCOUNTS: Record<AccountId, LemlistAccount> = {
   clement: {
     id: "clement",
     label: "Clément",
-    apiKey: () => process.env.LEMLIST_API_KEY ?? "",
-    campaignId: () => process.env.LEMLIST_CAMPAIGN_ID ?? "cam_JC7mjRSoLg4MACxR6",
+    apiKey: () => (process.env.LEMLIST_API_KEY ?? "").trim(),
+    campaignId: () => (process.env.LEMLIST_CAMPAIGN_ID ?? "cam_JC7mjRSoLg4MACxR6").trim(),
     cacheKey: "lemlist_conversion_clement",
   },
   sandro: {
     id: "sandro",
     label: "Sandro",
-    apiKey: () => process.env.LEMLIST_API_KEY_SANDRO ?? "",
-    campaignId: () => process.env.LEMLIST_CAMPAIGN_ID_SANDRO ?? "cam_QRLG9eJkNdBC2t8wT",
+    apiKey: () => (process.env.LEMLIST_API_KEY_SANDRO ?? "").trim(),
+    campaignId: () => (process.env.LEMLIST_CAMPAIGN_ID_SANDRO ?? "cam_QRLG9eJkNdBC2t8wT").trim(),
     cacheKey: "lemlist_conversion_sandro",
   },
 };
