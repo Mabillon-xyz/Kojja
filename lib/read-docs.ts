@@ -8,13 +8,14 @@ export interface DocSection {
   content: string
   isSystem: boolean
   sortOrder: number
+  tag: string | null
 }
 
 export async function readDocs(): Promise<DocSection[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('documents')
-    .select('id, title, emoji, content, last_updated, is_system, sort_order')
+    .select('id, title, emoji, content, last_updated, is_system, sort_order, tag')
     .order('sort_order', { ascending: true })
 
   if (error) throw new Error(`readDocs: ${error.message}`)
@@ -27,6 +28,7 @@ export async function readDocs(): Promise<DocSection[]> {
     lastUpdated: row.last_updated,
     isSystem: row.is_system,
     sortOrder: row.sort_order,
+    tag: row.tag ?? null,
   }))
 }
 
@@ -34,7 +36,7 @@ export async function readDoc(id: string): Promise<DocSection | null> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('documents')
-    .select('id, title, emoji, content, last_updated, is_system, sort_order')
+    .select('id, title, emoji, content, last_updated, is_system, sort_order, tag')
     .eq('id', id)
     .single()
 
@@ -48,5 +50,6 @@ export async function readDoc(id: string): Promise<DocSection | null> {
     lastUpdated: data.last_updated,
     isSystem: data.is_system,
     sortOrder: data.sort_order,
+    tag: data.tag ?? null,
   }
 }

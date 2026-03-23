@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS documents (
   last_updated TEXT NOT NULL DEFAULT '',
   sort_order   INT  NOT NULL DEFAULT 0,
   is_system    BOOLEAN NOT NULL DEFAULT false,  -- true = strategy docs managed by Claude
+  tag          TEXT,                             -- optional label: 'tech', 'ops', etc.
   created_at   TIMESTAMPTZ DEFAULT now(),
   updated_at   TIMESTAMPTZ DEFAULT now()
 );

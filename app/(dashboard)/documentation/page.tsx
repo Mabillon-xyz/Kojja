@@ -66,6 +66,11 @@ export default async function DocumentationPage() {
                   strategy
                 </span>
               )}
+              {doc.tag && (
+                <span className="text-xs text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded">
+                  {doc.tag}
+                </span>
+              )}
             </div>
 
             <div className="text-right">
