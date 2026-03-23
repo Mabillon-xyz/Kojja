@@ -10,13 +10,14 @@ const nav = [
   { label: 'CRM', href: '/crm', emoji: '👥' },
   { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
   { label: 'Campaigns', href: '/flows', emoji: '⚡' },
+  { label: 'Agent', href: '/agent', emoji: '🤖' },
 ]
 
 const mobileNav = [
   { label: 'Home', href: '/dashboard', emoji: '🏠' },
   { label: 'CRM', href: '/crm', emoji: '👥' },
   { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
-  { label: 'Campaigns', href: '/flows', emoji: '⚡' },
+  { label: 'Agent', href: '/agent', emoji: '🤖' },
   { label: 'Settings', href: '/settings', emoji: '⚙️' },
 ]
 
