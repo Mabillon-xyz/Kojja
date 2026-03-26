@@ -27,36 +27,68 @@ async function fetchCoachLeadCount(apiKey: string, campaignId: string): Promise<
 
 async function fetchAllLemlistLeads(apiKey: string, campaignId: string): Promise<LemlistLead[]> {
   const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
-  const all: LemlistLead[] = [];
+
+  // Step 1: fetch all lead stubs — campaign leads API returns {_id, state, contactId} only
+  const stubs: { contactId?: string }[] = [];
   let offset = 0;
   const limit = 100;
-  const MAX_PAGES = 20; // safety cap — 2000 leads max
+  const MAX_PAGES = 20; // 2000 leads max
 
   for (let p = 0; p < MAX_PAGES; p++) {
     const url = `https://api.lemlist.com/api/campaigns/${campaignId}/leads?limit=${limit}&offset=${offset}`;
-    const res = await fetch(url, {
-      cache: "no-store",
-      headers: { Authorization: `Basic ${basicAuth}` },
-    });
-
+    const res = await fetch(url, { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } });
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`Lemlist API error ${res.status}: ${text.slice(0, 200)}`);
     }
-
     const text = await res.text();
     if (!text.trim()) break;
-
     const page: unknown = JSON.parse(text);
-    const rows: LemlistLead[] = Array.isArray(page) ? page : ((page as { leads?: LemlistLead[] }).leads ?? []);
+    const rows = Array.isArray(page) ? page : ((page as { leads?: unknown[] }).leads ?? []);
     if (rows.length === 0) break;
-
-    all.push(...rows);
+    stubs.push(...rows as { contactId?: string }[]);
     if (rows.length < limit) break;
     offset += limit;
   }
 
-  return all;
+  if (stubs.length === 0) return [];
+
+  // Step 2: batch-enrich via /api/contacts?idsOrEmails=... to get email, name, linkedin
+  const BATCH = 100;
+  const leads: LemlistLead[] = [];
+
+  for (let i = 0; i < stubs.length; i += BATCH) {
+    const ids = stubs.slice(i, i + BATCH)
+      .map((s) => s.contactId)
+      .filter((id): id is string => Boolean(id))
+      .join(",");
+    if (!ids) continue;
+
+    const res = await fetch(
+      `https://api.lemlist.com/api/contacts?idsOrEmails=${ids}`,
+      { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } }
+    );
+    if (!res.ok) continue;
+
+    const contacts: unknown = await res.json();
+    if (!Array.isArray(contacts)) continue;
+
+    for (const c of contacts) {
+      const contact = c as {
+        email?: string;
+        fields?: { firstName?: string; lastName?: string; linkedInUrl?: string; companyName?: string };
+      };
+      leads.push({
+        email: contact.email,
+        firstName: contact.fields?.firstName,
+        lastName: contact.fields?.lastName,
+        linkedinUrl: contact.fields?.linkedInUrl,
+        companyName: contact.fields?.companyName,
+      });
+    }
+  }
+
+  return leads;
 }
 
 export async function syncLemlistConversion(accountId: AccountId): Promise<ConversionData & { updatedAt: string }> {
