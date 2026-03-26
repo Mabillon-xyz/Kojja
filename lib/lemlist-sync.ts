@@ -21,8 +21,8 @@ async function fetchCoachLeadCount(apiKey: string, campaignId: string): Promise<
     { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } }
   );
   if (!res.ok) return 0;
-  const data = await res.json() as { nbLeads?: number };
-  return data.nbLeads ?? 0;
+  const data = await res.json() as { nbLeads?: number; nbLeadsLaunched?: number };
+  return data.nbLeadsLaunched ?? data.nbLeads ?? 0;
 }
 
 async function fetchAllLemlistLeads(apiKey: string, campaignId: string): Promise<LemlistLead[]> {
@@ -124,12 +124,18 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
       { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } }
     );
     if (res.ok) {
-      const contacts: unknown = await res.json();
-      if (Array.isArray(contacts)) {
-        for (const c of contacts) {
-          const email = (c as { email?: string }).email?.toLowerCase().trim();
-          if (email) crmEmailsInLemlist.add(email);
-        }
+      const raw: unknown = await res.json();
+      // Lemlist may return a raw array or a wrapped object like { leads: [...] }
+      let contacts: unknown[] = [];
+      if (Array.isArray(raw)) {
+        contacts = raw;
+      } else if (raw && typeof raw === "object") {
+        const obj = raw as Record<string, unknown>;
+        contacts = Array.isArray(obj.leads) ? obj.leads : Array.isArray(obj.contacts) ? obj.contacts : [];
+      }
+      for (const c of contacts) {
+        const email = (c as { email?: string }).email?.toLowerCase().trim();
+        if (email) crmEmailsInLemlist.add(email);
       }
     }
   }
