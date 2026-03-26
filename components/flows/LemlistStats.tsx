@@ -254,7 +254,7 @@ export default function LemlistStats({ account = "clement" }: { account?: string
 
           {/* Summary KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Campaign leads" value={conv.total} sub="in Lemlist" />
+            <StatCard label="Campaign leads" value={conv.coachTotal > 0 ? conv.coachTotal : conv.total} sub="in Coach campaign" />
             <StatCard
               label="In CRM"
               value={conv.inCrm}

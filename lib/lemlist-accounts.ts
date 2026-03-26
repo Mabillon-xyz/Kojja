@@ -5,6 +5,7 @@ export type LemlistAccount = {
   label: string;
   apiKey: () => string;
   campaignId: () => string;
+  coachCampaignId: () => string;
   cacheKey: string;
 };
 
@@ -15,6 +16,7 @@ export const LEMLIST_ACCOUNTS: Record<AccountId, LemlistAccount> = {
     label: "Clément",
     apiKey: () => (process.env.LEMLIST_API_KEY ?? "").trim(),
     campaignId: () => (process.env.LEMLIST_CAMPAIGN_ID ?? "cam_JC7mjRSoLg4MACxR6").trim(),
+    coachCampaignId: () => (process.env.LEMLIST_COACH_CAMPAIGN_ID ?? "").trim(),
     cacheKey: "lemlist_conversion_clement",
   },
   sandro: {
@@ -22,6 +24,7 @@ export const LEMLIST_ACCOUNTS: Record<AccountId, LemlistAccount> = {
     label: "Sandro",
     apiKey: () => (process.env.LEMLIST_API_KEY_SANDRO ?? "").trim(),
     campaignId: () => (process.env.LEMLIST_CAMPAIGN_ID_SANDRO ?? "cam_QRLG9eJkNdBC2t8wT").trim(),
+    coachCampaignId: () => (process.env.LEMLIST_COACH_CAMPAIGN_ID_SANDRO ?? "").trim(),
     cacheKey: "lemlist_conversion_sandro",
   },
 };

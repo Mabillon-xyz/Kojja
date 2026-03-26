@@ -41,7 +41,7 @@ export default function ConversionChart({ snapshots }: { snapshots: Snapshot[] }
       <div className="flex items-start justify-between mb-4">
         <div>
           <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Booking rate over time</p>
-          <p className="text-xs text-neutral-400 mt-0.5">% of Lemlist leads who booked a call</p>
+          <p className="text-xs text-neutral-400 mt-0.5">% of Coach leads who booked a call (in Lemlist campaign)</p>
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-neutral-900">{latest.rate.toFixed(1)}%</p>
@@ -79,7 +79,7 @@ export default function ConversionChart({ snapshots }: { snapshots: Snapshot[] }
                   <p className="font-semibold text-neutral-700">{fmtDate(String(label))}</p>
                   <p className="text-blue-600 font-bold">{Number(payload[0].value).toFixed(1)}% booking rate</p>
                   <p className="text-neutral-400">
-                    {(payload[0].payload as { booked: number }).booked} booked / {(payload[0].payload as { total: number }).total} leads
+                    {(payload[0].payload as { booked: number }).booked} booked / {(payload[0].payload as { total: number }).total} Coach leads
                   </p>
                 </div>
               ) : null

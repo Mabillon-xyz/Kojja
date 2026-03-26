@@ -10,6 +10,21 @@ function getServiceClient() {
   );
 }
 
+async function fetchCoachLeadCount(apiKey: string, campaignId: string): Promise<number> {
+  if (!campaignId) return 0;
+  const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
+  const startDate = "2020-01-01T00:00:00.000Z";
+  const endDate = new Date().toISOString();
+  const params = new URLSearchParams({ startDate, endDate });
+  const res = await fetch(
+    `https://api.lemlist.com/api/v2/campaigns/${campaignId}/stats?${params}`,
+    { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } }
+  );
+  if (!res.ok) return 0;
+  const data = await res.json() as { nbLeads?: number };
+  return data.nbLeads ?? 0;
+}
+
 async function fetchAllLemlistLeads(apiKey: string, campaignId: string): Promise<LemlistLead[]> {
   const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
   const all: LemlistLead[] = [];
@@ -54,10 +69,13 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
 
   const supabase = getServiceClient();
 
-  // Fetch Lemlist leads + CRM leads in parallel
-  const [lemlistLeads, { data: crmLeads, error }] = await Promise.all([
+  const coachCampaignId = account.coachCampaignId();
+
+  // Fetch Lemlist leads + CRM leads + Coach campaign count in parallel
+  const [lemlistLeads, { data: crmLeads, error }, coachTotal] = await Promise.all([
     fetchAllLemlistLeads(apiKey, campaignId),
     supabase.from("leads").select("email, linkedin_url, stage"),
+    fetchCoachLeadCount(apiKey, coachCampaignId),
   ]);
 
   if (error) throw new Error(`Supabase error: ${error.message}`);
@@ -82,6 +100,9 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
   const total = enriched.length;
   const inCrm = enriched.filter((l) => l.inCrm).length;
   const customers = enriched.filter((l) => l.crmStage === "customer").length;
+  const booked = enriched.filter(
+    (l) => l.crmStage === "call_scheduled" || l.crmStage === "call_done"
+  ).length;
   const updatedAt = new Date().toISOString();
 
   const stageBreakdown = {
@@ -92,12 +113,18 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
     not_interested: enriched.filter((l) => l.crmStage === "not_interested").length,
   };
 
+  // Booking rate: booked calls from Lemlist campaign / total Coach campaign leads
+  const bookingDenominator = coachTotal > 0 ? coachTotal : total;
+  const bookingRate = bookingDenominator > 0 ? Math.round((booked / bookingDenominator) * 100 * 100) / 100 : 0;
+
   const payload: ConversionData & { updatedAt: string } = {
     leads: enriched,
     total,
     inCrm,
     customers,
     conversionRate: total > 0 ? Math.round((inCrm / total) * 100) + "%" : "0%",
+    coachTotal,
+    booked,
     updatedAt,
   };
 
@@ -106,9 +133,9 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
     supabase.from("campaign_snapshots").insert({
       snapshotted_at: updatedAt,
       campaign_id: campaignId,
-      total_leads: total,
-      booked_leads: inCrm,
-      conversion_rate: total > 0 ? Math.round((inCrm / total) * 100 * 100) / 100 : 0,
+      total_leads: bookingDenominator,
+      booked_leads: booked,
+      conversion_rate: bookingRate,
       stage_breakdown: stageBreakdown,
     }),
     supabase.from("app_cache").upsert({ key: account.cacheKey, value: payload, updated_at: updatedAt }),

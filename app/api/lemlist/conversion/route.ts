@@ -23,10 +23,12 @@ export type ConversionData = {
   inCrm: number;
   customers: number;
   conversionRate: string;
+  coachTotal: number;
+  booked: number;
 };
 
 const EMPTY: ConversionData & { updatedAt: null } = {
-  leads: [], total: 0, inCrm: 0, customers: 0, conversionRate: "0%", updatedAt: null,
+  leads: [], total: 0, inCrm: 0, customers: 0, conversionRate: "0%", coachTotal: 0, booked: 0, updatedAt: null,
 };
 
 /** Fast read — returns cached data. */
