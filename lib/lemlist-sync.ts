@@ -132,9 +132,8 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
   const total = enriched.length;
   const inCrm = enriched.filter((l) => l.inCrm).length;
   const customers = enriched.filter((l) => l.crmStage === "customer").length;
-  const booked = enriched.filter(
-    (l) => l.crmStage === "call_scheduled" || l.crmStage === "call_done"
-  ).length;
+  // All CRM-matched leads have booked a call (regardless of stage outcome)
+  const booked = inCrm;
   const updatedAt = new Date().toISOString();
 
   const stageBreakdown = {
