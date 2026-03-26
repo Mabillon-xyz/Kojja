@@ -169,13 +169,9 @@ export default function LemlistStats({ account = "clement" }: { account?: string
 
   const launched = data.nbLeadsLaunched ?? 0;
 
-  // Leads to show in table: CRM matches first, then unmatched
+  // Table shows only CRM-matched leads
   const sortedLeads: EnrichedLead[] = conv
-    ? [...conv.leads].sort((a, b) => {
-        if (a.inCrm && !b.inCrm) return -1;
-        if (!a.inCrm && b.inCrm) return 1;
-        return 0;
-      })
+    ? conv.leads.filter((l) => l.inCrm)
     : [];
   const visibleLeads = showAll ? sortedLeads : sortedLeads.slice(0, 10);
 
