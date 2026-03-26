@@ -112,15 +112,43 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
 
   if (error) throw new Error(`Supabase error: ${error.message}`);
 
-  // Build lookup maps
+  // --- Accurate CRM matching: look up CRM emails directly in Lemlist contacts API ---
+  // (The paginated leads API returns historical duplicates beyond offset 2000, so
+  //  CRM leads may not appear in the stubs. Querying by email is the reliable approach.)
+  const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
+  const crmEmails = (crmLeads ?? []).map((l) => l.email).filter(Boolean) as string[];
+  const crmEmailsInLemlist = new Set<string>();
+  if (crmEmails.length > 0) {
+    const res = await fetch(
+      `https://api.lemlist.com/api/contacts?idsOrEmails=${crmEmails.join(",")}`,
+      { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } }
+    );
+    if (res.ok) {
+      const contacts: unknown = await res.json();
+      if (Array.isArray(contacts)) {
+        for (const c of contacts) {
+          const email = (c as { email?: string }).email?.toLowerCase().trim();
+          if (email) crmEmailsInLemlist.add(email);
+        }
+      }
+    }
+  }
+
+  // CRM leads that exist in Lemlist
+  const crmLeadsInLemlist = (crmLeads ?? []).filter(
+    (l) => l.email && crmEmailsInLemlist.has(l.email.toLowerCase().trim())
+  );
+  const inCrm = crmLeadsInLemlist.length;
+  const customers = crmLeadsInLemlist.filter((l) => l.stage === "customer").length;
+  const booked = inCrm; // all CRM leads in Lemlist have booked a call
+
+  // --- Enrich Lemlist leads for the table display (best-effort via stubs) ---
   const byEmail = new Map<string, string>();
   const byLinkedin = new Map<string, string>();
   for (const lead of crmLeads ?? []) {
     if (lead.email) byEmail.set(lead.email.toLowerCase().trim(), lead.stage);
     if (lead.linkedin_url) byLinkedin.set(lead.linkedin_url.toLowerCase().trim(), lead.stage);
   }
-
-  // Enrich
   const enriched: EnrichedLead[] = lemlistLeads.map((ll) => {
     const stage =
       (ll.email ? byEmail.get(ll.email.toLowerCase().trim()) : undefined) ??
@@ -128,32 +156,44 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
       null;
     return { ...ll, inCrm: stage !== null, crmStage: stage };
   });
+  // Also add any CRM leads that didn't appear in stubs
+  for (const crm of crmLeadsInLemlist) {
+    const alreadyInTable = enriched.some(
+      (l) => l.email?.toLowerCase() === crm.email?.toLowerCase()
+    );
+    if (!alreadyInTable) {
+      enriched.push({
+        email: crm.email ?? undefined,
+        firstName: undefined,
+        lastName: undefined,
+        linkedinUrl: crm.linkedin_url ?? undefined,
+        companyName: undefined,
+        inCrm: true,
+        crmStage: crm.stage,
+      });
+    }
+  }
 
-  const total = enriched.length;
-  const inCrm = enriched.filter((l) => l.inCrm).length;
-  const customers = enriched.filter((l) => l.crmStage === "customer").length;
-  // All CRM-matched leads have booked a call (regardless of stage outcome)
-  const booked = inCrm;
+  const total = coachTotal > 0 ? coachTotal : enriched.length;
   const updatedAt = new Date().toISOString();
 
   const stageBreakdown = {
-    call_scheduled: enriched.filter((l) => l.crmStage === "call_scheduled").length,
-    call_done: enriched.filter((l) => l.crmStage === "call_done").length,
-    proposal_sent: enriched.filter((l) => l.crmStage === "proposal_sent").length,
+    call_scheduled: crmLeadsInLemlist.filter((l) => l.stage === "call_scheduled").length,
+    call_done: crmLeadsInLemlist.filter((l) => l.stage === "call_done").length,
+    proposal_sent: crmLeadsInLemlist.filter((l) => l.stage === "proposal_sent").length,
     customer: customers,
-    not_interested: enriched.filter((l) => l.crmStage === "not_interested").length,
+    not_interested: crmLeadsInLemlist.filter((l) => l.stage === "not_interested").length,
   };
 
-  // Booking rate: booked calls from Lemlist campaign / total Coach campaign leads
-  const bookingDenominator = coachTotal > 0 ? coachTotal : total;
-  const bookingRate = bookingDenominator > 0 ? Math.round((booked / bookingDenominator) * 100 * 100) / 100 : 0;
+  // Booking rate: booked / Coach total
+  const bookingRate = total > 0 ? Math.round((booked / total) * 100 * 100) / 100 : 0;
 
   const payload: ConversionData & { updatedAt: string } = {
     leads: enriched,
     total,
     inCrm,
     customers,
-    conversionRate: total > 0 ? Math.round((inCrm / total) * 100) + "%" : "0%",
+    conversionRate: total > 0 ? Math.round((customers / total) * 100) + "%" : "0%",
     coachTotal,
     booked,
     updatedAt,
@@ -164,7 +204,7 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
     supabase.from("campaign_snapshots").insert({
       snapshotted_at: updatedAt,
       campaign_id: campaignId,
-      total_leads: bookingDenominator,
+      total_leads: total,
       booked_leads: booked,
       conversion_rate: bookingRate,
       stage_breakdown: stageBreakdown,
