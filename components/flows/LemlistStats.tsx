@@ -244,32 +244,28 @@ export default function LemlistStats({ account = "clement" }: { account?: string
       {/* Conversion rate chart */}
       <ConversionChart snapshots={snapshots} />
 
-      {/* CRM Conversion */}
+      {/* CRM KPIs */}
+      {conv && (
+        <div className="grid grid-cols-2 gap-4">
+          <StatCard
+            label="Customers"
+            value={conv.customers}
+            sub={conv.coachTotal > 0 ? Math.round((conv.customers / conv.coachTotal) * 100) + "% of Coach leads" : "0%"}
+          />
+          <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Conversion rate</p>
+            <p className="text-3xl font-bold text-green-600">{conv.conversionRate}</p>
+            <p className="text-xs text-neutral-400 mt-1">leads → customers</p>
+          </div>
+        </div>
+      )}
+
+      {/* CRM Leads */}
       {conv && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-neutral-900">CRM conversion</h3>
-            <span className="text-xs text-neutral-400 font-medium">matched against CRM leads</span>
-          </div>
-
-          {/* Summary KPIs */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Campaign leads" value={conv.coachTotal > 0 ? conv.coachTotal : conv.total} sub="in Coach campaign" />
-            <StatCard
-              label="In CRM"
-              value={conv.inCrm}
-              sub={conv.total > 0 ? Math.round((conv.inCrm / conv.total) * 100) + "% matched" : "0%"}
-            />
-            <StatCard
-              label="Customers"
-              value={conv.customers}
-              sub={conv.total > 0 ? Math.round((conv.customers / conv.total) * 100) + "% of leads" : "0%"}
-            />
-            <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
-              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Conversion rate</p>
-              <p className="text-3xl font-bold text-green-600">{conv.conversionRate}</p>
-              <p className="text-xs text-neutral-400 mt-1">leads → customers</p>
-            </div>
+            <h3 className="text-base font-bold text-neutral-900">CRM leads</h3>
+            <span className="text-xs text-neutral-400 font-medium">matched against CRM</span>
           </div>
 
           {/* Leads table */}
