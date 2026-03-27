@@ -3,8 +3,11 @@ import HomeClient from '@/components/dashboard/HomeClient'
 import NextActions from '@/components/dashboard/NextActions'
 import DailyCallsChart, { type DayData } from '@/components/dashboard/DailyCallsChart'
 import FlowsDailyChart from '@/components/flows/FlowsDailyChart'
+import ConversionChart from '@/components/flows/ConversionChart'
 import { createClient } from '@/lib/supabase/server'
 import type { DailyCount } from '@/components/flows/FlowsList'
+import type { Snapshot } from '@/app/api/lemlist/snapshots/route'
+import { getAccount } from '@/lib/lemlist-accounts'
 import { TrendingUp, Users, BarChart2, Target } from 'lucide-react'
 
 const PRIX_CLIENT = 1750
@@ -42,6 +45,24 @@ function buildDailyData(leads: Awaited<ReturnType<typeof readLeads>>): DayData[]
   })
 }
 
+async function fetchClementSnapshots(): Promise<Snapshot[]> {
+  const supabase = await createClient()
+  const campaignId = getAccount("clement")!.campaignId()
+  const { data } = await supabase
+    .from("campaign_snapshots")
+    .select("id, snapshotted_at, total_leads, booked_leads, conversion_rate, stage_breakdown")
+    .eq("campaign_id", campaignId)
+    .order("snapshotted_at", { ascending: true })
+  if (!data) return []
+  // Deduplicate: keep latest snapshot per day
+  const byDay = new Map<string, Snapshot>()
+  for (const s of data as Snapshot[]) {
+    const day = s.snapshotted_at.slice(0, 10)
+    if (!byDay.has(day) || s.snapshotted_at > byDay.get(day)!.snapshotted_at) byDay.set(day, s)
+  }
+  return Array.from(byDay.values()).sort((a, b) => a.snapshotted_at.localeCompare(b.snapshotted_at))
+}
+
 async function buildFlowsChartData(): Promise<DailyCount[]> {
   const supabase = await createClient()
   const { data } = await supabase
@@ -69,7 +90,7 @@ async function buildFlowsChartData(): Promise<DailyCount[]> {
 }
 
 export default async function DashboardPage() {
-  const [leads, flowsChartData] = await Promise.all([readLeads(), buildFlowsChartData()])
+  const [leads, flowsChartData, snapshots] = await Promise.all([readLeads(), buildFlowsChartData(), fetchClementSnapshots()])
 
   const totalLeads = leads.length
   const customers = leads.filter((l) => l.stage === 'customer').length
@@ -138,6 +159,9 @@ export default async function DashboardPage() {
 
       {/* Daily calls chart — full width */}
       <DailyCallsChart data={dailyData} />
+
+      {/* Booking rate over time */}
+      <ConversionChart snapshots={snapshots} />
 
       {/* Flows per day chart */}
       <FlowsDailyChart chartData={flowsChartData} />

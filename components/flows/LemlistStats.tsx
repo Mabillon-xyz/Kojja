@@ -182,20 +182,22 @@ export default function LemlistStats({ account = "clement" }: { account?: string
           <h2 className="text-lg font-bold text-neutral-900">Campaign stats</h2>
           <p className="text-xs text-neutral-400 mt-0.5">
             {data.nbLeads ?? 0} leads total
-            {conv?.updatedAt && (
+            {account !== "sandro" && conv?.updatedAt && (
               <> · CRM synced {new Date(conv.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} at {new Date(conv.updatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</>
             )}
-            {!conv?.updatedAt && <> · CRM not synced yet</>}
+            {account !== "sandro" && !conv?.updatedAt && <> · CRM not synced yet</>}
           </p>
         </div>
-        <button
-          onClick={sync}
-          disabled={syncing}
-          className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-700 border border-neutral-200 rounded-lg px-3 py-1.5 hover:bg-neutral-50 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? "Syncing…" : "Sync CRM"}
-        </button>
+        {account !== "sandro" && (
+          <button
+            onClick={sync}
+            disabled={syncing}
+            className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-700 border border-neutral-200 rounded-lg px-3 py-1.5 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing…" : "Sync CRM"}
+          </button>
+        )}
       </div>
 
       {/* Funnel KPIs */}
@@ -237,11 +239,11 @@ export default function LemlistStats({ account = "clement" }: { account?: string
         </div>
       </div>
 
-      {/* Conversion rate chart */}
-      <ConversionChart snapshots={snapshots} />
+      {/* Conversion rate chart — Clément only */}
+      {account !== "sandro" && <ConversionChart snapshots={snapshots} />}
 
       {/* CRM KPIs */}
-      {conv && (
+      {account !== "sandro" && conv && (
         <div className="grid grid-cols-2 gap-4">
           <StatCard
             label="Customers"
@@ -256,8 +258,8 @@ export default function LemlistStats({ account = "clement" }: { account?: string
         </div>
       )}
 
-      {/* CRM Leads */}
-      {conv && (
+      {/* CRM Leads — Clément only */}
+      {account !== "sandro" && conv && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <h3 className="text-base font-bold text-neutral-900">CRM leads</h3>
