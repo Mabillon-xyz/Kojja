@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       byDay.set(day, s);
     }
   }
-  const deduped = [...byDay.values()].sort((a, b) => a.snapshotted_at.localeCompare(b.snapshotted_at));
+  const deduped = Array.from(byDay.values()).sort((a, b) => a.snapshotted_at.localeCompare(b.snapshotted_at));
 
   return NextResponse.json(deduped);
 }
