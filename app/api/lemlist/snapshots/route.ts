@@ -36,5 +36,15 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json(data as Snapshot[]);
+  // Keep only the latest snapshot per day to avoid duplicate dates in the chart
+  const byDay = new Map<string, Snapshot>();
+  for (const s of (data as Snapshot[])) {
+    const day = s.snapshotted_at.slice(0, 10);
+    if (!byDay.has(day) || s.snapshotted_at > byDay.get(day)!.snapshotted_at) {
+      byDay.set(day, s);
+    }
+  }
+  const deduped = [...byDay.values()].sort((a, b) => a.snapshotted_at.localeCompare(b.snapshotted_at));
+
+  return NextResponse.json(deduped);
 }
