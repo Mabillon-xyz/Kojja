@@ -145,7 +145,7 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
     (l) => l.email && crmEmailsInLemlist.has(l.email.toLowerCase().trim())
   );
   const inCrm = crmLeadsInLemlist.length;
-  const customers = crmLeadsInLemlist.filter((l) => l.stage === "customer").length;
+  const customers = (crmLeads ?? []).filter((l) => l.stage === "customer").length;
   // All CRM leads represent people who booked a call (email matching is imperfect
   // — some have different emails in Lemlist vs CRM — so use total CRM lead count)
   const booked = (crmLeads ?? []).length;
