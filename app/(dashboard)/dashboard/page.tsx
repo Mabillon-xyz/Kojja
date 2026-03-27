@@ -157,11 +157,11 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Daily calls chart — full width */}
-      <DailyCallsChart data={dailyData} />
-
-      {/* Booking rate over time */}
-      <ConversionChart snapshots={snapshots} />
+      {/* Charts side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <DailyCallsChart data={dailyData} />
+        <ConversionChart snapshots={snapshots} />
+      </div>
 
       {/* Flows per day chart */}
       <FlowsDailyChart chartData={flowsChartData} />
