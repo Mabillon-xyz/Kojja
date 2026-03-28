@@ -8,6 +8,7 @@ import { Settings, BookOpen, X } from 'lucide-react'
 const nav = [
   { label: 'Home', href: '/dashboard', emoji: '🏠' },
   { label: 'CRM', href: '/crm', emoji: '👥' },
+  { label: 'Proposals', href: '/proposal-tool', emoji: '📝' },
   { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
   { label: 'Campaigns', href: '/flows', emoji: '⚡' },
   { label: 'Agent', href: '/agent', emoji: '🤖' },
