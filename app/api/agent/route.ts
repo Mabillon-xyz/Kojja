@@ -10,6 +10,21 @@ const MODELS = [
 
 // ─── Tool definitions ───────────────────────────────────────────────────────
 
+const FETCH_URL_TOOL: Anthropic.Tool = {
+  name: 'fetch_url',
+  description:
+    'Fetch and read the content of any publicly accessible URL: web pages, CSV files, public Google Sheets (share as "anyone with link"), JSON APIs, etc. ' +
+    'For Google Sheets links (docs.google.com/spreadsheets), this tool automatically converts to a CSV export URL — just pass the normal sheet URL. ' +
+    'Use this whenever the user shares a link they want you to read.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      url: { type: 'string', description: 'The URL to fetch' },
+    },
+    required: ['url'],
+  },
+}
+
 const WEB_SEARCH_TOOL: Anthropic.Tool = {
   name: 'web_search',
   description:
@@ -75,6 +90,45 @@ Database tables (read-only access via query_database tool):
 `.trim()
 
 // ─── Tool implementations ────────────────────────────────────────────────────
+
+async function fetchUrl(url: string): Promise<string> {
+  try {
+    // Convert Google Sheets edit URL → CSV export URL
+    const sheetsMatch = url.match(
+      /docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)(?:\/[^?]*)?(?:\?.*gid=(\d+))?/
+    )
+    if (sheetsMatch) {
+      const sheetId = sheetsMatch[1]
+      const gid     = sheetsMatch[2] ?? '0'
+      url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`
+    }
+
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KojaAgent/1.0)' },
+      signal: AbortSignal.timeout(15_000),
+    })
+
+    if (!res.ok) {
+      return `Failed to fetch URL (HTTP ${res.status} ${res.statusText}).\n` +
+        (url.includes('docs.google.com')
+          ? 'Make sure the sheet is shared as "Anyone with the link can view".'
+          : '')
+    }
+
+    const contentType = res.headers.get('content-type') ?? ''
+    const text = await res.text()
+
+    // Truncate large responses
+    const MAX = 40_000
+    const truncated = text.length > MAX
+      ? text.slice(0, MAX) + `\n\n[... truncated — ${text.length - MAX} characters omitted]`
+      : text
+
+    return `Content-Type: ${contentType}\nURL: ${url}\n\n${truncated}`
+  } catch (err) {
+    return `Fetch error: ${err instanceof Error ? err.message : 'unknown error'}`
+  }
+}
 
 async function parallelSearch(query: string): Promise<string> {
   const apiKey = process.env.PARALLEL_API_KEY
@@ -251,9 +305,12 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = `You are an expert assistant for Koj²a, a business development and sales coaching platform.
 
-You have access to two tools:
+You have access to three tools:
+- fetch_url: fetch and read any publicly accessible URL (web pages, public Google Sheets, CSV, JSON APIs). For Google Sheets, just pass the normal sheet URL — it auto-converts to CSV.
 - web_search: search the internet for current or external information
 - query_database: read the live Koja database (SELECT only)
+
+IMPORTANT: If the user shares a URL (Google Sheets, web page, etc.), ALWAYS use fetch_url to read it directly rather than saying you can't access it.
 
 ${DB_SCHEMA}
 
@@ -284,7 +341,7 @@ Be concise, direct, and helpful. Answer in the same language as the user's messa
       model: selectedModel,
       max_tokens: 4096,
       system: systemPrompt,
-      tools: [WEB_SEARCH_TOOL, QUERY_DATABASE_TOOL],
+      tools: [FETCH_URL_TOOL, WEB_SEARCH_TOOL, QUERY_DATABASE_TOOL],
       messages: currentMessages,
     })
 
@@ -322,7 +379,9 @@ Be concise, direct, and helpful. Answer in the same language as the user's messa
       toolUseBlocks.map(async (block) => {
         let result: string
 
-        if (block.name === 'web_search') {
+        if (block.name === 'fetch_url') {
+          result = await fetchUrl((block.input as { url: string }).url)
+        } else if (block.name === 'web_search') {
           result = await parallelSearch((block.input as { query: string }).query)
         } else if (block.name === 'query_database') {
           result = await queryDatabase(block.input as QueryInput)
