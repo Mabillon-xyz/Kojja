@@ -76,6 +76,36 @@ const QUERY_DATABASE_TOOL: Anthropic.Tool = {
   },
 }
 
+const UPDATE_DOCUMENT_TOOL: Anthropic.Tool = {
+  name: 'update_document',
+  description:
+    'Update the content (and optionally title/emoji) of a document in the Koja knowledge base. ' +
+    'Use this when the user asks you to update, rewrite, or replace the content of a strategic document. ' +
+    'First use query_database to read the document and get its id, then call this tool to write the new content.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      id: {
+        type: 'string',
+        description: 'The document id (e.g. "icp", "positioning", "strategy"). Get it from query_database first.',
+      },
+      content: {
+        type: 'string',
+        description: 'The full new markdown content to replace the existing content.',
+      },
+      title: {
+        type: 'string',
+        description: 'Optional new title for the document.',
+      },
+      emoji: {
+        type: 'string',
+        description: 'Optional new emoji for the document.',
+      },
+    },
+    required: ['id', 'content'],
+  },
+}
+
 const DB_SCHEMA = `
 Database tables (read-only access via query_database tool):
 
@@ -237,6 +267,39 @@ async function queryDatabase(input: QueryInput): Promise<string> {
   }
 }
 
+type UpdateDocumentInput = {
+  id: string
+  content: string
+  title?: string
+  emoji?: string
+}
+
+async function updateDocument(input: UpdateDocumentInput): Promise<string> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const updates: Record<string, unknown> = {
+      content: input.content,
+      last_updated: new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+    }
+    if (input.title) updates.title = input.title
+    if (input.emoji) updates.emoji = input.emoji
+
+    const { error } = await supabase
+      .from('documents')
+      .update(updates)
+      .eq('id', input.id)
+
+    if (error) return `Update error: ${error.message}`
+    return `Document "${input.id}" updated successfully.`
+  } catch (err) {
+    return `Update error: ${err instanceof Error ? err.message : 'unknown error'}`
+  }
+}
+
 // ─── Attachment types ─────────────────────────────────────────────────────────
 
 type ImageAttachment    = { type: 'image';       name: string; data: string; mediaType: string }
@@ -305,10 +368,11 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = `You are an expert assistant for Koj²a, a business development and sales coaching platform.
 
-You have access to three tools:
+You have access to four tools:
 - fetch_url: fetch and read any publicly accessible URL (web pages, public Google Sheets, CSV, JSON APIs). For Google Sheets, just pass the normal sheet URL — it auto-converts to CSV.
 - web_search: search the internet for current or external information
 - query_database: read the live Koja database (SELECT only)
+- update_document: update the content of a strategic document in the Koja knowledge base (use query_database first to get the document id, then call this to write new content)
 
 IMPORTANT: If the user shares a URL (Google Sheets, web page, etc.), ALWAYS use fetch_url to read it directly rather than saying you can't access it.
 
@@ -341,7 +405,7 @@ Be concise, direct, and helpful. Answer in the same language as the user's messa
       model: selectedModel,
       max_tokens: 4096,
       system: systemPrompt,
-      tools: [FETCH_URL_TOOL, WEB_SEARCH_TOOL, QUERY_DATABASE_TOOL],
+      tools: [FETCH_URL_TOOL, WEB_SEARCH_TOOL, QUERY_DATABASE_TOOL, UPDATE_DOCUMENT_TOOL],
       messages: currentMessages,
     })
 
@@ -385,6 +449,8 @@ Be concise, direct, and helpful. Answer in the same language as the user's messa
           result = await parallelSearch((block.input as { query: string }).query)
         } else if (block.name === 'query_database') {
           result = await queryDatabase(block.input as QueryInput)
+        } else if (block.name === 'update_document') {
+          result = await updateDocument(block.input as UpdateDocumentInput)
         } else {
           result = 'Unknown tool.'
         }
