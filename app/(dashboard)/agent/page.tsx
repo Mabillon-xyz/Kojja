@@ -1,10 +1,114 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Bot, User, Loader2, ChevronDown, Plus, Trash2, MessageSquare, PanelLeft, X, Zap } from 'lucide-react'
+import { Send, Bot, User, Loader2, ChevronDown, Plus, Trash2, MessageSquare, PanelLeft, X, Zap, Paperclip, FileText, Image as ImageIcon, Music, Video, File } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
+
+// ─── File attachment types ────────────────────────────────────────────────────
+
+type FileAttachment =
+  | { type: 'image';       name: string; data: string; mediaType: string; previewUrl: string }
+  | { type: 'document';    name: string; data: string; mediaType: string }
+  | { type: 'text';        name: string; text: string }
+  | { type: 'unsupported'; name: string; size: number }
+
+function fileIcon(att: FileAttachment) {
+  if (att.type === 'image') return <ImageIcon className="w-3 h-3" />
+  if (att.type === 'document') return <FileText className="w-3 h-3" />
+  if (att.type === 'unsupported') {
+    const ext = att.name.split('.').pop()?.toLowerCase() ?? ''
+    if (['mp4','mov','avi','webm'].includes(ext)) return <Video className="w-3 h-3" />
+    if (['mp3','wav','m4a','aac'].includes(ext)) return <Music className="w-3 h-3" />
+  }
+  return <File className="w-3 h-3" />
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve((reader.result as string).split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+async function processFile(file: File): Promise<FileAttachment> {
+  const name = file.name
+  const mime = file.type
+  const ext  = name.split('.').pop()?.toLowerCase() ?? ''
+
+  // Images
+  if (['image/png','image/jpeg','image/gif','image/webp'].includes(mime)) {
+    const data = await fileToBase64(file)
+    const previewUrl = URL.createObjectURL(file)
+    return { type: 'image', name, data, mediaType: mime, previewUrl }
+  }
+
+  // PDF
+  if (mime === 'application/pdf') {
+    const data = await fileToBase64(file)
+    return { type: 'document', name, data, mediaType: mime }
+  }
+
+  // Text-based files
+  if (mime.startsWith('text/') || ['md','html','htm','csv','txt','json','xml'].includes(ext)) {
+    const text = await file.text()
+    return { type: 'text', name, text }
+  }
+
+  // Excel / spreadsheet — parse with SheetJS
+  if (['xlsx','xls','ods'].includes(ext) || mime.includes('spreadsheet') || mime.includes('excel')) {
+    try {
+      const XLSX = await import('xlsx')
+      const ab   = await file.arrayBuffer()
+      const wb   = XLSX.read(ab, { type: 'array' })
+      const csvParts = wb.SheetNames.map((sheetName) => {
+        const csv = XLSX.utils.sheet_to_csv(wb.Sheets[sheetName])
+        return `Sheet: ${sheetName}\n${csv}`
+      })
+      return { type: 'text', name, text: csvParts.join('\n\n') }
+    } catch {
+      return { type: 'unsupported', name, size: file.size }
+    }
+  }
+
+  // Everything else (mp4, mp3, etc.)
+  return { type: 'unsupported', name, size: file.size }
+}
+
+function AttachmentChip({ att, onRemove }: { att: FileAttachment; onRemove: () => void }) {
+  return (
+    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-100 border border-neutral-200 text-xs text-neutral-600 max-w-[160px]">
+      {att.type === 'image' && 'previewUrl' in att ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={att.previewUrl} alt={att.name} className="w-4 h-4 rounded object-cover flex-shrink-0" />
+      ) : (
+        <span className="flex-shrink-0 text-neutral-400">{fileIcon(att)}</span>
+      )}
+      <span className="truncate">{att.name}</span>
+      <button onClick={onRemove} className="flex-shrink-0 text-neutral-400 hover:text-neutral-600 ml-0.5">
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  )
+}
+
+function MessageAttachmentBadges({ content }: { content: string }) {
+  const match = content.match(/^\[Files: (.+?)\]\n/)
+  if (!match) return null
+  const files = match[1].split(', ')
+  return (
+    <div className="flex flex-wrap gap-1.5 mb-2">
+      {files.map((f, i) => (
+        <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-100 text-[11px]">
+          <Paperclip className="w-2.5 h-2.5" /> {f}
+        </span>
+      ))}
+    </div>
+  )
+}
 
 const mdComponents: Components = {
   p:          ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
@@ -112,8 +216,11 @@ export default function AgentPage() {
   const [deletingId, setDeletingId]       = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen]     = useState(false)
   const [hourlyTokens, setHourlyTokens]   = useState(0)
+  const [pendingFiles, setPendingFiles]   = useState<FileAttachment[]>([])
+  const [processingFile, setProcessingFile] = useState(false)
   const bottomRef   = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ── Load conversations + auto-open most recent ──────────────────────────
   const loadConversations = useCallback(async () => {
@@ -169,14 +276,37 @@ export default function AgentPage() {
     setDeletingId(null)
   }
 
+  // ── File handling ────────────────────────────────────────────────────────
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    setProcessingFile(true)
+    const processed = await Promise.all(files.map(processFile))
+    setPendingFiles((prev) => [...prev, ...processed])
+    setProcessingFile(false)
+    e.target.value = ''
+  }
+
+  function removePendingFile(idx: number) {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== idx))
+  }
+
   // ── Send ─────────────────────────────────────────────────────────────────
   async function send() {
     const text = input.trim()
-    if (!text || loading) return
+    if ((!text && pendingFiles.length === 0) || loading) return
 
-    const newMessages: Message[] = [...messages, { role: 'user', content: text }]
+    // Build display content: prepend file list header if there are attachments
+    const fileNames = pendingFiles.map((f) => f.name)
+    const displayContent = fileNames.length > 0
+      ? `[Files: ${fileNames.join(', ')}]\n${text}`
+      : text
+
+    const attachmentsToSend = [...pendingFiles]
+    const newMessages: Message[] = [...messages, { role: 'user', content: displayContent }]
     setMessages(newMessages)
     setInput('')
+    setPendingFiles([])
     setLoading(true)
     setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
 
@@ -185,7 +315,7 @@ export default function AgentPage() {
       const res = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, model }),
+        body: JSON.stringify({ messages: newMessages, model, attachments: attachmentsToSend }),
       })
 
       if (!res.ok || !res.body) {
@@ -262,6 +392,17 @@ export default function AgentPage() {
       e.preventDefault()
       send()
     }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    const files = Array.from(e.dataTransfer.files)
+    if (!files.length) return
+    setProcessingFile(true)
+    Promise.all(files.map(processFile)).then((processed) => {
+      setPendingFiles((prev) => [...prev, ...processed])
+      setProcessingFile(false)
+    })
   }
 
   const selectedModel = MODELS.find((m) => m.id === model) ?? MODELS[0]
@@ -460,7 +601,10 @@ export default function AgentPage() {
                     {msg.content}
                   </ReactMarkdown>
                 ) : (
-                  msg.content
+                  <>
+                    <MessageAttachmentBadges content={msg.content} />
+                    {msg.content.replace(/^\[Files: .+?\]\n/, '')}
+                  </>
                 )}
               </div>
             </div>
@@ -470,20 +614,56 @@ export default function AgentPage() {
 
         {/* Input */}
         <div className="px-4 md:px-6 pb-4 md:pb-6 pt-3 border-t border-neutral-100">
-          <div className="flex items-end gap-3 bg-neutral-50 rounded-2xl border border-neutral-200 px-4 py-3 focus-within:border-neutral-300 focus-within:bg-white transition-colors">
+          {/* Pending file chips */}
+          {pendingFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {pendingFiles.map((att, i) => (
+                <AttachmentChip key={i} att={att} onRemove={() => removePendingFile(i)} />
+              ))}
+            </div>
+          )}
+
+          <div
+            className="flex items-end gap-2 bg-neutral-50 rounded-2xl border border-neutral-200 px-3 py-3 focus-within:border-neutral-300 focus-within:bg-white transition-colors"
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+          >
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.html,.htm,.txt,.md,.csv,.json,.xml,.xlsx,.xls,.ods,.mp4,.mov,.mp3,.wav,.m4a"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+
+            {/* Attachment button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              title="Attach files (images, PDF, Excel, HTML, text, audio, video)"
+              className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors disabled:opacity-40"
+            >
+              {processingFile
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Paperclip className="w-4 h-4" />
+              }
+            </button>
+
             <textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a question... (Enter to send, Shift+Enter for new line)"
+              placeholder="Ask a question… or drop files here"
               rows={1}
               disabled={loading}
               className="flex-1 bg-transparent text-sm text-neutral-800 placeholder-neutral-400 resize-none outline-none min-h-[24px] disabled:opacity-50"
             />
             <button
               onClick={send}
-              disabled={!input.trim() || loading}
+              disabled={(!input.trim() && pendingFiles.length === 0) || loading}
               className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {loading
@@ -492,6 +672,9 @@ export default function AgentPage() {
               }
             </button>
           </div>
+          <p className="text-[11px] text-neutral-400 mt-1.5 ml-1">
+            Supports images, PDF, Excel, HTML, CSV, text · Drop files or click 📎
+          </p>
         </div>
       </div>
     </div>

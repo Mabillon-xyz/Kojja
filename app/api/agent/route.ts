@@ -183,6 +183,57 @@ async function queryDatabase(input: QueryInput): Promise<string> {
   }
 }
 
+// ─── Attachment types ─────────────────────────────────────────────────────────
+
+type ImageAttachment    = { type: 'image';       name: string; data: string; mediaType: string }
+type DocumentAttachment = { type: 'document';    name: string; data: string; mediaType: string }
+type TextAttachment     = { type: 'text';        name: string; text: string }
+type UnsupportedFile    = { type: 'unsupported'; name: string; size: number }
+type FileAttachment     = ImageAttachment | DocumentAttachment | TextAttachment | UnsupportedFile
+
+function buildContentBlocks(
+  text: string,
+  attachments: FileAttachment[],
+): Anthropic.MessageParam['content'] {
+  const blocks: Anthropic.ContentBlockParam[] = []
+
+  for (const att of attachments) {
+    if (att.type === 'image') {
+      blocks.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: att.mediaType as 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp',
+          data: att.data,
+        },
+      })
+    } else if (att.type === 'document') {
+      blocks.push({
+        type: 'document',
+        source: {
+          type: 'base64',
+          media_type: 'application/pdf',
+          data: att.data,
+        },
+      } as Anthropic.ContentBlockParam)
+    } else if (att.type === 'text') {
+      blocks.push({
+        type: 'text',
+        text: `<file name="${att.name}">\n${att.text}\n</file>`,
+      })
+    } else if (att.type === 'unsupported') {
+      blocks.push({
+        type: 'text',
+        text: `[Attached file: ${att.name} (${(att.size / 1_048_576).toFixed(1)} MB) — binary content, cannot be read directly]`,
+      })
+    }
+  }
+
+  if (text) blocks.push({ type: 'text', text })
+
+  return blocks.length === 1 && blocks[0].type === 'text' ? blocks[0].text : blocks
+}
+
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -190,7 +241,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
   }
 
-  const { messages, model } = await req.json()
+  const { messages, model, attachments } = await req.json()
 
   if (!messages?.length) {
     return NextResponse.json({ error: 'messages required' }, { status: 400 })
@@ -212,7 +263,19 @@ Be concise, direct, and helpful. Answer in the same language as the user's messa
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+  // If there are attachments, inject them into the last user message content
   let currentMessages = [...messages] as Anthropic.MessageParam[]
+  if (attachments?.length) {
+    const lastIdx = currentMessages.length - 1
+    const last = currentMessages[lastIdx]
+    if (last.role === 'user') {
+      const textContent = typeof last.content === 'string' ? last.content : ''
+      currentMessages = [
+        ...currentMessages.slice(0, lastIdx),
+        { role: 'user', content: buildContentBlocks(textContent, attachments as FileAttachment[]) },
+      ]
+    }
+  }
   let totalTokens = 0
 
   // eslint-disable-next-line no-constant-condition
