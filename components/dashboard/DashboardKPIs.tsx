@@ -1,14 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, TrendingUp, Users, BarChart2, Target } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+
+const ICONS: Record<string, LucideIcon> = { TrendingUp, Users, BarChart2, Target }
 
 export type KPI = {
   label: string
   value: string
   sub: string
-  icon: LucideIcon
+  icon: string
   iconBg: string
   iconColor: string
   valueColor: string
@@ -49,12 +51,13 @@ export default function DashboardKPIs({ kpis }: { kpis: KPI[] }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => {
           const hide = blurred && kpi.sensitive
+          const Icon = ICONS[kpi.icon]
           return (
             <div key={kpi.label} className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
               <div className="flex items-start justify-between mb-4">
                 <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider">{kpi.label}</p>
                 <div className={`p-2 rounded-lg ${kpi.iconBg}`}>
-                  <kpi.icon className={`w-4 h-4 ${kpi.iconColor}`} />
+                  {Icon && <Icon className={`w-4 h-4 ${kpi.iconColor}`} />}
                 </div>
               </div>
               <p

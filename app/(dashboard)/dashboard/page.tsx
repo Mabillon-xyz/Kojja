@@ -9,7 +9,6 @@ import { createClient } from '@/lib/supabase/server'
 import type { DailyCount } from '@/components/flows/FlowsList'
 import type { Snapshot } from '@/app/api/lemlist/snapshots/route'
 import { getAccount } from '@/lib/lemlist-accounts'
-import { TrendingUp, Users, BarChart2, Target } from 'lucide-react'
 
 const PRIX_CLIENT = 1750
 
@@ -105,7 +104,7 @@ export default async function DashboardPage() {
       label: 'Revenue',
       value: '€' + revenue.toLocaleString('en-GB'),
       sub: `${customers} client${customers !== 1 ? 's' : ''} × €${PRIX_CLIENT.toLocaleString('en-GB')}`,
-      icon: TrendingUp,
+      icon: 'TrendingUp',
       iconBg: 'bg-emerald-100',
       iconColor: 'text-emerald-600',
       valueColor: 'text-emerald-700',
@@ -115,7 +114,7 @@ export default async function DashboardPage() {
       label: 'Customers',
       value: String(customers),
       sub: 'Active clients',
-      icon: Users,
+      icon: 'Users',
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600',
       valueColor: 'text-blue-700',
@@ -125,7 +124,7 @@ export default async function DashboardPage() {
       label: 'Total leads',
       value: String(totalLeads),
       sub: 'Since launch',
-      icon: BarChart2,
+      icon: 'BarChart2',
       iconBg: 'bg-violet-100',
       iconColor: 'text-violet-600',
       valueColor: 'text-neutral-900',
@@ -134,7 +133,7 @@ export default async function DashboardPage() {
       label: 'Conversion',
       value: conversionRate + '%',
       sub: `${proposalsSent} proposal${proposalsSent !== 1 ? 's' : ''} sent`,
-      icon: Target,
+      icon: 'Target',
       iconBg: 'bg-amber-100',
       iconColor: 'text-amber-600',
       valueColor: 'text-neutral-900',
