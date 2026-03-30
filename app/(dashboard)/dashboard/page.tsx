@@ -4,6 +4,7 @@ import NextActions from '@/components/dashboard/NextActions'
 import DailyCallsChart, { type DayData } from '@/components/dashboard/DailyCallsChart'
 import FlowsDailyChart from '@/components/flows/FlowsDailyChart'
 import ConversionChart from '@/components/flows/ConversionChart'
+import DashboardKPIs from '@/components/dashboard/DashboardKPIs'
 import { createClient } from '@/lib/supabase/server'
 import type { DailyCount } from '@/components/flows/FlowsList'
 import type { Snapshot } from '@/app/api/lemlist/snapshots/route'
@@ -108,6 +109,7 @@ export default async function DashboardPage() {
       iconBg: 'bg-emerald-100',
       iconColor: 'text-emerald-600',
       valueColor: 'text-emerald-700',
+      sensitive: true,
     },
     {
       label: 'Customers',
@@ -117,6 +119,7 @@ export default async function DashboardPage() {
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600',
       valueColor: 'text-blue-700',
+      sensitive: true,
     },
     {
       label: 'Total leads',
@@ -142,20 +145,7 @@ export default async function DashboardPage() {
     <div className="space-y-6 max-w-7xl">
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
-            <div className="flex items-start justify-between mb-4">
-              <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider">{kpi.label}</p>
-              <div className={`p-2 rounded-lg ${kpi.iconBg}`}>
-                <kpi.icon className={`w-4 h-4 ${kpi.iconColor}`} />
-              </div>
-            </div>
-            <p className={`text-3xl font-bold ${kpi.valueColor}`}>{kpi.value}</p>
-            <p className="text-xs text-neutral-400 mt-1.5">{kpi.sub}</p>
-          </div>
-        ))}
-      </div>
+      <DashboardKPIs kpis={kpis} />
 
       {/* Charts side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
