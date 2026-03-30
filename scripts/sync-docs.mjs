@@ -7,6 +7,9 @@
  * Usage : node scripts/sync-docs.mjs
  */
 
+// Local dev: bypass TLS cert issues (system proxy/VPN intercepts)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
 import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'

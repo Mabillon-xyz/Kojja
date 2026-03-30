@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Settings, BookOpen, X } from 'lucide-react'
+import { Settings, BookOpen, X, SlidersHorizontal } from 'lucide-react'
 
 const nav = [
   { label: 'Home', href: '/dashboard', emoji: '🏠' },
@@ -82,7 +82,7 @@ export default function Sidebar() {
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <div className="p-1.5">
+              <div className="p-1.5 space-y-0.5">
                 <Link
                   href="/documentation"
                   onClick={() => setSettingsOpen(false)}
@@ -94,6 +94,18 @@ export default function Sidebar() {
                 >
                   <BookOpen className="w-4 h-4 flex-shrink-0" />
                   Documentation
+                </Link>
+                <Link
+                  href="/settings"
+                  onClick={() => setSettingsOpen(false)}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
+                    settingsActive
+                      ? 'bg-blue-50 text-blue-700 font-semibold'
+                      : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                  }`}
+                >
+                  <SlidersHorizontal className="w-4 h-4 flex-shrink-0" />
+                  Configuration
                 </Link>
               </div>
             </div>
