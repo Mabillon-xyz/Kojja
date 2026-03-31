@@ -62,14 +62,14 @@ export default function DashboardKPIs({ kpis }: { kpis: KPI[] }) {
               </div>
               <p
                 className={`text-3xl font-bold transition-all duration-200 select-none ${kpi.valueColor} ${
-                  hide ? 'blur-sm' : ''
+                  hide ? 'blur-xl' : ''
                 }`}
               >
                 {kpi.value}
               </p>
               <p
                 className={`text-xs text-neutral-400 mt-1.5 transition-all duration-200 select-none ${
-                  hide ? 'blur-sm' : ''
+                  hide ? 'blur-xl' : ''
                 }`}
               >
                 {kpi.sub}
