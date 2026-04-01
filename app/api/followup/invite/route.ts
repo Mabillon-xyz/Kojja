@@ -10,9 +10,6 @@ const ORGANIZER_NAME = "Clément Guiraud";
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
 const USER_ID = "pg-test-aa13515c-f26c-44f3-aa7a-9d87bab3072a";
 
-// Structured marker stored in lead notes to track follow-up calls.
-// Format: [FOLLOWUP|<ISO_DATE>|<MEET_LINK>]
-export const FOLLOWUP_MARKER = /\[FOLLOWUP\|([^|]+)\|([^\]]*)\]/g
 
 function getTransporter() {
   return nodemailer.createTransport({
