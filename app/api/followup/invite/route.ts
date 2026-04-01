@@ -4,6 +4,7 @@ import { buildEmailHtml, interpolate } from "@/lib/automations";
 import { logEmail } from "@/lib/email-log";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import { revalidatePath } from "next/cache";
 
 const ORGANIZER_EMAIL = "clement.guiraudpro@gmail.com";
 const ORGANIZER_NAME = "Clément Guiraud";
@@ -103,10 +104,11 @@ export async function POST(req: NextRequest) {
 
     // Update CRM lead notes if the lead exists (does NOT change stage or call_date)
     const normalizedEmail = email.toLowerCase();
+    // Use ilike for case-insensitive email match (handles manually-added leads)
     const { data: lead } = await getSupabase()
       .from("leads")
       .select("id, notes, first_name, last_name")
-      .eq("email", normalizedEmail)
+      .ilike("email", normalizedEmail)
       .maybeSingle();
 
     if (lead) {
@@ -121,7 +123,13 @@ export async function POST(req: NextRequest) {
           ...(phone ? { phone } : {}),
         })
         .eq("id", lead.id);
-      if (updateError) console.error("Lead notes update failed:", updateError.message);
+      if (updateError) {
+        console.error("Lead notes update failed:", updateError.message);
+      } else {
+        revalidatePath("/crm");
+      }
+    } else {
+      console.warn(`[followup] No CRM lead found for email: ${normalizedEmail}`);
     }
 
     // Send confirmation emails
