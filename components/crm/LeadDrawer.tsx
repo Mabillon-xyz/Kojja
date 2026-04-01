@@ -1,5 +1,5 @@
 'use client'
-import { useState, useTransition } from 'react'
+import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lead, STAGE_LABELS, STAGES, formatRelativeDate } from '@/lib/lead-types'
 import { updateLead, updateLeadStage } from '@/app/actions/leads'
@@ -246,10 +246,24 @@ export default function LeadDrawer({ lead, onClose }: Props) {
               <TimelineEvent label="Call request received" date={lead.call_booked_at} />
               {lead.call_date && (
                 <TimelineEvent
-                  label={`Call ${new Date(lead.call_date) < new Date() ? 'held' : 'scheduled'}`}
+                  label={`Discovery call ${new Date(lead.call_date) < new Date() ? 'held' : 'scheduled'}`}
                   date={lead.call_date}
                 />
               )}
+              {parseFollowUpCalls(lead.notes).map((fu, i) => (
+                <TimelineEvent
+                  key={i}
+                  label={`Follow-up call ${new Date(fu.date) < new Date() ? 'held' : 'scheduled'}${fu.meetLink ? ' 🎥' : ''}`}
+                  date={fu.date}
+                  extra={fu.meetLink ? (
+                    <a href={fu.meetLink} target="_blank" rel="noopener noreferrer"
+                      className="text-violet-600 hover:underline text-[10px]">
+                      Join Meet
+                    </a>
+                  ) : undefined}
+                  color="violet"
+                />
+              ))}
               {lead.stage !== 'call_scheduled' && (
                 <TimelineEvent
                   label={`Stage: ${STAGE_LABELS[lead.stage]}`}
@@ -342,15 +356,35 @@ function Field({
   )
 }
 
-function TimelineEvent({ label, date }: { label: string; date: string }) {
+function parseFollowUpCalls(notes: string | null): { date: string; meetLink: string }[] {
+  if (!notes) return []
+  const results: { date: string; meetLink: string }[] = []
+  const re = /\[FOLLOWUP\|([^|]+)\|([^\]]*)\]/g
+  let m
+  while ((m = re.exec(notes)) !== null) {
+    results.push({ date: m[1], meetLink: m[2] })
+  }
+  return results
+}
+
+function TimelineEvent({
+  label, date, extra, color = 'neutral',
+}: {
+  label: string
+  date: string
+  extra?: React.ReactNode
+  color?: 'neutral' | 'violet'
+}) {
+  const dotClass = color === 'violet' ? 'bg-violet-400' : 'bg-neutral-300'
   return (
     <div className="flex items-start gap-3 text-sm">
-      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-neutral-300 flex-shrink-0" />
+      <div className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotClass}`} />
       <div>
         <span className="text-neutral-700">{label}</span>
         <span className="text-neutral-400 ml-2 text-xs">
           {new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
         </span>
+        {extra && <span className="ml-2">{extra}</span>}
       </div>
     </div>
   )
