@@ -38,6 +38,9 @@ function FollowUpBooking() {
   const [slots, setSlots] = useState<string[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
 
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState(prefilledEmail)
+  const [phone, setPhone] = useState('')
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -47,6 +50,11 @@ function FollowUpBooking() {
     setToday(d)
     setMonth(new Date(d.getFullYear(), d.getMonth(), 1))
   }, [])
+
+  // Pre-fill email from URL param after hydration
+  useEffect(() => {
+    if (prefilledEmail) setEmail(prefilledEmail)
+  }, [prefilledEmail])
 
   useEffect(() => {
     if (!selectedDate) return
@@ -81,9 +89,11 @@ function FollowUpBooking() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: prefilledEmail,
+          name,
+          email,
           date: selectedDate,
           time: selectedTime,
+          ...(phone ? { phone } : {}),
           ...(message ? { message } : {}),
         }),
       })
@@ -109,9 +119,6 @@ function FollowUpBooking() {
       <div>
         <p className="text-xs text-gray-400 mb-0.5">Clément Guiraud</p>
         <h1 className="text-lg font-semibold text-gray-900">Follow-up Call</h1>
-        {prefilledEmail && (
-          <p className="text-xs text-gray-400 mt-1 break-all">{prefilledEmail}</p>
-        )}
       </div>
       <div className="space-y-2.5">
         <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -140,7 +147,7 @@ function FollowUpBooking() {
             <h2 className="text-lg font-semibold text-gray-900">Follow-up confirmé !</h2>
             <p className="text-sm text-gray-500">
               Votre call de suivi avec Clément est confirmé.<br />
-              Un email de confirmation vous a été envoyé.
+              Un email de confirmation vous a été envoyé à <strong>{email}</strong>.
             </p>
             {selectedDate && selectedTime && (
               <div className="bg-violet-50 border border-violet-100 rounded-xl px-4 py-3 text-sm text-violet-700 font-medium">
@@ -275,6 +282,44 @@ function FollowUpBooking() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Nom complet <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                    placeholder="Jean Dupont"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    placeholder="jean@entreprise.com"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Téléphone{' '}
+                    <span className="text-xs text-gray-400 font-normal">(optionnel)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="+33 6 12 34 56 78"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Quelque chose à préparer ?{' '}
