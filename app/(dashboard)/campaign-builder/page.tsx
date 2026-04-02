@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { createClient } from '@/lib/supabase/client'
 
 // ── Types ─────────────────────────────────────────────────────────
+type Lead = { id: string; first_name: string; last_name: string; company_name: string | null }
 type Email = { subject: string; body: string }
 type CampaignKit = {
   icp: string
@@ -111,6 +113,7 @@ export default function CampaignBuilderPage() {
     results: '',
     context: '',
   })
+  const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState('')
@@ -120,6 +123,24 @@ export default function CampaignBuilderPage() {
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }))
   }
+
+  function pickLead(id: string) {
+    const lead = leads.find((l) => l.id === id)
+    if (!lead) return
+    const name = [lead.first_name, lead.last_name].filter(Boolean).join(' ')
+    const company = lead.company_name ? ` — ${lead.company_name}` : ''
+    set('coachName', `${name}${company}`)
+  }
+
+  // Fetch leads on mount
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from('leads')
+      .select('id, first_name, last_name, company_name')
+      .order('first_name')
+      .then(({ data }) => { if (data) setLeads(data) })
+  }, [])
 
   useEffect(() => {
     if (loading) {
@@ -174,6 +195,25 @@ export default function CampaignBuilderPage() {
 
             <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 space-y-4">
               <h2 className="text-sm font-semibold text-neutral-700">👤 Coach profile</h2>
+
+              {leads.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="leadPick">Pick from your leads</Label>
+                  <select
+                    id="leadPick"
+                    defaultValue=""
+                    onChange={(e) => pickLead(e.target.value)}
+                    className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm bg-white text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                  >
+                    <option value="" disabled>— Select a lead —</option>
+                    {leads.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.first_name} {l.last_name}{l.company_name ? ` — ${l.company_name}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="coachName">Coach / Company name *</Label>
