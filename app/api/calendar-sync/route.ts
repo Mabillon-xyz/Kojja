@@ -101,6 +101,19 @@ export async function POST() {
         continue;
       }
 
+      // Skip events starting before 9:30 Paris time
+      const startLocal = new Date(event.start.dateTime);
+      const parisHour = parseInt(
+        startLocal.toLocaleString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hour12: false })
+      );
+      const parisMinute = parseInt(
+        startLocal.toLocaleString("fr-FR", { timeZone: "Europe/Paris", minute: "2-digit" })
+      );
+      if (parisHour < 9 || (parisHour === 9 && parisMinute < 30)) {
+        skipped++;
+        continue;
+      }
+
       const marker = `${SYNC_MARKER_PREFIX}${uid}]`;
       const description = event.description
         ? `${marker}\n\n${event.description}`
