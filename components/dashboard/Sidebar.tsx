@@ -11,6 +11,7 @@ const nav = [
   { label: 'Proposals', href: '/proposal-tool', emoji: '📝' },
   { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
   { label: 'Campaigns', href: '/flows', emoji: '⚡' },
+  { label: 'Builder', href: '/campaign-builder', emoji: '🎯' },
   { label: 'Agent', href: '/agent', emoji: '🤖' },
 ]
 
