@@ -93,6 +93,22 @@ async function parallelSearch(query: string): Promise<string> {
   }
 }
 
+async function fetchPappers(companyName: string | null): Promise<Record<string, unknown> | null> {
+  if (!companyName) return null
+  const apiKey = process.env.PAPPERS_API_KEY
+  if (!apiKey) return null
+  try {
+    const url = `https://api.pappers.fr/v2/recherche?q=${encodeURIComponent(companyName)}&api_token=${apiKey}&_limit=1`
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+    if (!res.ok) return null
+    const data = await res.json()
+    const results = (data?.resultats ?? []) as Record<string, unknown>[]
+    return results[0] ?? null
+  } catch {
+    return null
+  }
+}
+
 async function fetchLemlistContact(email: string | null): Promise<Record<string, unknown> | null> {
   if (!email) return null
   const apiKey = process.env.LEMLIST_API_KEY
@@ -184,10 +200,11 @@ export async function POST(
     return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
   }
 
-  // 2. In parallel: fetch Google Sheet + Lemlist contact
-  const [sheetResult, lemlistResult] = await Promise.allSettled([
+  // 2. In parallel: fetch Google Sheet + Lemlist contact + Pappers
+  const [sheetResult, lemlistResult, pappersResult] = await Promise.allSettled([
     fetchUrl(COACHES_SHEET_URL),
     fetchLemlistContact(lead.email),
+    fetchPappers(lead.company_name),
   ])
 
   // Find matching row in Google Sheet by LinkedIn URL or last name
@@ -213,6 +230,8 @@ export async function POST(
 
   const lemlistContact =
     lemlistResult.status === 'fulfilled' ? lemlistResult.value : null
+  const pappersData =
+    pappersResult.status === 'fulfilled' ? pappersResult.value : null
 
   // 3. Build context
   const leadContext = [
@@ -234,6 +253,12 @@ export async function POST(
     ? `\n\nLemlist contact data:\n${JSON.stringify(lemlistContact, null, 2)}`
     : ''
 
+  const pappersContext = pappersData
+    ? `\n\nPappers (registre entreprise français) :\n${JSON.stringify(pappersData, null, 2)}`
+    : process.env.PAPPERS_API_KEY
+    ? ''
+    : '\n\n(Pas de clé Pappers configurée — Claude peut chercher sur pappers.fr/recherche)'
+
   // 4. Run Claude agentic loop
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
@@ -243,8 +268,10 @@ L'ICP cible est : coach business indépendant (solo ou très petite structure), 
 
 Ton rôle : rechercher des informations sur un prospect coach, évaluer son adéquation ICP, et générer des messages d'approche personnalisés.
 
-Utilise web_search pour rechercher des informations sur ce coach (nom + "coach", site web, LinkedIn, activité, certifications).
-Utilise fetch_url pour lire une page LinkedIn, un site de coaching, ou toute URL pertinente.
+Sources à utiliser :
+- web_search : recherche générale (nom + "coach", site web, LinkedIn, certifications, témoignages)
+- fetch_url : lire un profil LinkedIn, un site de coaching, ou une page Pappers
+- Pappers (pappers.fr) : si l'entreprise est connue, cherche les infos juridiques (SIREN, forme juridique, date création, dirigeants, effectif). URL type : https://www.pappers.fr/recherche?q={nom_entreprise}
 
 Génère les messages en français, vouvoiement, ancrés dans la situation réelle du coach.
 
@@ -252,7 +279,7 @@ IMPORTANT : Ta réponse finale doit être UNIQUEMENT un objet JSON valide (sans 
 
   const userMessage = `Recherche ce prospect coach et génère un rapport JSON.
 
-${leadContext}${sheetsContext}${lemlistContext}
+${leadContext}${sheetsContext}${lemlistContext}${pappersContext}
 
 Effectue des recherches web pour mieux connaître ce coach, puis réponds UNIQUEMENT avec ce JSON :
 {
