@@ -3,6 +3,7 @@ import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lead, STAGE_LABELS, STAGES, formatRelativeDate } from '@/lib/lead-types'
 import { updateLead, updateLeadStage } from '@/app/actions/leads'
+import LeadResearchTab from './LeadResearch'
 
 type Props = {
   lead: Lead | null
@@ -35,6 +36,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [drawerTab, setDrawerTab] = useState<'info' | 'research'>('info')
 
   function handleSave() {
     if (!lead) return
@@ -102,28 +104,54 @@ export default function LeadDrawer({ lead, onClose }: Props) {
       {/* Panel */}
       <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <div>
-            <h2 className="font-semibold text-neutral-900">
-              {firstName} {lastName}
-            </h2>
-            {(companyName || city) && (
-              <p className="text-sm text-neutral-500">
-                {companyName}{city ? ` · ${city}` : ''}
-              </p>
-            )}
+        <div className="border-b border-neutral-200">
+          <div className="flex items-center justify-between px-6 pt-4 pb-3">
+            <div>
+              <h2 className="font-semibold text-neutral-900">
+                {firstName} {lastName}
+              </h2>
+              {(companyName || city) && (
+                <p className="text-sm text-neutral-500">
+                  {companyName}{city ? ` · ${city}` : ''}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-400 hover:text-neutral-600 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-400 hover:text-neutral-600 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {/* Tab bar */}
+          <div className="flex px-6 gap-1">
+            {(['info', 'research'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setDrawerTab(tab)}
+                className={`px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${
+                  drawerTab === tab
+                    ? 'border-neutral-900 text-neutral-900'
+                    : 'border-transparent text-neutral-400 hover:text-neutral-600'
+                }`}
+              >
+                {tab === 'info' ? 'Fiche' : 'Recherche IA'}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+          {/* Research tab */}
+          {drawerTab === 'research' && (
+            <LeadResearchTab leadId={lead.id} />
+          )}
+
+          {/* Info tab */}
+          {drawerTab === 'info' && <>
 
           {/* Contact info */}
           <div>
@@ -276,10 +304,12 @@ export default function LeadDrawer({ lead, onClose }: Props) {
           <p className="text-xs text-neutral-400">
             Registered {formatRelativeDate(lead.call_booked_at)}
           </p>
+
+          </>}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-between gap-3">
+        {/* Footer — only show for info tab */}
+        {drawerTab === 'info' && <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-between gap-3">
           <button
             onClick={() => setShowDeleteConfirm(true)}
             className="flex items-center gap-1.5 text-xs font-medium text-red-500 border border-red-200 hover:bg-red-50 hover:border-red-300 px-3 py-2 rounded-lg transition-colors"
@@ -296,7 +326,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
           >
             {saved ? 'Saved ✓' : isPending ? 'Saving...' : 'Save'}
           </button>
-        </div>
+        </div>}
       </div>
 
       {/* Delete confirmation */}

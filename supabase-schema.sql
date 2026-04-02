@@ -454,3 +454,36 @@ CREATE POLICY "Authenticated users can delete leads"
 -- Service role (utilisé par /api/leads pour les bookings publics)
 CREATE POLICY "Service role full access"
   ON leads FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- Lead Research (agent IA de recherche par lead)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS lead_research (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lead_id          UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+  created_at       TIMESTAMPTZ DEFAULT now(),
+  model            TEXT DEFAULT 'claude-sonnet-4-6',
+  profile_summary  TEXT,
+  icp_match        TEXT CHECK (icp_match IN ('high', 'medium', 'low')),
+  icp_reason       TEXT,
+  enriched_fields  JSONB,
+  icebreaker       TEXT,
+  email_subject    TEXT,
+  email_body       TEXT,
+  linkedin_dm      TEXT,
+  sources          TEXT[],
+  sheets_row       JSONB,
+  lemlist_contact  JSONB
+);
+
+ALTER TABLE lead_research ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read lead_research"
+  ON lead_research FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Authenticated users can insert lead_research"
+  ON lead_research FOR INSERT TO authenticated WITH CHECK (true);
+
+CREATE POLICY "Service role full access on lead_research"
+  ON lead_research FOR ALL TO service_role USING (true) WITH CHECK (true);

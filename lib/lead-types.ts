@@ -72,3 +72,26 @@ export const STAGES: Lead['stage'][] = [
   'customer',
   'not_interested',
 ]
+
+export type LeadResearch = {
+  id: string
+  lead_id: string
+  created_at: string
+  model: string
+  profile_summary: string | null
+  icp_match: 'high' | 'medium' | 'low' | null
+  icp_reason: string | null
+  enriched_fields: {
+    company_name?: string
+    city?: string
+    linkedin_url?: string
+    phone?: string
+  } | null
+  icebreaker: string | null
+  email_subject: string | null
+  email_body: string | null
+  linkedin_dm: string | null
+  sources: string[] | null
+  sheets_row: Record<string, string> | null
+  lemlist_contact: Record<string, unknown> | null
+}
