@@ -7,6 +7,30 @@ import nodemailer from "nodemailer";
 
 const ORGANIZER_EMAIL = "clement.guiraudpro@gmail.com";
 const ORGANIZER_NAME = "Clément Guiraud";
+const EDENRED_EMAIL = "clement.guiraud@edenred.com";
+
+function buildBlockICS(startDT: Date, meetLink: string | null, uid: string): string {
+  const endDT = new Date(startDT.getTime() + 30 * 60 * 1000);
+  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const desc = meetLink ? `Lien Meet : ${meetLink}` : "Créneau réservé";
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Koja//EN",
+    "METHOD:REQUEST",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${fmt(new Date())}`,
+    `DTSTART:${fmt(startDT)}`,
+    `DTEND:${fmt(endDT)}`,
+    "SUMMARY:Bloqué",
+    `DESCRIPTION:${desc}`,
+    `ORGANIZER;CN=${ORGANIZER_NAME}:mailto:${ORGANIZER_EMAIL}`,
+    `ATTENDEE;RSVP=FALSE:mailto:${EDENRED_EMAIL}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
 
 function getTransporter() {
   return nodemailer.createTransport({
@@ -173,6 +197,8 @@ export async function POST(req: NextRequest) {
 
       const leadSubject = `✓ Call confirmé — ${dateFR} à ${timeFR}`;
       const orgSubject = `📞 Nouveau call : ${name} — ${dateFR} à ${timeFR}`;
+      const icsContent = buildBlockICS(startDT, meetLink ?? null, `discovery-${Date.now()}@koja`);
+
       await Promise.all([
         transporter.sendMail({ from, to: email, subject: leadSubject, html: buildEmailHtml(leadBody, ctx) })
           .then(() => logEmail({ to_email: email, subject: leadSubject, status: "success", source: "invite" }))
@@ -180,6 +206,14 @@ export async function POST(req: NextRequest) {
         transporter.sendMail({ from, to: ORGANIZER_EMAIL, subject: orgSubject, html: buildEmailHtml(orgBody, ctx) })
           .then(() => logEmail({ to_email: ORGANIZER_EMAIL, subject: orgSubject, status: "success", source: "invite" }))
           .catch((e) => { console.error("Email to organizer failed:", String(e)); return logEmail({ to_email: ORGANIZER_EMAIL, subject: orgSubject, status: "error", error: String(e), source: "invite" }); }),
+        // Block Edenred calendar slot (title "Bloqué", Meet link in description)
+        transporter.sendMail({
+          from,
+          to: EDENRED_EMAIL,
+          subject: "Bloqué",
+          html: "<p>Créneau bloqué.</p>",
+          alternatives: [{ contentType: "text/calendar; charset=utf-8; method=REQUEST", content: Buffer.from(icsContent) }],
+        }).catch((e) => console.error("Edenred ICS failed:", String(e))),
       ]);
     }
 
