@@ -93,6 +93,21 @@ async function parallelSearch(query: string): Promise<string> {
   }
 }
 
+// Annuaire des entreprises (api.gouv.fr) — free, no API key required
+async function fetchAnnuaireEntreprises(companyName: string | null): Promise<Record<string, unknown> | null> {
+  if (!companyName) return null
+  try {
+    const url = `https://recherche-entreprises.api.gouv.fr/search?q=${encodeURIComponent(companyName)}&limit=1`
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+    if (!res.ok) return null
+    const data = await res.json()
+    const results = (data?.results ?? []) as Record<string, unknown>[]
+    return results[0] ?? null
+  } catch {
+    return null
+  }
+}
+
 async function fetchPappers(companyName: string | null): Promise<Record<string, unknown> | null> {
   if (!companyName) return null
   const apiKey = process.env.PAPPERS_API_KEY
@@ -200,11 +215,12 @@ export async function POST(
     return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
   }
 
-  // 2. In parallel: fetch Google Sheet + Lemlist contact + Pappers
-  const [sheetResult, lemlistResult, pappersResult] = await Promise.allSettled([
+  // 2. In parallel: fetch Google Sheet + Lemlist + Pappers + Annuaire entreprises
+  const [sheetResult, lemlistResult, pappersResult, annuaireResult] = await Promise.allSettled([
     fetchUrl(COACHES_SHEET_URL),
     fetchLemlistContact(lead.email),
     fetchPappers(lead.company_name),
+    fetchAnnuaireEntreprises(lead.company_name),
   ])
 
   // Find matching row in Google Sheet by LinkedIn URL or last name
@@ -232,6 +248,8 @@ export async function POST(
     lemlistResult.status === 'fulfilled' ? lemlistResult.value : null
   const pappersData =
     pappersResult.status === 'fulfilled' ? pappersResult.value : null
+  const annuaireData =
+    annuaireResult.status === 'fulfilled' ? annuaireResult.value : null
 
   // 3. Build context
   const leadContext = [
@@ -259,6 +277,10 @@ export async function POST(
     ? ''
     : '\n\n(Pas de clé Pappers configurée — Claude peut chercher sur pappers.fr/recherche)'
 
+  const annuaireContext = annuaireData
+    ? `\n\nAnnuaire des entreprises (api.gouv.fr / données officielles État français) :\n${JSON.stringify(annuaireData, null, 2)}`
+    : ''
+
   // 4. Run Claude agentic loop
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
@@ -272,6 +294,8 @@ Sources à utiliser :
 - web_search : recherche générale (nom + "coach", site web, LinkedIn, certifications, témoignages)
 - fetch_url : lire un profil LinkedIn, un site de coaching, ou une page Pappers
 - Pappers (pappers.fr) : si l'entreprise est connue, cherche les infos juridiques (SIREN, forme juridique, date création, dirigeants, effectif). URL type : https://www.pappers.fr/recherche?q={nom_entreprise}
+- Annuaire des entreprises (api.gouv.fr) : données officielles de l'État français (SIREN, dirigeants, NAF, effectif). Données déjà fournies si disponibles.
+- BODACC (bodacc.fr) : annonces légales officielles (créations, modifications, procédures). URL type : https://www.bodacc.fr/annonce/liste-annonces/?q={nom_entreprise}
 
 Génère les messages en français, vouvoiement, ancrés dans la situation réelle du coach.
 
@@ -279,7 +303,7 @@ IMPORTANT : Ta réponse finale doit être UNIQUEMENT un objet JSON valide (sans 
 
   const userMessage = `Recherche ce prospect coach et génère un rapport JSON.
 
-${leadContext}${sheetsContext}${lemlistContext}${pappersContext}
+${leadContext}${sheetsContext}${lemlistContext}${annuaireContext}${pappersContext}
 
 Effectue des recherches web pour mieux connaître ce coach, puis réponds UNIQUEMENT avec ce JSON :
 {
