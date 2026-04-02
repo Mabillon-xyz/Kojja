@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createDirectClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import type { Lead } from '@/lib/read-leads'
+import { enrichLead } from '@/lib/enrich-lead'
 
 export async function createLead(formData: FormData) {
   const supabase = await createClient()
@@ -23,7 +24,7 @@ export async function createLead(formData: FormData) {
   const comment = (formData.get('comment') as string)?.trim() || null
   const linkedin_url = (formData.get('linkedin_url') as string)?.trim() || null
 
-  const { error } = await supabase.from('leads').insert({
+  const { data: created, error } = await supabase.from('leads').insert({
     first_name,
     last_name,
     email,
@@ -35,9 +36,15 @@ export async function createLead(formData: FormData) {
     contact_means: contact_means.length > 0 ? contact_means : null,
     comment,
     linkedin_url,
-  })
+  }).select('id, company_name').single()
 
   if (error) throw new Error(`createLead: ${error.message}`)
+
+  // Enrichissement automatique (fire-and-forget — non bloquant)
+  if (created?.id) {
+    enrichLead(created.id, created.company_name).catch(() => {})
+  }
+
   revalidatePath('/crm')
 }
 

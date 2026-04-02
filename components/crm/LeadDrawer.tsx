@@ -169,6 +169,24 @@ export default function LeadDrawer({ lead, onClose }: Props) {
             </div>
           </div>
 
+          {/* Données entreprise enrichies automatiquement */}
+          {(lead.siren || lead.forme_juridique || lead.effectif || lead.naf_libelle) && (
+            <div>
+              <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Entreprise</p>
+              <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-3 space-y-1.5">
+                {lead.siren && <InfoRow label="SIREN" value={lead.siren} />}
+                {lead.forme_juridique && <InfoRow label="Forme juridique" value={lead.forme_juridique} />}
+                {lead.effectif && <InfoRow label="Effectif" value={lead.effectif} />}
+                {lead.naf_libelle && (
+                  <InfoRow
+                    label="Activité"
+                    value={lead.naf_code ? `${lead.naf_code} — ${lead.naf_libelle}` : lead.naf_libelle}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Contact means */}
           <div>
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Contact means</p>
@@ -382,6 +400,15 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
       />
+    </div>
+  )
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 text-xs">
+      <span className="text-neutral-400 flex-shrink-0">{label}</span>
+      <span className="text-neutral-700 text-right">{value}</span>
     </div>
   )
 }

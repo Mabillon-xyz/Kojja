@@ -18,6 +18,12 @@ export type Lead = {
   contact_means: string[] | null
   comment: string | null
   linkedin_url: string | null
+  // Enrichissement automatique (Annuaire entreprises + Pappers)
+  siren: string | null
+  forme_juridique: string | null
+  effectif: string | null
+  naf_code: string | null
+  naf_libelle: string | null
   created_at: string
   updated_at: string
 }

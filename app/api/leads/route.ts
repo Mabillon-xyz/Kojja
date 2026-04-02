@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
+import { enrichLead } from '@/lib/enrich-lead'
 
 // Public endpoint — used by /book form (no auth required)
 // Uses service role key to bypass RLS
@@ -74,6 +75,16 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    // ── Enrichissement automatique (non-bloquant) ─────────────────────────
+    // Fast: Annuaire entreprises + Pappers (~1-2s), met à jour siren/naf/effectif
+    enrichLead(data.id, data.company_name).catch(() => {})
+
+    // Full Claude research — fire-and-forget, best-effort (peut être relancé manuellement)
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000'
+    fetch(`${siteUrl}/api/leads/${data.id}/research`, { method: 'POST' }).catch(() => {})
 
     const fullName = `${first_name.trim()} ${last_name.trim()}`
     const owner = process.env.GMAIL_USER!

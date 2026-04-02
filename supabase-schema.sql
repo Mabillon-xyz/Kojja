@@ -487,3 +487,16 @@ CREATE POLICY "Authenticated users can insert lead_research"
 
 CREATE POLICY "Service role full access on lead_research"
   ON lead_research FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- Leads — champs enrichissement entreprise (migration)
+-- ============================================================
+
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS siren           TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS forme_juridique  TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS effectif         TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS naf_code         TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS naf_libelle      TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS contact_means    TEXT[];
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS comment          TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS linkedin_url     TEXT;
