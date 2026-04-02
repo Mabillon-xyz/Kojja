@@ -138,6 +138,7 @@ export default function CampaignBuilderPage() {
     supabase
       .from('leads')
       .select('id, first_name, last_name, company_name')
+      .neq('stage', 'not_interested')
       .order('first_name')
       .then(({ data }) => { if (data) setLeads(data) })
   }, [])
