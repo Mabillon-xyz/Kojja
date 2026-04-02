@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 
@@ -22,7 +22,7 @@ function getTransporter() {
   });
 }
 
-function buildBlockICS(startDT: Date, meetLink: string | null, uid: string, label: string): string {
+function buildBlockICS(startDT: Date, meetLink: string | null, uid: string): string {
   const endDT = new Date(startDT.getTime() + 30 * 60 * 1000);
   const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   const desc = meetLink ? `Lien Meet : ${meetLink}` : "Créneau réservé";
@@ -54,7 +54,7 @@ function parseFollowUpCalls(notes: string | null): { date: string; meetLink: str
   return results;
 }
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     return NextResponse.json({ error: "GMAIL credentials not configured" }, { status: 500 });
   }
@@ -81,7 +81,7 @@ export async function POST(_req: NextRequest) {
     if (lead.call_date) {
       const startDT = new Date(lead.call_date);
       const uid = `resend-discovery-${lead.id}@koja`;
-      const ics = buildBlockICS(startDT, null, uid, "Discovery");
+      const ics = buildBlockICS(startDT, null, uid);
       try {
         await transporter.sendMail({
           from,
@@ -101,7 +101,7 @@ export async function POST(_req: NextRequest) {
       const startDT = new Date(fu.date);
       if (startDT <= now) continue; // skip past follow-ups
       const uid = `resend-followup-${lead.id}-${startDT.getTime()}@koja`;
-      const ics = buildBlockICS(startDT, fu.meetLink || null, uid, "Follow-up");
+      const ics = buildBlockICS(startDT, fu.meetLink || null, uid);
       try {
         await transporter.sendMail({
           from,
