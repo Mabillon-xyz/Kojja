@@ -317,7 +317,7 @@ export default function LeadResearchTab({ leadId }: Props) {
 
       {!latest && !loading && (
         <p className="text-sm text-neutral-400 italic">
-          Aucune recherche pour ce lead. Cliquez sur "Lancer la recherche" pour commencer.
+          Aucune recherche pour ce lead. Cliquez sur &quot;Lancer la recherche&quot; pour commencer.
         </p>
       )}
     </div>

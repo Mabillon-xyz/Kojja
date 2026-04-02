@@ -158,7 +158,7 @@ export async function GET(
   const supabase = getSupabase()
 
   // Fetch research record + lead name
-  const [{ data: research, error: rErr }, { data: lead, error: lErr }] = await Promise.all([
+  const [{ data: research, error: rErr }, { data: lead }] = await Promise.all([
     supabase.from('lead_research').select('*').eq('id', researchId).single(),
     supabase.from('leads').select('first_name, last_name').eq('id', params.id).single(),
   ])
