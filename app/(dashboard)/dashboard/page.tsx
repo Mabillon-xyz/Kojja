@@ -1,4 +1,5 @@
 import { readLeads } from '@/lib/read-leads'
+import DashboardBanner from '@/components/dashboard/DashboardBanner'
 import HomeClient from '@/components/dashboard/HomeClient'
 import NextActions from '@/components/dashboard/NextActions'
 import DailyCallsChart, { type DayData } from '@/components/dashboard/DailyCallsChart'
@@ -142,6 +143,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
+
+      <DashboardBanner />
 
       {/* KPIs */}
       <DashboardKPIs kpis={kpis} />
