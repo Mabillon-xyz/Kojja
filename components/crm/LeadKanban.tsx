@@ -19,7 +19,15 @@ export default function LeadKanban({ leads }: Props) {
   const [, startTransition] = useTransition()
 
   const byStage = STAGES.reduce<Record<string, Lead[]>>((acc, stage) => {
-    acc[stage] = leads.filter((l) => l.stage === stage)
+    const stageLeads = leads.filter((l) => l.stage === stage)
+    if (stage === 'call_scheduled') {
+      stageLeads.sort((a, b) => {
+        if (!a.call_date) return 1
+        if (!b.call_date) return -1
+        return new Date(a.call_date).getTime() - new Date(b.call_date).getTime()
+      })
+    }
+    acc[stage] = stageLeads
     return acc
   }, {})
 
