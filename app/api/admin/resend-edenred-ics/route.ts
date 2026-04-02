@@ -54,13 +54,7 @@ function parseFollowUpCalls(notes: string | null): { date: string; meetLink: str
   return results;
 }
 
-export async function POST(req: NextRequest) {
-  // Simple auth: same secret used for pipeline
-  const authHeader = req.headers.get("x-pipeline-secret");
-  if (authHeader !== process.env.PIPELINE_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export async function POST(_req: NextRequest) {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     return NextResponse.json({ error: "GMAIL credentials not configured" }, { status: 500 });
   }
