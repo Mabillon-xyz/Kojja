@@ -47,7 +47,10 @@ async function listEvents(
     throw new Error((result.error as string) ?? "Failed to list events");
   }
 
-  return ((result.data as { items?: CalEvent[] })?.items ?? []);
+  // Composio wraps the Google Calendar response under response_data
+  const raw = result.data as Record<string, unknown>;
+  const unwrapped = (raw?.response_data ?? raw) as { items?: CalEvent[] };
+  return unwrapped?.items ?? [];
 }
 
 function extractSyncedUid(description?: string): string | null {
@@ -141,6 +144,11 @@ export async function POST() {
       createdTitles,
       errors,
       syncedUntil: threeWeeks.toISOString(),
+      debug: {
+        edenredRaw: allEdenred.length,
+        edenredFiltered: edenredEvents.length,
+        personalEvents: personalEvents.length,
+      },
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

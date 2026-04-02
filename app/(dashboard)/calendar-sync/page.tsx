@@ -1234,7 +1234,10 @@ export default function CalendarSyncPage() {
       if (!r.ok) {
         setSyncMsg({ ok: false, text: data.error ?? "Sync failed" });
       } else {
-        setSyncMsg({ ok: true, text: `${data.created} added, ${data.skipped} already synced` });
+        const msg = data.total === 0
+          ? `No Edenred events found (3 weeks). Check calendar access.`
+          : `${data.created} added, ${data.skipped} already synced (${data.total} Edenred events scanned)`;
+        setSyncMsg({ ok: data.total > 0 || data.created > 0, text: msg });
         fetchEvents();
       }
     } catch (e: unknown) {
