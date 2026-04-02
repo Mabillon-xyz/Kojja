@@ -16,7 +16,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <NavSignOut email={user.email ?? ''} />
         </header>
         <main className="flex-1 overflow-auto">
-          <div className="p-6 lg:p-8 pb-28 md:pb-8">
+          <div className="p-6 lg:p-8 pb-20 md:pb-8">
             {children}
           </div>
         </main>

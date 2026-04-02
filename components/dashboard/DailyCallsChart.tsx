@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Cell,
@@ -23,7 +23,8 @@ export type DayData = {
   isPast: boolean
 }
 
-const WINDOW = 21
+const WINDOW_DESKTOP = 21
+const WINDOW_MOBILE  = 7
 
 type CustomTooltipProps = {
   active?: boolean
@@ -96,13 +97,24 @@ function CustomXTick({ x = 0, y = 0, payload, visibleData }: XTickProps) {
 
 export default function DailyCallsChart({ data }: { data: DayData[] }) {
   const todayIdx = data.findIndex((d) => d.isToday)
+  const [daysToShow, setDaysToShow] = useState(WINDOW_DESKTOP)
   const [offset, setOffset] = useState(Math.max(0, todayIdx - 3))
 
-  const visibleData = data.slice(offset, offset + WINDOW)
+  useEffect(() => {
+    function update() {
+      const w = typeof window !== 'undefined' ? window.innerWidth : 1024
+      setDaysToShow(w < 640 ? WINDOW_MOBILE : WINDOW_DESKTOP)
+    }
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
+  const visibleData = data.slice(offset, offset + daysToShow)
   const todayCalls = data.find((d) => d.isToday)?.calls ?? []
 
   const canPrev = offset > 0
-  const canNext = offset + WINDOW < data.length
+  const canNext = offset + daysToShow < data.length
 
   const rangeStart = visibleData[0]
   const rangeEnd = visibleData[visibleData.length - 1]
@@ -119,16 +131,16 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
           <p className="text-xs text-neutral-400 mt-0.5">Scheduled per day</p>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-xs text-neutral-400 mr-2">{rangeLabel}</span>
+          <span className="hidden sm:inline text-xs text-neutral-400 mr-2">{rangeLabel}</span>
           <button
-            onClick={() => setOffset(o => Math.max(0, o - 7))}
+            onClick={() => setOffset(o => Math.max(0, o - daysToShow))}
             disabled={!canPrev}
             className="p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-30 transition-colors"
           >
             <ChevronLeft className="w-4 h-4 text-neutral-500" />
           </button>
           <button
-            onClick={() => setOffset(o => Math.min(data.length - WINDOW, o + 7))}
+            onClick={() => setOffset(o => Math.min(data.length - daysToShow, o + daysToShow))}
             disabled={!canNext}
             className="p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-30 transition-colors"
           >
@@ -140,7 +152,7 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
       {/* Bar chart */}
       <div className="px-2 pb-2">
         <ResponsiveContainer width="100%" height={140}>
-          <BarChart data={visibleData} barSize={20} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <BarChart data={visibleData} barSize={daysToShow <= 7 ? 28 : 20} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <XAxis
               dataKey="iso"
               tick={(props) => <CustomXTick {...props} visibleData={visibleData} />}

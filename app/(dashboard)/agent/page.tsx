@@ -472,7 +472,7 @@ export default function AgentPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="-mx-6 -mt-6 -mb-28 md:-mb-8 lg:-mx-8 lg:-mt-8 h-[calc(100vh-48px)] flex bg-white overflow-hidden">
+    <div className="-mx-6 -mt-6 -mb-20 md:-mb-8 lg:-mx-8 lg:-mt-8 h-[calc(100dvh-48px-64px)] md:h-[calc(100dvh-48px)] flex bg-white overflow-hidden">
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
@@ -515,7 +515,7 @@ export default function AgentPage() {
             >
               <Zap className="w-3 h-3" />
               <span className="font-medium tabular-nums">{formatTokens(hourlyTokens)}</span>
-              <span className="text-neutral-400">/ 1h</span>
+              <span className="hidden sm:inline text-neutral-400">/ 1h</span>
             </div>
 
             {/* Model selector */}

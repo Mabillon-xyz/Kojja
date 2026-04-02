@@ -53,15 +53,15 @@ export default function DashboardKPIs({ kpis }: { kpis: KPI[] }) {
           const hide = blurred && kpi.sensitive
           const Icon = ICONS[kpi.icon]
           return (
-            <div key={kpi.label} className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
-              <div className="flex items-start justify-between mb-4">
+            <div key={kpi.label} className="bg-white border border-neutral-200 rounded-xl p-4 sm:p-5 shadow-sm">
+              <div className="flex items-start justify-between mb-3 sm:mb-4">
                 <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider">{kpi.label}</p>
-                <div className={`p-2 rounded-lg ${kpi.iconBg}`}>
-                  {Icon && <Icon className={`w-4 h-4 ${kpi.iconColor}`} />}
+                <div className={`p-1.5 sm:p-2 rounded-lg ${kpi.iconBg}`}>
+                  {Icon && <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${kpi.iconColor}`} />}
                 </div>
               </div>
               <p
-                className={`text-3xl font-bold transition-all duration-200 select-none ${kpi.valueColor} ${
+                className={`text-2xl sm:text-3xl font-bold transition-all duration-200 select-none ${kpi.valueColor} ${
                   hide ? 'blur-xl' : ''
                 }`}
               >
