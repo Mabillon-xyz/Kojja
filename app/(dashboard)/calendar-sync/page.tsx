@@ -1395,7 +1395,7 @@ export default function CalendarSyncPage() {
                 </div>
 
                 {/* Time grid */}
-                <div className="overflow-y-auto" style={{ maxHeight: 560 }}>
+                <div className="overflow-y-auto" style={{ maxHeight: (HOUR_END - HOUR_START) * SLOT_H }}>
                   <div className="grid" style={{ gridTemplateColumns: "52px repeat(7, minmax(80px, 1fr))" }}>
                     <div className="relative" style={{ height: totalPx }}>
                       {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
