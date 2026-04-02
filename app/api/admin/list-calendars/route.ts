@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Composio } from "@composio/core";
 
-const USER_ID = "ca_qYgwaF-k0wOh";
+const USER_ID = "pg-test-aa13515c-f26c-44f3-aa7a-9d87bab3072a";
 
 let composioClient: Composio | null = null;
 function getComposio(): Composio {

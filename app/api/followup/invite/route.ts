@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache";
 const ORGANIZER_EMAIL = "clement.guiraudpro@gmail.com";
 const ORGANIZER_NAME = "Clément Guiraud";
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
-const USER_ID = "ca_qYgwaF-k0wOh";
+const USER_ID = "pg-test-aa13515c-f26c-44f3-aa7a-9d87bab3072a";
 const EDENRED_EMAIL = "clement.guiraud@edenred.com";
 
 function buildBlockICS(startDT: Date, meetLink: string | null, uid: string): string {
