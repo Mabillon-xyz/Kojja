@@ -1417,15 +1417,15 @@ export default function CalendarSyncPage() {
                               key={ev.id}
                               style={{ position: "absolute", left: 2, right: 2, top, height, zIndex: 1 }}
                               onClick={(e) => { e.stopPropagation(); setSelectedEvent(ev); }}
-                              className={`rounded-md px-1.5 py-0.5 overflow-hidden text-[10px] font-medium leading-tight border-l-2 cursor-pointer hover:brightness-95 transition-all ${
+                              className={`rounded-md px-1.5 py-0.5 overflow-hidden text-[10px] font-semibold leading-tight border-l-2 cursor-pointer hover:brightness-90 transition-all ${
                                 lead
-                                  ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-400 dark:border-red-500"
-                                  : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-400"
+                                  ? "bg-rose-500 text-white border-rose-700"
+                                  : "bg-blue-500 text-white border-blue-700"
                               }`}
                             >
                               <span className="block truncate">{ev.summary ?? "(no title)"}</span>
                               {height > 26 && (
-                                <span className="block opacity-70 text-[9px]">
+                                <span className="block opacity-80 text-[9px]">
                                   {new Date(ev.start.dateTime!).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                                 </span>
                               )}
