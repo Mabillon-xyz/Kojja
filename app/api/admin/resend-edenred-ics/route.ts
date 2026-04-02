@@ -64,12 +64,10 @@ export async function POST() {
   const transporter = getTransporter();
   const from = `${ORGANIZER_NAME} <${process.env.GMAIL_USER}>`;
 
-  // Fetch all leads with upcoming discovery calls
+  // Fetch all leads — we check dates ourselves to catch both discovery + follow-up calls
   const { data: leads, error } = await supabase
     .from("leads")
-    .select("id, first_name, last_name, email, call_date, notes")
-    .not("call_date", "is", null)
-    .gt("call_date", now.toISOString());
+    .select("id, first_name, last_name, email, call_date, notes");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -77,8 +75,8 @@ export async function POST() {
   const failed: string[] = [];
 
   for (const lead of leads ?? []) {
-    // Discovery call
-    if (lead.call_date) {
+    // Discovery call (upcoming only)
+    if (lead.call_date && new Date(lead.call_date) > now) {
       const startDT = new Date(lead.call_date);
       const uid = `resend-discovery-${lead.id}@koja`;
       const ics = buildBlockICS(startDT, null, uid);
