@@ -3,7 +3,7 @@ import { Composio } from "@composio/core";
 
 const EDENRED_CAL_ID = "clement.guiraud@edenred.com";
 const PERSONAL_CAL_ID = "clement.guiraudpro@gmail.com";
-const USER_ID = "pg-test-aa13515c-f26c-44f3-aa7a-9d87bab3072a";
+const USER_ID = "ca_qYgwaF-k0wOh";
 const SYNC_MARKER_PREFIX = "[edenred-sync:";
 
 let composioClient: Composio | null = null;
