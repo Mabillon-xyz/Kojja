@@ -209,13 +209,22 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  try {
+    return await runResearch(params.id)
+  } catch (err) {
+    console.error('[research] unhandled error:', err)
+    return NextResponse.json({ error: String(err) }, { status: 500 })
+  }
+}
+
+async function runResearch(leadId: string) {
   const supabase = getSupabase()
 
   // 1. Fetch lead
   const { data: lead, error: leadErr } = await supabase
     .from('leads')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', leadId)
     .single()
 
   if (leadErr || !lead) {
@@ -402,14 +411,14 @@ Effectue des recherches web pour mieux connaître ce coach, puis réponds UNIQUE
   if (ef.linkedin_url && !lead.linkedin_url) updates.linkedin_url = ef.linkedin_url
   if (ef.phone && !lead.phone) updates.phone = ef.phone
   if (Object.keys(updates).length > 0) {
-    await supabase.from('leads').update(updates).eq('id', params.id)
+    await supabase.from('leads').update(updates).eq('id', leadId)
   }
 
   // 7. Save research record
   const { data: saved, error: saveErr } = await supabase
     .from('lead_research')
     .insert({
-      lead_id: params.id,
+      lead_id: leadId,
       model: 'claude-sonnet-4-6',
       profile_summary: report.profile_summary,
       icp_match: report.icp_match,
