@@ -19,6 +19,8 @@ export type DayData = {
   iso: string       // "2026-03-18"
   count: number
   calls: DayCall[]
+  followUpCount: number
+  followUpCalls: DayCall[]
   isToday: boolean
   isPast: boolean
 }
@@ -40,16 +42,31 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
         {d.sublabel} {d.label}
         {d.isToday && <span className="ml-1.5 text-blue-600 font-bold">· Today</span>}
       </p>
-      {d.calls.length === 0 ? (
+      {d.calls.length === 0 && d.followUpCalls.length === 0 ? (
         <p className="text-neutral-400">No calls</p>
       ) : (
-        d.calls.map((c, i) => (
-          <p key={i} className="text-neutral-600 leading-5">
-            {c.time ? <span className="font-semibold text-neutral-800">{c.time} </span> : null}
-            {c.name}
-            {c.company ? <span className="text-neutral-400"> · {c.company}</span> : null}
-          </p>
-        ))
+        <>
+          {d.calls.map((c, i) => (
+            <p key={i} className="text-neutral-600 leading-5">
+              {c.time ? <span className="font-semibold text-neutral-800">{c.time} </span> : null}
+              {c.name}
+              {c.company ? <span className="text-neutral-400"> · {c.company}</span> : null}
+            </p>
+          ))}
+          {d.followUpCalls.length > 0 && (
+            <>
+              {d.calls.length > 0 && <div className="border-t border-neutral-100 my-1" />}
+              <p className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1">Follow-up</p>
+              {d.followUpCalls.map((c, i) => (
+                <p key={i} className="text-red-500 leading-5">
+                  {c.time ? <span className="font-semibold text-red-600">{c.time} </span> : null}
+                  {c.name}
+                  {c.company ? <span className="text-red-300"> · {c.company}</span> : null}
+                </p>
+              ))}
+            </>
+          )}
+        </>
       )}
     </div>
   )
@@ -111,7 +128,9 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
   }, [])
 
   const visibleData = data.slice(offset, offset + daysToShow)
-  const todayCalls = data.find((d) => d.isToday)?.calls ?? []
+  const todayData = data.find((d) => d.isToday)
+  const todayCalls = todayData?.calls ?? []
+  const todayFollowUps = todayData?.followUpCalls ?? []
 
   const canPrev = offset > 0
   const canNext = offset + daysToShow < data.length
@@ -130,22 +149,34 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
           <h2 className="text-sm font-semibold text-neutral-900">First calls</h2>
           <p className="text-xs text-neutral-400 mt-0.5">Scheduled per day</p>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="hidden sm:inline text-xs text-neutral-400 mr-2">{rangeLabel}</span>
-          <button
-            onClick={() => setOffset(o => Math.max(0, o - daysToShow))}
-            disabled={!canPrev}
-            className="p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-30 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4 text-neutral-500" />
-          </button>
-          <button
-            onClick={() => setOffset(o => Math.min(data.length - daysToShow, o + daysToShow))}
-            disabled={!canNext}
-            className="p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-30 transition-colors"
-          >
-            <ChevronRight className="w-4 h-4 text-neutral-500" />
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3 text-xs text-neutral-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-sm bg-blue-400 inline-block" />
+              First call
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-sm bg-red-300 inline-block" />
+              Follow-up
+            </span>
+          </div>
+          <span className="hidden sm:inline text-xs text-neutral-400">{rangeLabel}</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setOffset(o => Math.max(0, o - daysToShow))}
+              disabled={!canPrev}
+              className="p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-30 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-neutral-500" />
+            </button>
+            <button
+              onClick={() => setOffset(o => Math.min(data.length - daysToShow, o + daysToShow))}
+              disabled={!canNext}
+              className="p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-30 transition-colors"
+            >
+              <ChevronRight className="w-4 h-4 text-neutral-500" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -166,11 +197,19 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
               content={<CustomTooltip />}
               cursor={{ fill: '#f5f5f5', radius: 4 }}
             />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]} minPointSize={0}>
+            <Bar dataKey="count" stackId="a" radius={[0, 0, 0, 0]} minPointSize={0}>
               {visibleData.map((d) => (
                 <Cell
                   key={d.iso}
                   fill={d.isToday ? '#3b82f6' : d.isPast ? '#e5e5e5' : '#bfdbfe'}
+                />
+              ))}
+            </Bar>
+            <Bar dataKey="followUpCount" stackId="a" radius={[4, 4, 0, 0]} minPointSize={0}>
+              {visibleData.map((d) => (
+                <Cell
+                  key={d.iso}
+                  fill={d.isToday ? '#ef4444' : d.isPast ? '#fca5a5' : '#fecaca'}
                 />
               ))}
             </Bar>
@@ -183,25 +222,28 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
         <div className="px-5 py-3 flex items-center gap-2">
           <Phone className="w-3.5 h-3.5 text-blue-500" />
           <span className="text-xs font-bold uppercase tracking-widest text-blue-600">
-            Today · {todayCalls.length} call{todayCalls.length !== 1 ? 's' : ''}
+            Today · {todayCalls.length + todayFollowUps.length} call{(todayCalls.length + todayFollowUps.length) !== 1 ? 's' : ''}
           </span>
         </div>
-        {todayCalls.length === 0 ? (
+        {todayCalls.length === 0 && todayFollowUps.length === 0 ? (
           <p className="px-5 pb-4 text-sm text-neutral-400">No calls scheduled today.</p>
         ) : (
           <div className="px-5 pb-4 space-y-2">
-            {todayCalls
-              .slice()
+            {[...todayCalls, ...todayFollowUps]
+              .map((c, i) => ({ ...c, isFollowUp: i >= todayCalls.length }))
               .sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'))
               .map((c, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-blue-600 w-12 shrink-0 tabular-nums">
+                  <span className={`text-sm font-bold w-12 shrink-0 tabular-nums ${c.isFollowUp ? 'text-red-500' : 'text-blue-600'}`}>
                     {c.time ?? '—'}
                   </span>
                   <div className="min-w-0">
                     <span className="text-sm font-semibold text-neutral-900">{c.name}</span>
                     {c.company && (
                       <span className="text-sm text-neutral-400"> · {c.company}</span>
+                    )}
+                    {c.isFollowUp && (
+                      <span className="ml-2 text-[10px] font-semibold text-red-400 bg-red-50 px-1.5 py-0.5 rounded">follow-up</span>
                     )}
                   </div>
                 </div>

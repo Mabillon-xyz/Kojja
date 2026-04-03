@@ -14,7 +14,10 @@ import { getAccount } from '@/lib/lemlist-accounts'
 const PRIX_CLIENT = 1750
 
 function buildDailyData(leads: Awaited<ReturnType<typeof readLeads>>): DayData[] {
-  const scheduled = leads.filter((l) => l.stage === 'call_scheduled')
+  const firstCalls = leads.filter((l) => l.stage === 'call_scheduled')
+  const followUps = leads.filter((l) =>
+    l.call_date && !['call_scheduled', 'customer', 'not_interested'].includes(l.stage)
+  )
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
 
@@ -24,15 +27,21 @@ function buildDailyData(leads: Awaited<ReturnType<typeof readLeads>>): DayData[]
     const isToday = i === 7
     const isPast = day < today
 
-    const calls = scheduled
+    const toCall = (l: (typeof leads)[0]) => ({
+      name: `${l.first_name} ${l.last_name}`,
+      time: l.call_date
+        ? new Date(l.call_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+        : null,
+      company: l.company_name,
+    })
+
+    const calls = firstCalls
       .filter((l) => l.call_date && l.call_date.startsWith(iso))
-      .map((l) => ({
-        name: `${l.first_name} ${l.last_name}`,
-        time: l.call_date
-          ? new Date(l.call_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-          : null,
-        company: l.company_name,
-      }))
+      .map(toCall)
+
+    const followUpCalls = followUps
+      .filter((l) => l.call_date && l.call_date.startsWith(iso))
+      .map(toCall)
 
     return {
       label: String(day.getDate()),
@@ -40,6 +49,8 @@ function buildDailyData(leads: Awaited<ReturnType<typeof readLeads>>): DayData[]
       iso,
       count: calls.length,
       calls,
+      followUpCount: followUpCalls.length,
+      followUpCalls,
       isToday,
       isPast,
     }
