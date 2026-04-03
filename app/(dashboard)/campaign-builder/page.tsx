@@ -10,12 +10,6 @@ import { createClient } from '@/lib/supabase/client'
 
 // ── Types ─────────────────────────────────────────────────────────
 type Lead = { id: string; first_name: string; last_name: string; company_name: string | null }
-type ResearchRecord = {
-  profile_summary: string | null
-  icp_reason: string | null
-  icebreaker: string | null
-  sheets_row: Record<string, string> | null
-}
 type Email = { subject: string; body: string }
 type CampaignKit = {
   icp: string
@@ -133,31 +127,6 @@ export default function CampaignBuilderPage() {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
-  function extractFromResearch(r: ResearchRecord) {
-    const summary = r.profile_summary ?? ''
-    const icp = r.icp_reason ?? ''
-    const sheets = r.sheets_row
-
-    // Specialty: sheets summary > first sentence of profile_summary
-    const firstSentence = summary.split(/(?<=[.!?])\s/)[0] ?? ''
-    const coachSpecialty = (sheets?.summary || firstSentence).trim().slice(0, 300)
-
-    // Target audience: extract client types from icp_reason
-    const audienceMatches = icp.match(
-      /(?:ETI|PME|TPE|grands?\s+comptes?|grandes?\s+entreprises?|Comex|dirigeants?[^,;.\n]{0,60}(?:PME|ETI|grande|indépendant)[^,;.\n]{0,40})/gi
-    )
-    const targetAudience = audienceMatches?.slice(0, 3).join(', ').slice(0, 220) ?? ''
-
-    // Pain points: icebreaker is the personalized hook — best proxy for value prop / pain addressed
-    const clientPainPoints = r.icebreaker?.trim() ?? ''
-
-    // Results: extract quantified achievements from profile_summary
-    const metrics = summary.match(/\d+[+]?\s*(?:ans?|dirigeants?|clients?|mois|%|entreprises?)[^,;.\n]{0,60}/gi)
-    const results = metrics?.slice(0, 3).join('; ').trim() ?? ''
-
-    return { coachSpecialty, targetAudience, clientPainPoints, results, context: summary }
-  }
-
   async function pickLead(id: string) {
     setSelectedLeadId(id)
     const lead = leads.find((l) => l.id === id)
@@ -169,21 +138,18 @@ export default function CampaignBuilderPage() {
 
     setResearchLoading(true)
     try {
-      const res = await fetch(`/api/leads/${id}/research`)
+      const res = await fetch(`/api/leads/${id}/research/suggestions`)
       if (res.ok) {
-        const records: ResearchRecord[] = await res.json()
-        if (records.length > 0) {
-          const ex = extractFromResearch(records[0])
-          setForm((f) => ({
-            ...f,
-            coachSpecialty: ex.coachSpecialty || f.coachSpecialty,
-            targetAudience: ex.targetAudience || f.targetAudience,
-            clientPainPoints: ex.clientPainPoints || f.clientPainPoints,
-            results: ex.results || f.results,
-            context: ex.context || f.context,
-          }))
-          setAiPrefilled(true)
-        }
+        const s = await res.json()
+        setForm((f) => ({
+          ...f,
+          coachSpecialty: s.coachSpecialty || f.coachSpecialty,
+          targetAudience: s.targetAudience || f.targetAudience,
+          clientPainPoints: s.clientPainPoints || f.clientPainPoints,
+          results: s.results || f.results,
+          context: s.context || f.context,
+        }))
+        setAiPrefilled(true)
       }
     } finally {
       setResearchLoading(false)
