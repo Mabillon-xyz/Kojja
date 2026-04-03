@@ -64,13 +64,25 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const supabase = await createServiceClient()
 
     // Fetch lead
-    const { data: lead } = await supabase
+    const { data: lead, error: leadError } = await supabase
       .from('leads')
-      .select('first_name, last_name, notes, stage, call_recap')
+      .select('first_name, last_name, notes, stage')
       .eq('id', params.id)
       .single()
 
+    if (leadError) {
+      console.error('[recap] lead fetch error:', leadError)
+      return NextResponse.json({ error: `Lead fetch failed: ${leadError.message}` }, { status: 500 })
+    }
     if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
+
+    // Fetch call_recap separately (column may not exist in older deployments)
+    const { data: recapRow } = await supabase
+      .from('leads')
+      .select('call_recap')
+      .eq('id', params.id)
+      .single()
+    const existingRecap = (recapRow as { call_recap?: string | null } | null)?.call_recap ?? null
 
     const leadName = `${lead.first_name} ${lead.last_name}`
 
@@ -92,8 +104,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     // Accumulate raw recap text (for Campaign Builder context)
     const recapEntry = `[${new Date().toISOString().slice(0, 10)}]\n${recap.trim()}`
-    const updatedRecap = (lead as { call_recap?: string | null }).call_recap
-      ? `${(lead as { call_recap: string }).call_recap}\n\n---\n\n${recapEntry}`
+    const updatedRecap = existingRecap
+      ? `${existingRecap}\n\n---\n\n${recapEntry}`
       : recapEntry
 
     // Build update payload
