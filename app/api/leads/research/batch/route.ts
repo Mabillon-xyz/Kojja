@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 function getSupabase() {
@@ -13,7 +13,7 @@ function getSupabase() {
  * Returns the list of leads that don't have an existing research record.
  * The client is responsible for calling each lead's research endpoint individually.
  */
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const supabase = getSupabase()
 
   const { data: leads, error: leadsErr } = await supabase
