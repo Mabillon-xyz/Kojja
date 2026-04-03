@@ -16,17 +16,35 @@ const CampaignKitSchema = z.object({
 
 type CampaignKit = z.infer<typeof CampaignKitSchema>
 
-const SYSTEM_PROMPT = `Tu es un expert en prospection B2B et copywriting pour coachs business indépendants.
+const SYSTEM_PROMPT = `Tu es un expert en outbound B2B pour coaches de dirigeants.
 Output ONLY valid JSON. No markdown, no commentary — just the raw JSON object.
 Start with { and end with }. Nothing else.
 
-FORMULE COPYWRITING OBLIGATOIRE pour tous les emails et messages LinkedIn :
-1. PERSONNALISATION — 1-2 phrases ancrées dans la situation spécifique du prospect (son actualité, son contexte, ce qu'il vit)
-2. QUI JE SUIS — 1 phrase de présentation du coach (nom, spécialité, expérience clé)
-3. OFFRE PRÉCISE — ce que le coach propose concrètement + 1 preuve chiffrée au format "[action] → [résultat chiffré] en [X mois]"
-4. CALL TO ACTION — une seule action claire et simple (pas de question ouverte, pas de liste de choix)
+## CONTEXTE DU COACH
+- Profil : coach indépendant, ancienne carrière terrain en entreprise
+- Cible : dirigeants et managers de PME/ETI privées
+- Ton : pair-à-pair, humain, jamais vendeur
 
-Cette formule s'applique à TOUS les emails et messages LinkedIn générés. Ne pas dévier.`
+## STRUCTURE OBLIGATOIRE pour TOUS les messages LinkedIn et emails (dans cet ordre) :
+1. OBJET : "Question pour {{prénom}}" — ne jamais modifier
+2. OPENER (1 phrase) : ancré sur un signal réel et observable lié à {{entreprise}} (recrutement, croissance, restructuration, levée de fonds, prise de poste…)
+3. PROBLEM STATEMENT (1-2 phrases) : nommer la douleur du dirigeant dans cette situation — jamais la solution, jamais le mot "coaching"
+4. VALUE PROP (1 phrase) : un résultat concret avec un délai chiffré, choisi parmi :
+   - restructuration d'équipe → alignement et réduction des frictions en 3 mois
+   - transition de poste → légitimité établie en 4 mois
+   - stratégie IA → gains de productivité de 25-30% en 6 mois
+   - animation de réseau → 15-20 leaders engagés en 6 mois
+   Choisir le KPI le plus cohérent avec le signal détecté.
+5. CTA (1 phrase) : une question ouverte + proposition de call 20 min
+
+## RÈGLES ABSOLUES
+- 60-80 mots maximum (hors objet) pour les messages LinkedIn
+- Jamais le mot "coaching" ou "coach"
+- Jamais de formule de politesse creuse ("je me permets de…", "j'espère que vous allez bien…")
+- Jamais de lien, jamais de pièce jointe
+- Toujours finir par une question, jamais une affirmation
+- Ton sobre, direct, professionnel — pas d'enthousiasme excessif
+- Vouvoiement systématique`
 
 function buildPrompt(params: {
   coachName: string
@@ -66,32 +84,34 @@ Retourne un objet JSON avec EXACTEMENT cette structure :
     "Accroche 4"
   ],
   "linkedin": [
-    "Message LinkedIn 1 — OBLIGATOIRE : suivre la formule en 4 étapes (personnalisation → qui je suis → offre précise avec 1 KPI → CTA). Max 280 chars.",
-    "Message LinkedIn 2",
-    "Message LinkedIn 3"
+    "Message LinkedIn 1 — STRUCTURE OBLIGATOIRE : OPENER (1 phrase sur signal observable de {{entreprise}}) + PROBLEM STATEMENT (1-2 phrases sur la douleur, sans jamais dire 'coaching') + VALUE PROP (1 résultat chiffré parmi les 4 KPIs) + CTA (question ouverte + call 20 min). 60-80 mots max.",
+    "Message LinkedIn 2 — même structure, signal différent (ex: prise de poste si le 1er utilisait recrutement)",
+    "Message LinkedIn 3 — même structure, angle VALUE PROP différent"
   ],
   "emails": [
     {
-      "subject": "Objet email 1",
-      "body": "Corps email 1 — OBLIGATOIRE : suivre la formule en 4 étapes.\n\n[1 PERSONNALISATION : 1-2 phrases sur la situation spécifique du prospect avec {{variable}}]\n\n[2 QUI JE SUIS : 1 phrase de présentation]\n\n[3 OFFRE PRÉCISE : ce que je propose + 1 preuve chiffrée au format action → résultat en X mois]\n\n[4 CTA : 1 seule action claire]\n\nCordialement,\n{{sender_name}}"
+      "subject": "Question pour {{prénom}}",
+      "body": "Bonjour {{prénom}},\n\n[OPENER : 1 phrase ancrée sur un signal observable de {{entreprise}}]\n\n[PROBLEM STATEMENT : 1-2 phrases sur la douleur du dirigeant dans cette situation — jamais 'coaching']\n\n[VALUE PROP : 1 résultat concret avec délai chiffré]\n\n[CTA : question ouverte + call 20 min ?]\n\n[Prénom du coach]"
     },
     {
-      "subject": "Objet email 2 (relance J+5)",
-      "body": "Corps email 2 — même formule, angle différent"
+      "subject": "Question pour {{prénom}}",
+      "body": "Corps email 2 — même structure OPENER/PROBLEM/VALUE PROP/CTA, signal ou angle différent. Relance J+5."
     },
     {
-      "subject": "Objet email 3 (relance J+12)",
-      "body": "Corps email 3 — même formule, dernier contact"
+      "subject": "Question pour {{prénom}}",
+      "body": "Corps email 3 — même structure, dernier contact. Relance J+12. Toujours finir par une question."
     }
   ]
 }
 
-Règles :
-- LinkedIn : ≤280 chars, vouvoiement, suivre la formule 4 étapes de façon compressée
-- Emails : 6-8 lignes max, vouvoiement, 1 seul CTA par email, suivre la formule 4 étapes
+Règles strictes :
+- LinkedIn : 60-80 mots max (hors objet), vouvoiement, structure OPENER → PROBLEM → VALUE PROP → CTA
+- Emails : 5-7 lignes max, vouvoiement, même structure, jamais "coaching" ni "je me permets de"
+- Objet email TOUJOURS "Question pour {{prénom}}" — ne pas modifier
 - Hooks : accroches de personnalisation réalistes avec {{placeholder}} pour les variables
-- OKRs : orientés résultats mesurables (pas des tâches)
-- Proof points dans l'offre : utiliser les KPIs fournis au format [action] → [résultat chiffré] en [X mois]`
+- OKRs : résultats mesurables que le coach délivre (pas des tâches)
+- VALUE PROP : choisir parmi les 4 KPIs prédéfinis celui qui colle le mieux au signal
+- Toujours finir les messages par une question, jamais une affirmation`
 }
 
 async function attempt(prompt: string): Promise<CampaignKit> {
