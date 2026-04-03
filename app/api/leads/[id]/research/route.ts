@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
+import { ALL_ACCOUNT_IDS, LEMLIST_ACCOUNTS } from '@/lib/lemlist-accounts'
 
 const COACHES_SHEET_URL =
   'https://docs.google.com/spreadsheets/d/19O54kk8km9RJsfemuAK2HNlkU9ze3vahcA-LyrJhp1c/export?format=csv&gid=1823960202'
@@ -126,21 +127,24 @@ async function fetchPappers(companyName: string | null): Promise<Record<string, 
 
 async function fetchLemlistContact(email: string | null): Promise<Record<string, unknown> | null> {
   if (!email) return null
-  const apiKey = process.env.LEMLIST_API_KEY
-  if (!apiKey) return null
-  try {
-    const basicAuth = Buffer.from(`:${apiKey}`).toString('base64')
-    const res = await fetch(
-      `https://api.lemlist.com/api/contacts?idsOrEmails=${encodeURIComponent(email)}`,
-      { headers: { Authorization: `Basic ${basicAuth}` }, signal: AbortSignal.timeout(10_000) }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
-    const contacts = Array.isArray(data) ? data : []
-    return (contacts[0] as Record<string, unknown>) ?? null
-  } catch {
-    return null
+  for (const accountId of ALL_ACCOUNT_IDS) {
+    const apiKey = LEMLIST_ACCOUNTS[accountId].apiKey()
+    if (!apiKey) continue
+    try {
+      const basicAuth = Buffer.from(`:${apiKey}`).toString('base64')
+      const res = await fetch(
+        `https://api.lemlist.com/api/contacts?idsOrEmails=${encodeURIComponent(email)}`,
+        { headers: { Authorization: `Basic ${basicAuth}` }, signal: AbortSignal.timeout(10_000) }
+      )
+      if (!res.ok) continue
+      const data = await res.json()
+      const contacts = Array.isArray(data) ? data : []
+      if (contacts.length > 0) return contacts[0] as Record<string, unknown>
+    } catch {
+      // try next account
+    }
   }
+  return null
 }
 
 // ─── Tool definitions ────────────────────────────────────────────────────────
