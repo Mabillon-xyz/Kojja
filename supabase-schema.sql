@@ -500,3 +500,33 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS naf_libelle      TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS contact_means    TEXT[];
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS comment          TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS linkedin_url     TEXT;
+
+-- ============================================================
+-- Campaign Kits (generated + edited kits from the campaign builder)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS campaign_kits (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lead_id     UUID REFERENCES leads(id) ON DELETE SET NULL,
+  coach_name  TEXT NOT NULL,
+  form_inputs JSONB NOT NULL DEFAULT '{}',
+  icp         TEXT NOT NULL DEFAULT '',
+  okrs        JSONB NOT NULL DEFAULT '[]',
+  hooks       JSONB NOT NULL DEFAULT '[]',
+  linkedin    JSONB NOT NULL DEFAULT '[]',
+  emails      JSONB NOT NULL DEFAULT '[]',
+  label       TEXT,
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS campaign_kits_updated_at ON campaign_kits;
+CREATE TRIGGER campaign_kits_updated_at
+  BEFORE UPDATE ON campaign_kits
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+ALTER TABLE campaign_kits ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Auth users manage campaign_kits"
+  ON campaign_kits FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access on campaign_kits"
+  ON campaign_kits FOR ALL TO service_role USING (true) WITH CHECK (true);

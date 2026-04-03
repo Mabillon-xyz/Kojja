@@ -79,6 +79,21 @@ export const STAGES: Lead['stage'][] = [
   'not_interested',
 ]
 
+export type CampaignKitRow = {
+  id: string
+  lead_id: string | null
+  coach_name: string
+  form_inputs: Record<string, string>
+  icp: string
+  okrs: string[]
+  hooks: string[]
+  linkedin: string[]
+  emails: Array<{ subject: string; body: string }>
+  label: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type LeadResearch = {
   id: string
   lead_id: string

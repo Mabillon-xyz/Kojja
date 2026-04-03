@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Copy, Check, Loader2, Sparkles } from 'lucide-react'
+import { Copy, Check, Loader2, Sparkles, Save, FileText, Printer, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,12 +11,31 @@ import { createClient } from '@/lib/supabase/client'
 // ── Types ─────────────────────────────────────────────────────────
 type Lead = { id: string; first_name: string; last_name: string; company_name: string | null }
 type Email = { subject: string; body: string }
-type CampaignKit = {
-  icp: string
-  okrs: string[]
-  hooks: string[]
-  linkedin: string[]
-  emails: Email[]
+type CampaignKit = { icp: string; okrs: string[]; hooks: string[]; linkedin: string[]; emails: Email[] }
+type KitMeta = { id: string; coach_name: string; label: string | null; created_at: string }
+
+// ── Auto-resizing textarea ─────────────────────────────────────────
+function AutoTextarea({ value, onChange, className = '', rows = 2 }: {
+  value: string
+  onChange: (v: string) => void
+  className?: string
+  rows?: number
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (!ref.current) return
+    ref.current.style.height = 'auto'
+    ref.current.style.height = ref.current.scrollHeight + 'px'
+  }, [value])
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      rows={rows}
+      onChange={e => onChange(e.target.value)}
+      className={`w-full text-sm text-neutral-700 leading-relaxed bg-transparent border-0 outline-none resize-none p-0 ${className}`}
+    />
+  )
 }
 
 // ── Progress overlay ───────────────────────────────────────────────
@@ -74,15 +93,10 @@ function GeneratingOverlay({ elapsed }: { elapsed: number }) {
 // ── Copy button ────────────────────────────────────────────────────
 function CopyBtn({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
-  function copy() {
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
   return (
     <button
-      onClick={copy}
-      className="p-1.5 rounded-md hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors"
+      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+      className="p-1.5 rounded-md hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors flex-shrink-0"
       title="Copy"
     >
       {copied ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
@@ -106,12 +120,8 @@ function Section({ emoji, title, children }: { emoji: string; title: string; chi
 // ── Main component ─────────────────────────────────────────────────
 export default function CampaignBuilderPage() {
   const [form, setForm] = useState({
-    coachName: '',
-    coachSpecialty: '',
-    targetAudience: '',
-    clientPainPoints: '',
-    results: '',
-    context: '',
+    coachName: '', coachSpecialty: '', targetAudience: '',
+    clientPainPoints: '', results: '', context: '',
   })
   const [leads, setLeads] = useState<Lead[]>([])
   const [selectedLeadId, setSelectedLeadId] = useState('')
@@ -120,13 +130,96 @@ export default function CampaignBuilderPage() {
   const [loading, setLoading] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState('')
-  const [kit, setKit] = useState<CampaignKit | null>(null)
+
+  // Kit state
+  const [editedKit, setEditedKit] = useState<CampaignKit | null>(null)
+  const [savedKitId, setSavedKitId] = useState<string | null>(null)
+  const [isDirty, setIsDirty] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [history, setHistory] = useState<KitMeta[]>([])
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
+  // ── Kit edit helpers ───────────────────────────────────────────
+  function updateKit(partial: Partial<CampaignKit>) {
+    setEditedKit(k => k ? { ...k, ...partial } : null)
+    setIsDirty(true)
+  }
+
+  function updateArray(key: 'okrs' | 'hooks' | 'linkedin', i: number, val: string) {
+    setEditedKit(k => {
+      if (!k) return null
+      const arr = [...k[key]]
+      arr[i] = val
+      return { ...k, [key]: arr }
+    })
+    setIsDirty(true)
+  }
+
+  function updateEmail(i: number, field: 'subject' | 'body', val: string) {
+    setEditedKit(k => {
+      if (!k) return null
+      const emails = k.emails.map((e, idx) => idx === i ? { ...e, [field]: val } : e)
+      return { ...k, emails }
+    })
+    setIsDirty(true)
+  }
+
+  // ── Save / export ──────────────────────────────────────────────
+  async function saveKit(): Promise<string | null> {
+    if (!editedKit) return null
+    setSaving(true)
+    try {
+      if (savedKitId) {
+        await fetch(`/api/campaign-kits/${savedKitId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editedKit),
+        })
+        setIsDirty(false)
+        return savedKitId
+      } else {
+        const res = await fetch('/api/campaign-kits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lead_id: selectedLeadId || null,
+            coach_name: form.coachName,
+            form_inputs: form,
+            ...editedKit,
+          }),
+        })
+        if (!res.ok) return null
+        const data = await res.json()
+        setSavedKitId(data.id)
+        setIsDirty(false)
+        setHistory(prev => [{ id: data.id, coach_name: data.coach_name, label: null, created_at: data.created_at }, ...prev])
+        return data.id
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function exportKit(format: 'html' | 'pdf') {
+    const id = savedKitId || await saveKit()
+    if (id) window.open(`/api/campaign-kits/${id}/export?format=${format}`, '_blank')
+  }
+
+  async function loadKit(id: string) {
+    const res = await fetch(`/api/campaign-kits/${id}`)
+    if (!res.ok) return
+    const data = await res.json()
+    setEditedKit({ icp: data.icp, okrs: data.okrs, hooks: data.hooks, linkedin: data.linkedin, emails: data.emails })
+    setSavedKitId(id)
+    setIsDirty(false)
+  }
+
+  // ── Lead picker ────────────────────────────────────────────────
   async function pickLead(id: string) {
     setSelectedLeadId(id)
     const lead = leads.find((l) => l.id === id)
@@ -136,27 +229,33 @@ export default function CampaignBuilderPage() {
     setForm((f) => ({ ...f, coachName: `${name}${company}` }))
     setAiPrefilled(false)
 
+    // Fetch suggestions + history in parallel
     setResearchLoading(true)
-    try {
-      const res = await fetch(`/api/leads/${id}/research/suggestions`)
-      if (res.ok) {
-        const s = await res.json()
-        setForm((f) => ({
-          ...f,
-          coachSpecialty: s.coachSpecialty || f.coachSpecialty,
-          targetAudience: s.targetAudience || f.targetAudience,
-          clientPainPoints: s.clientPainPoints || f.clientPainPoints,
-          results: s.results || f.results,
-          context: s.context || f.context,
-        }))
-        setAiPrefilled(true)
-      }
-    } finally {
-      setResearchLoading(false)
+    const [sugRes, histRes] = await Promise.allSettled([
+      fetch(`/api/leads/${id}/research/suggestions`),
+      fetch(`/api/campaign-kits?lead_id=${id}`),
+    ])
+    setResearchLoading(false)
+
+    if (sugRes.status === 'fulfilled' && sugRes.value.ok) {
+      const s = await sugRes.value.json()
+      setForm((f) => ({
+        ...f,
+        coachSpecialty: s.coachSpecialty || f.coachSpecialty,
+        targetAudience: s.targetAudience || f.targetAudience,
+        clientPainPoints: s.clientPainPoints || f.clientPainPoints,
+        results: s.results || f.results,
+        context: s.context || f.context,
+      }))
+      setAiPrefilled(true)
+    }
+
+    if (histRes.status === 'fulfilled' && histRes.value.ok) {
+      setHistory(await histRes.value.json())
     }
   }
 
-  // Fetch leads on mount
+  // ── Fetch leads on mount ───────────────────────────────────────
   useEffect(() => {
     const supabase = createClient()
     supabase
@@ -177,10 +276,13 @@ export default function CampaignBuilderPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [loading])
 
+  // ── Generate ───────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    setKit(null)
+    setEditedKit(null)
+    setSavedKitId(null)
+    setIsDirty(false)
     setLoading(true)
     try {
       const res = await fetch('/api/campaign-builder', {
@@ -190,7 +292,24 @@ export default function CampaignBuilderPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Generation failed')
-      setKit(data)
+      setEditedKit(data)
+      // Auto-save
+      const saveRes = await fetch('/api/campaign-kits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead_id: selectedLeadId || null,
+          coach_name: form.coachName,
+          form_inputs: form,
+          ...data,
+        }),
+      })
+      if (saveRes.ok) {
+        const saved = await saveRes.json()
+        setSavedKitId(saved.id)
+        setIsDirty(false)
+        setHistory(prev => [{ id: saved.id, coach_name: saved.coach_name, label: null, created_at: saved.created_at }, ...prev])
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     }
@@ -222,12 +341,12 @@ export default function CampaignBuilderPage() {
               <h2 className="text-sm font-semibold text-neutral-700">👤 Coach profile</h2>
 
               {leads.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="leadPick">Pick from your leads</Label>
                     {researchLoading && (
                       <span className="text-[11px] text-violet-500 flex items-center gap-1">
-                        <Loader2 size={11} className="animate-spin" /> Chargement recherche…
+                        <Loader2 size={11} className="animate-spin" /> Chargement…
                       </span>
                     )}
                     {!researchLoading && aiPrefilled && (
@@ -249,6 +368,31 @@ export default function CampaignBuilderPage() {
                       </option>
                     ))}
                   </select>
+
+                  {/* History panel */}
+                  {history.length > 0 && (
+                    <details className="border border-neutral-200 rounded-lg overflow-hidden">
+                      <summary className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-neutral-500 cursor-pointer hover:bg-neutral-50 select-none">
+                        <History size={11} />
+                        {history.length} kit{history.length > 1 ? 's' : ''} sauvegardé{history.length > 1 ? 's' : ''} pour ce lead
+                      </summary>
+                      <div className="divide-y divide-neutral-100">
+                        {history.map(h => (
+                          <button
+                            key={h.id}
+                            type="button"
+                            onClick={() => loadKit(h.id)}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-neutral-50 flex items-center justify-between gap-2"
+                          >
+                            <span className="truncate text-neutral-700">{h.label || h.coach_name}</span>
+                            <span className="text-neutral-400 flex-shrink-0">
+                              {new Date(h.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </details>
+                  )}
                 </div>
               )}
 
@@ -296,22 +440,23 @@ export default function CampaignBuilderPage() {
                   placeholder="Overwhelmed by decisions, lack of clarity on priorities, difficulty delegating…"
                   value={form.clientPainPoints}
                   onChange={(e) => set('clientPainPoints', e.target.value)}
-                  required
-                  rows={3}
-                  className="resize-none"
+                  required rows={3} className="resize-none"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="results">Concrete results / proof points *</Label>
+                <Label htmlFor="results">
+                  Concrete results / proof points *
+                  <span className="ml-1.5 text-neutral-400 font-normal text-[11px]">
+                    format : [action] → [résultat chiffré] en [X mois]
+                  </span>
+                </Label>
                 <Textarea
                   id="results"
-                  placeholder="+40% revenue in 6 months, client promoted to VP in 3 months, 3 new clients per week…"
+                  placeholder="Restructuration d'équipe dirigeante → turnover réduit de 60% en 12 mois / DG en transition → nouveau poste trouvé en 3 mois…"
                   value={form.results}
                   onChange={(e) => set('results', e.target.value)}
-                  required
-                  rows={3}
-                  className="resize-none"
+                  required rows={3} className="resize-none"
                 />
               </div>
 
@@ -325,8 +470,7 @@ export default function CampaignBuilderPage() {
                   placeholder="Methodology, certifications, tone of voice, target geography…"
                   value={form.context}
                   onChange={(e) => set('context', e.target.value)}
-                  rows={2}
-                  className="resize-none"
+                  rows={2} className="resize-none"
                 />
               </div>
             </div>
@@ -344,7 +488,7 @@ export default function CampaignBuilderPage() {
 
           {/* ── Right: Output ── */}
           <div className="space-y-4">
-            {!kit ? (
+            {!editedKit ? (
               <div className="bg-white border border-neutral-200 border-dashed rounded-2xl p-12 text-center">
                 <p className="text-3xl mb-3">🎯</p>
                 <p className="text-sm font-medium text-neutral-600">Your campaign kit will appear here</p>
@@ -352,46 +496,99 @@ export default function CampaignBuilderPage() {
               </div>
             ) : (
               <>
-                {/* ICP */}
+                {/* Action bar */}
+                <div className="flex items-center justify-between gap-2 bg-white border border-neutral-200 rounded-xl px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    {savedKitId && !isDirty ? (
+                      <span className="text-[11px] text-green-600 font-medium flex items-center gap-1">
+                        <Check size={11} /> Sauvegardé
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant={isDirty ? 'default' : 'outline'}
+                        onClick={saveKit}
+                        disabled={saving}
+                        className="h-7 text-xs"
+                      >
+                        {saving
+                          ? <><Loader2 size={11} className="animate-spin mr-1" />Saving…</>
+                          : <><Save size={11} className="mr-1" />{savedKitId ? 'Mettre à jour' : 'Sauvegarder'}</>
+                        }
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm" variant="outline" className="h-7 text-xs gap-1"
+                      onClick={() => exportKit('html')} disabled={saving}
+                    >
+                      <FileText size={11} /> HTML
+                    </Button>
+                    <Button
+                      size="sm" variant="outline" className="h-7 text-xs gap-1"
+                      onClick={() => exportKit('pdf')} disabled={saving}
+                    >
+                      <Printer size={11} /> PDF
+                    </Button>
+                  </div>
+                </div>
+
+                {/* ICP — editable */}
                 <Section emoji="🎯" title="ICP — Ideal Client Profile">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm text-neutral-700 leading-relaxed flex-1">{kit.icp}</p>
-                    <CopyBtn text={kit.icp} />
+                    <AutoTextarea
+                      value={editedKit.icp}
+                      onChange={v => updateKit({ icp: v })}
+                      className="flex-1"
+                      rows={3}
+                    />
+                    <CopyBtn text={editedKit.icp} />
                   </div>
                 </Section>
 
-                {/* OKRs */}
+                {/* OKRs — editable */}
                 <Section emoji="📈" title="OKRs — Résultats clés">
                   <ul className="space-y-2">
-                    {kit.okrs.map((okr, i) => (
+                    {editedKit.okrs.map((okr, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="mt-0.5 w-5 h-5 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-bold text-neutral-500 flex-shrink-0">
                           {i + 1}
                         </span>
-                        <span className="text-sm text-neutral-700 flex-1">{okr}</span>
+                        <AutoTextarea
+                          value={okr}
+                          onChange={v => updateArray('okrs', i, v)}
+                          className="flex-1"
+                          rows={1}
+                        />
                         <CopyBtn text={okr} />
                       </li>
                     ))}
                   </ul>
                 </Section>
 
-                {/* Hooks */}
+                {/* Hooks — editable */}
                 <Section emoji="🪝" title="Accroches de personnalisation">
                   <div className="space-y-3">
-                    {kit.hooks.map((hook, i) => (
+                    {editedKit.hooks.map((hook, i) => (
                       <div key={i} className="flex items-start gap-2 bg-neutral-50 rounded-xl px-4 py-3">
                         <span className="text-xs font-bold text-neutral-400 mt-0.5 w-4 flex-shrink-0">{i + 1}</span>
-                        <p className="text-sm text-neutral-700 flex-1 leading-relaxed">{hook}</p>
+                        <AutoTextarea
+                          value={hook}
+                          onChange={v => updateArray('hooks', i, v)}
+                          className="flex-1"
+                          rows={2}
+                        />
                         <CopyBtn text={hook} />
                       </div>
                     ))}
                   </div>
                 </Section>
 
-                {/* LinkedIn */}
+                {/* LinkedIn — editable */}
                 <Section emoji="💼" title="Messages LinkedIn">
                   <div className="space-y-3">
-                    {kit.linkedin.map((msg, i) => (
+                    {editedKit.linkedin.map((msg, i) => (
                       <div key={i} className="border border-neutral-200 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">
@@ -406,31 +603,45 @@ export default function CampaignBuilderPage() {
                             <CopyBtn text={msg} />
                           </div>
                         </div>
-                        <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap">{msg}</p>
+                        <AutoTextarea
+                          value={msg}
+                          onChange={v => updateArray('linkedin', i, v)}
+                          rows={3}
+                        />
                       </div>
                     ))}
                   </div>
                 </Section>
 
-                {/* Emails */}
+                {/* Emails — editable */}
                 <Section emoji="📧" title="Séquence email">
                   <div className="space-y-4">
-                    {kit.emails.map((email, i) => (
+                    {editedKit.emails.map((email, i) => (
                       <div key={i} className="border border-neutral-200 rounded-xl overflow-hidden">
                         <div className="bg-neutral-50 px-4 py-2.5 flex items-center justify-between border-b border-neutral-200">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide flex-shrink-0">
-                              Email {i + 1}
-                            </span>
-                            <span className="text-xs text-neutral-600 font-medium truncate">· {email.subject}</span>
-                          </div>
+                          <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide flex-shrink-0">
+                            Email {i + 1}
+                          </span>
                           <CopyBtn text={`Objet : ${email.subject}\n\n${email.body}`} />
                         </div>
-                        <div className="p-4">
-                          <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1.5">Objet</p>
-                          <p className="text-sm text-neutral-800 font-medium mb-3">{email.subject}</p>
-                          <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1.5">Corps</p>
-                          <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap">{email.body}</p>
+                        <div className="p-4 space-y-3">
+                          <div>
+                            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">Objet</p>
+                            <input
+                              type="text"
+                              value={email.subject}
+                              onChange={e => updateEmail(i, 'subject', e.target.value)}
+                              className="w-full text-sm font-medium text-neutral-800 bg-transparent border-0 outline-none p-0"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">Corps</p>
+                            <AutoTextarea
+                              value={email.body}
+                              onChange={v => updateEmail(i, 'body', v)}
+                              rows={6}
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}
