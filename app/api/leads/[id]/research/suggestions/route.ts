@@ -75,7 +75,9 @@ export async function GET(
 
   const prompt = `Tu es un expert en marketing B2B pour coachs business. À partir du profil ci-dessous, génère des suggestions pour un campaign builder Lemlist.
 
-IMPORTANT : Les champs "clientPainPoints" et "results" décrivent ce que LE COACH apporte À SES CLIENTS (les dirigeants qu'il accompagne), PAS ses propres caractéristiques.
+RÈGLES IMPORTANTES :
+- "clientPainPoints" et "results" décrivent ce que LE COACH apporte À SES CLIENTS (les dirigeants qu'il accompagne), PAS ses propres caractéristiques.
+- "results" doit être des KPIs ultra précis au format strict : [action coaching concrète] → [résultat chiffré] en [X mois/semaines]. Ces proof points servent à crédibiliser l'offre dans les messages de prospection.
 
 ${leadContext}
 
@@ -94,7 +96,7 @@ Réponds UNIQUEMENT avec ce JSON valide (pas de markdown, pas d'explication) :
   "coachSpecialty": "Spécialité de coaching en 1-2 phrases courtes, basée sur son expérience réelle",
   "targetAudience": "Profil exact des clients qu'il accompagne (type d'entreprise, fonction, situation)",
   "clientPainPoints": "3-4 problèmes concrets que ses clients vivent et qu'il peut résoudre, séparés par ' / '",
-  "results": "3-4 résultats tangibles et mesurables qu'il apporte à ses clients, séparés par ' / '",
+  "results": "3-4 KPIs au format strict '[action coaching] → [résultat chiffré] en [X mois]', séparés par ' / '. Ex: Accompagnement DG en transition de poste → nouveau rôle trouvé en 3 mois / Restructuration d'une équipe dirigeante → turnover key talent réduit de 60% en 12 mois",
   "context": "Contexte additionnel utile : méthode, certifications, ancrage géographique, réseau, positionnement distinctif"
 }`
 

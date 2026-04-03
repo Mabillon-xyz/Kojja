@@ -16,9 +16,17 @@ const CampaignKitSchema = z.object({
 
 type CampaignKit = z.infer<typeof CampaignKitSchema>
 
-const SYSTEM_PROMPT = `You are an expert cold outreach strategist and B2B copywriter specializing in coaching businesses.
+const SYSTEM_PROMPT = `Tu es un expert en prospection B2B et copywriting pour coachs business indépendants.
 Output ONLY valid JSON. No markdown, no commentary — just the raw JSON object.
-Start with { and end with }. Nothing else.`
+Start with { and end with }. Nothing else.
+
+FORMULE COPYWRITING OBLIGATOIRE pour tous les emails et messages LinkedIn :
+1. PERSONNALISATION — 1-2 phrases ancrées dans la situation spécifique du prospect (son actualité, son contexte, ce qu'il vit)
+2. QUI JE SUIS — 1 phrase de présentation du coach (nom, spécialité, expérience clé)
+3. OFFRE PRÉCISE — ce que le coach propose concrètement + 1 preuve chiffrée au format "[action] → [résultat chiffré] en [X mois]"
+4. CALL TO ACTION — une seule action claire et simple (pas de question ouverte, pas de liste de choix)
+
+Cette formule s'applique à TOUS les emails et messages LinkedIn générés. Ne pas dévier.`
 
 function buildPrompt(params: {
   coachName: string
@@ -33,57 +41,57 @@ function buildPrompt(params: {
     ? `Here are the internal best practices and context documents to guide your output:\n---\n${params.docs}\n---\n\n`
     : ''
 
-  return `${docsBlock}Generate a complete Lemlist campaign kit for this coaching business profile:
+  return `${docsBlock}Génère un kit de campagne Lemlist complet pour ce profil de coach business :
 
-- Coach / Company: ${params.coachName}
-- Coaching specialty: ${params.coachSpecialty}
-- Target audience (who they coach): ${params.targetAudience}
-- Pain points addressed: ${params.clientPainPoints}
-- Concrete results / proof points: ${params.results}
-${params.context ? `- Additional context: ${params.context}` : ''}
+- Coach / Cabinet : ${params.coachName}
+- Spécialité : ${params.coachSpecialty}
+- Audience cible (qui il coache) : ${params.targetAudience}
+- Pain points adressés : ${params.clientPainPoints}
+- Proof points (KPIs au format [action] → [résultat chiffré] en [X mois]) : ${params.results}
+${params.context ? `- Contexte additionnel : ${params.context}` : ''}
 
-Return a JSON object with EXACTLY this structure:
+Retourne un objet JSON avec EXACTEMENT cette structure :
 {
-  "icp": "2-3 sentence definition of the ideal client profile for this coach",
+  "icp": "Définition en 2-3 phrases du profil client idéal pour ce coach",
   "okrs": [
-    "OKR 1 (outcome this coach delivers, measurable)",
+    "OKR 1 — résultat livré par ce coach, mesurable",
     "OKR 2",
     "OKR 3",
     "OKR 4"
   ],
   "hooks": [
-    "Personalization hook 1 — use {{variable}} for anything to customize per prospect",
-    "Personalization hook 2",
-    "Personalization hook 3",
-    "Personalization hook 4"
+    "Accroche 1 — phrase de personnalisation ancrée dans la situation du prospect, utilise {{variable}} pour les parties à personnaliser",
+    "Accroche 2",
+    "Accroche 3",
+    "Accroche 4"
   ],
   "linkedin": [
-    "LinkedIn message 1 — conversational, no pitch, max 280 chars, opens a dialogue",
-    "LinkedIn message 2",
-    "LinkedIn message 3"
+    "Message LinkedIn 1 — OBLIGATOIRE : suivre la formule en 4 étapes (personnalisation → qui je suis → offre précise avec 1 KPI → CTA). Max 280 chars.",
+    "Message LinkedIn 2",
+    "Message LinkedIn 3"
   ],
   "emails": [
     {
-      "subject": "Email subject line 1",
-      "body": "Email body 1 — 5-7 lines, direct, outcome-focused, one clear CTA"
+      "subject": "Objet email 1",
+      "body": "Corps email 1 — OBLIGATOIRE : suivre la formule en 4 étapes.\n\n[1 PERSONNALISATION : 1-2 phrases sur la situation spécifique du prospect avec {{variable}}]\n\n[2 QUI JE SUIS : 1 phrase de présentation]\n\n[3 OFFRE PRÉCISE : ce que je propose + 1 preuve chiffrée au format action → résultat en X mois]\n\n[4 CTA : 1 seule action claire]\n\nCordialement,\n{{sender_name}}"
     },
     {
-      "subject": "Email subject line 2",
-      "body": "Email body 2"
+      "subject": "Objet email 2 (relance J+5)",
+      "body": "Corps email 2 — même formule, angle différent"
     },
     {
-      "subject": "Email subject line 3",
-      "body": "Email body 3"
+      "subject": "Objet email 3 (relance J+12)",
+      "body": "Corps email 3 — même formule, dernier contact"
     }
   ]
 }
 
-Rules:
-- LinkedIn: conversational, no sales pitch, open a genuine dialogue, ≤280 chars
-- Emails: 5-7 lines max, direct, outcome-focused, single clear CTA
-- Hooks: realistic personalization angles with {{placeholder}} for variable parts
-- OKRs: outcome-oriented, measurable (not task-based)
-- Write in French unless the coach profile suggests otherwise`
+Règles :
+- LinkedIn : ≤280 chars, vouvoiement, suivre la formule 4 étapes de façon compressée
+- Emails : 6-8 lignes max, vouvoiement, 1 seul CTA par email, suivre la formule 4 étapes
+- Hooks : accroches de personnalisation réalistes avec {{placeholder}} pour les variables
+- OKRs : orientés résultats mesurables (pas des tâches)
+- Proof points dans l'offre : utiliser les KPIs fournis au format [action] → [résultat chiffré] en [X mois]`
 }
 
 async function attempt(prompt: string): Promise<CampaignKit> {
