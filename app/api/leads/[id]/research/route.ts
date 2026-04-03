@@ -59,7 +59,7 @@ async function fetchUrl(url: string): Promise<string> {
     })
     if (!res.ok) return `HTTP ${res.status} ${res.statusText}`
     const text = await res.text()
-    const MAX = 40_000
+    const MAX = 20_000
     return text.length > MAX ? text.slice(0, MAX) + '\n[truncated]' : text
   } catch (e) {
     return `Fetch error: ${e instanceof Error ? e.message : 'unknown'}`
@@ -77,7 +77,7 @@ async function parallelSearch(query: string): Promise<string> {
         objective: query,
         search_queries: [query],
         mode: 'fast',
-        excerpts: { max_chars_per_result: 2000 },
+        excerpts: { max_chars_per_result: 1000 },
       }),
     })
     if (!res.ok) return `Search failed: ${res.status}`
@@ -86,7 +86,7 @@ async function parallelSearch(query: string): Promise<string> {
     const results: R[] = data?.results ?? (Array.isArray(data) ? data : [])
     if (results.length > 0) {
       return results
-        .slice(0, 5)
+        .slice(0, 4)
         .map(r => `**${r.title ?? 'Result'}**\n${r.url ?? ''}\n${r.excerpts?.[0]?.text ?? r.snippet ?? ''}`)
         .join('\n\n')
     }
@@ -298,7 +298,8 @@ async function runResearch(leadId: string) {
     : ''
 
   // 4. Run Claude agentic loop
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+  // maxRetries=5 handles 429 rate-limit errors with exponential backoff automatically
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY!, maxRetries: 5 })
 
   const SYSTEM = `Tu es un assistant de recherche CRM pour Koj²a, un outil de prospection pour coachs business indépendants en France.
 
