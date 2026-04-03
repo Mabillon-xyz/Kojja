@@ -13,7 +13,6 @@ export default function DashboardBanner() {
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null)
   const [hovering, setHovering] = useState(false)
   const [avatarHovering, setAvatarHovering] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const avatarRef = useRef<HTMLInputElement>(null)
 
@@ -29,8 +28,6 @@ export default function DashboardBanner() {
     async function sync() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      setUserId(user.id)
-
       const { data } = await supabase
         .from('user_settings')
         .select('banner_url, avatar_url')
