@@ -66,7 +66,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Fetch lead
     const { data: lead } = await supabase
       .from('leads')
-      .select('first_name, last_name, notes, stage')
+      .select('first_name, last_name, notes, stage, call_recap')
       .eq('id', params.id)
       .single()
 
@@ -90,9 +90,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       ? `${lead.notes}\n\n${notesBlock}`
       : notesBlock
 
+    // Accumulate raw recap text (for Campaign Builder context)
+    const recapEntry = `[${new Date().toISOString().slice(0, 10)}]\n${recap.trim()}`
+    const updatedRecap = (lead as { call_recap?: string | null }).call_recap
+      ? `${(lead as { call_recap: string }).call_recap}\n\n---\n\n${recapEntry}`
+      : recapEntry
+
     // Build update payload
     const updates: Record<string, unknown> = {
       notes: updatedNotes,
+      call_recap: updatedRecap,
       next_action: result.next_action,
       next_action_date: result.next_action_date,
       updated_at: new Date().toISOString(),

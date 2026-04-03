@@ -24,6 +24,7 @@ export type Lead = {
   effectif: string | null
   naf_code: string | null
   naf_libelle: string | null
+  call_recap: string | null
   created_at: string
   updated_at: string
 }

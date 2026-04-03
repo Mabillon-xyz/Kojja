@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase/client'
 
 // ── Types ─────────────────────────────────────────────────────────
-type Lead = { id: string; first_name: string; last_name: string; company_name: string | null }
+type Lead = { id: string; first_name: string; last_name: string; company_name: string | null; call_recap: string | null }
 type Email = { subject: string; body: string }
 type CampaignKit = { icp: string; okrs: string[]; hooks: string[]; linkedin: string[]; emails: Email[] }
 type KitMeta = { id: string; coach_name: string; label: string | null; created_at: string }
@@ -249,15 +249,26 @@ export default function CampaignBuilderPage() {
 
     if (sugRes.status === 'fulfilled' && sugRes.value.ok) {
       const s = await sugRes.value.json()
+      // Inject call recap as additional context if available
+      const recapBlock = lead.call_recap
+        ? `[Recap du call]\n${lead.call_recap}`
+        : ''
+      const contextValue = [s.context, recapBlock].filter(Boolean).join('\n\n') || ''
       setForm((f) => ({
         ...f,
         coachSpecialty: s.coachSpecialty || f.coachSpecialty,
         targetAudience: s.targetAudience || f.targetAudience,
         clientPainPoints: s.clientPainPoints || f.clientPainPoints,
         results: s.results || f.results,
-        context: s.context || f.context,
+        context: contextValue || f.context,
       }))
       setAiPrefilled(true)
+    } else if (lead.call_recap) {
+      // No AI suggestions but we have a recap — inject it anyway
+      setForm((f) => ({
+        ...f,
+        context: `[Recap du call]\n${lead.call_recap}`,
+      }))
     }
 
     if (histRes.status === 'fulfilled' && histRes.value.ok) {
@@ -270,7 +281,7 @@ export default function CampaignBuilderPage() {
     const supabase = createClient()
     supabase
       .from('leads')
-      .select('id, first_name, last_name, company_name')
+      .select('id, first_name, last_name, company_name, call_recap')
       .neq('stage', 'not_interested')
       .order('first_name')
       .then(({ data }) => { if (data) setLeads(data) })
@@ -374,7 +385,7 @@ export default function CampaignBuilderPage() {
                     <option value="" disabled>— Select a lead —</option>
                     {leads.map((l) => (
                       <option key={l.id} value={l.id}>
-                        {l.first_name} {l.last_name}{l.company_name ? ` — ${l.company_name}` : ''}
+                        {l.first_name} {l.last_name}{l.company_name ? ` — ${l.company_name}` : ''}{l.call_recap ? ' 📋' : ''}
                       </option>
                     ))}
                   </select>
