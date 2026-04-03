@@ -31,6 +31,7 @@ export default function DashboardKPIs({ kpis }: { kpis: KPI[] }) {
     const next = !blurred
     setBlurred(next)
     localStorage.setItem(STORAGE_KEY, next ? '1' : '0')
+    window.dispatchEvent(new CustomEvent('koja2:presentation-mode', { detail: next }))
   }
 
   return (
@@ -50,7 +51,7 @@ export default function DashboardKPIs({ kpis }: { kpis: KPI[] }) {
       {/* KPI grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => {
-          const hide = blurred && kpi.sensitive
+          const hide = blurred
           const Icon = ICONS[kpi.icon]
           return (
             <div key={kpi.label} className="bg-white border border-neutral-200 rounded-xl p-4 sm:p-5 shadow-sm">

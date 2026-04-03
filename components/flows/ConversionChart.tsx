@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -12,25 +13,52 @@ import {
 } from "recharts";
 import type { Snapshot } from "@/app/api/lemlist/snapshots/route";
 
+const STORAGE_KEY = 'koja2:blur-sensitive'
+
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
+function buildDemoData() {
+  const today = new Date()
+  const rates = [1.1, 1.3, 1.5, 1.8, 2.0, 2.2, 2.5, 2.7, 2.9, 3.0]
+  return rates.map((rate, i) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() - (rates.length - 1 - i) * 3)
+    return { date: d.toISOString(), rate, booked: Math.round(rate * 3), total: 300 }
+  })
+}
+
+const DEMO_DATA = buildDemoData()
+
 export default function ConversionChart({ snapshots }: { snapshots: Snapshot[] }) {
-  if (snapshots.length === 0) {
+  const [demo, setDemo] = useState(false)
+
+  useEffect(() => {
+    setDemo(localStorage.getItem(STORAGE_KEY) === '1')
+    function onToggle(e: Event) {
+      setDemo((e as CustomEvent<boolean>).detail)
+    }
+    window.addEventListener('koja2:presentation-mode', onToggle)
+    return () => window.removeEventListener('koja2:presentation-mode', onToggle)
+  }, [])
+
+  const data = demo
+    ? DEMO_DATA
+    : snapshots.map((s) => ({
+        date: s.snapshotted_at,
+        rate: Number(s.conversion_rate),
+        booked: s.booked_leads,
+        total: s.total_leads,
+      }))
+
+  if (!demo && snapshots.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-neutral-200 shadow-sm px-6 py-10 text-center">
         <p className="text-sm text-neutral-400">No history yet — click &ldquo;Sync CRM&rdquo; to record the first data point.</p>
       </div>
     );
   }
-
-  const data = snapshots.map((s) => ({
-    date: s.snapshotted_at,
-    rate: Number(s.conversion_rate),
-    booked: s.booked_leads,
-    total: s.total_leads,
-  }));
 
   const latest = data[data.length - 1];
   const first = data[0];
