@@ -4,11 +4,26 @@ import { Lead } from '@/lib/lead-types'
 import LeadQueue from './LeadQueue'
 import LeadKanban from './LeadKanban'
 import AddLeadForm from './AddLeadForm'
-import { Plus, LayoutList, Kanban } from 'lucide-react'
+import { Plus, LayoutList, Kanban, BrainCircuit, Loader2 } from 'lucide-react'
 
 export default function CrmView({ leads }: { leads: Lead[] }) {
   const [view, setView] = useState<'queue' | 'pipeline'>('pipeline')
   const [showAdd, setShowAdd] = useState(false)
+  const [batchState, setBatchState] = useState<'idle' | 'loading' | 'done'>('idle')
+  const [batchResult, setBatchResult] = useState<{ queued: number; skipped: number } | null>(null)
+
+  async function runBatchResearch() {
+    setBatchState('loading')
+    try {
+      const res = await fetch('/api/leads/research/batch', { method: 'POST' })
+      const data = await res.json()
+      setBatchResult(data)
+      setBatchState('done')
+      setTimeout(() => setBatchState('idle'), 5000)
+    } catch {
+      setBatchState('idle')
+    }
+  }
 
   return (
     <div>
@@ -47,6 +62,25 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
               Pipeline
             </button>
           </div>
+
+          {/* Batch research button */}
+          <button
+            onClick={runBatchResearch}
+            disabled={batchState === 'loading'}
+            title="Run AI research for all leads without a research record"
+            className="flex items-center gap-1.5 text-sm font-semibold bg-neutral-900 text-white px-4 py-2 rounded-lg hover:bg-neutral-700 disabled:opacity-60 transition-colors shadow-sm"
+          >
+            {batchState === 'loading' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <BrainCircuit className="w-4 h-4" />
+            )}
+            {batchState === 'done' && batchResult
+              ? `${batchResult.queued} queued`
+              : batchState === 'loading'
+              ? 'Researching…'
+              : 'Research all'}
+          </button>
 
           {/* Add lead button */}
           <button
