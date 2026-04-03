@@ -56,12 +56,12 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
           {d.followUpCalls.length > 0 && (
             <>
               {d.calls.length > 0 && <div className="border-t border-neutral-100 my-1" />}
-              <p className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1">Follow-up</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-rose-300 mb-1">Follow-up</p>
               {d.followUpCalls.map((c, i) => (
-                <p key={i} className="text-red-500 leading-5">
-                  {c.time ? <span className="font-semibold text-red-600">{c.time} </span> : null}
+                <p key={i} className="text-rose-400 leading-5">
+                  {c.time ? <span className="font-semibold text-rose-400">{c.time} </span> : null}
                   {c.name}
-                  {c.company ? <span className="text-red-300"> · {c.company}</span> : null}
+                  {c.company ? <span className="text-rose-200"> · {c.company}</span> : null}
                 </p>
               ))}
             </>
@@ -156,7 +156,7 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
               First call
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-sm bg-red-300 inline-block" />
+              <span className="w-2 h-2 rounded-sm bg-rose-200 inline-block" />
               Follow-up
             </span>
           </div>
@@ -209,7 +209,7 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
               {visibleData.map((d) => (
                 <Cell
                   key={d.iso}
-                  fill={d.isToday ? '#ef4444' : d.isPast ? '#fca5a5' : '#fecaca'}
+                  fill={d.isToday ? '#fca5a5' : d.isPast ? '#fde8e8' : '#fee2e2'}
                 />
               ))}
             </Bar>
@@ -234,7 +234,7 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
               .sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'))
               .map((c, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <span className={`text-sm font-bold w-12 shrink-0 tabular-nums ${c.isFollowUp ? 'text-red-500' : 'text-blue-600'}`}>
+                  <span className={`text-sm font-bold w-12 shrink-0 tabular-nums ${c.isFollowUp ? 'text-rose-400' : 'text-blue-600'}`}>
                     {c.time ?? '—'}
                   </span>
                   <div className="min-w-0">
@@ -243,7 +243,7 @@ export default function DailyCallsChart({ data }: { data: DayData[] }) {
                       <span className="text-sm text-neutral-400"> · {c.company}</span>
                     )}
                     {c.isFollowUp && (
-                      <span className="ml-2 text-[10px] font-semibold text-red-400 bg-red-50 px-1.5 py-0.5 rounded">follow-up</span>
+                      <span className="ml-2 text-[10px] font-semibold text-rose-300 bg-rose-50 px-1.5 py-0.5 rounded">follow-up</span>
                     )}
                   </div>
                 </div>

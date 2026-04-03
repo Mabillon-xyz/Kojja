@@ -13,11 +13,31 @@ import { getAccount } from '@/lib/lemlist-accounts'
 
 const PRIX_CLIENT = 1750
 
+// Parse [FOLLOWUP|ISO_DATE|meetLink] markers from lead notes
+function parseFollowUps(leads: Awaited<ReturnType<typeof readLeads>>) {
+  const result: { iso: string; name: string; time: string | null; company: string | null }[] = []
+  const re = /\[FOLLOWUP\|([^|]+)\|([^\]]*)\]/g
+  for (const lead of leads) {
+    if (!lead.notes) continue
+    let m: RegExpExecArray | null
+    re.lastIndex = 0
+    while ((m = re.exec(lead.notes)) !== null) {
+      const d = new Date(m[1])
+      if (isNaN(d.getTime())) continue
+      result.push({
+        iso: d.toISOString().slice(0, 10),
+        name: `${lead.first_name} ${lead.last_name}`,
+        time: d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+        company: lead.company_name,
+      })
+    }
+  }
+  return result
+}
+
 function buildDailyData(leads: Awaited<ReturnType<typeof readLeads>>): DayData[] {
   const firstCalls = leads.filter((l) => l.stage === 'call_scheduled')
-  const followUps = leads.filter((l) =>
-    l.call_date && !['call_scheduled', 'customer', 'not_interested'].includes(l.stage)
-  )
+  const followUpEvents = parseFollowUps(leads)
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
 
@@ -27,21 +47,19 @@ function buildDailyData(leads: Awaited<ReturnType<typeof readLeads>>): DayData[]
     const isToday = i === 7
     const isPast = day < today
 
-    const toCall = (l: (typeof leads)[0]) => ({
-      name: `${l.first_name} ${l.last_name}`,
-      time: l.call_date
-        ? new Date(l.call_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-        : null,
-      company: l.company_name,
-    })
-
     const calls = firstCalls
       .filter((l) => l.call_date && l.call_date.startsWith(iso))
-      .map(toCall)
+      .map((l) => ({
+        name: `${l.first_name} ${l.last_name}`,
+        time: l.call_date
+          ? new Date(l.call_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+          : null,
+        company: l.company_name,
+      }))
 
-    const followUpCalls = followUps
-      .filter((l) => l.call_date && l.call_date.startsWith(iso))
-      .map(toCall)
+    const followUpCalls = followUpEvents
+      .filter((e) => e.iso === iso)
+      .map(({ name, time, company }) => ({ name, time, company }))
 
     return {
       label: String(day.getDate()),
