@@ -173,13 +173,19 @@ export default function CampaignBuilderPage() {
   async function saveKit(): Promise<string | null> {
     if (!editedKit) return null
     setSaving(true)
+    setError('')
     try {
       if (savedKitId) {
-        await fetch(`/api/campaign-kits/${savedKitId}`, {
+        const res = await fetch(`/api/campaign-kits/${savedKitId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(editedKit),
         })
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}))
+          setError(d.error || `Save failed (${res.status})`)
+          return null
+        }
         setIsDirty(false)
         return savedKitId
       } else {
@@ -193,7 +199,11 @@ export default function CampaignBuilderPage() {
             ...editedKit,
           }),
         })
-        if (!res.ok) return null
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}))
+          setError(d.error || `Save failed (${res.status})`)
+          return null
+        }
         const data = await res.json()
         setSavedKitId(data.id)
         setIsDirty(false)
