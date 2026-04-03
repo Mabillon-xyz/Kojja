@@ -43,6 +43,11 @@ export async function createLead(formData: FormData) {
   // Enrichissement automatique (fire-and-forget — non bloquant)
   if (created?.id) {
     enrichLead(created.id, created.company_name).catch(() => {})
+
+    // Recherche IA complète (fire-and-forget)
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+      ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    fetch(`${siteUrl}/api/leads/${created.id}/research`, { method: 'POST' }).catch(() => {})
   }
 
   revalidatePath('/crm')
