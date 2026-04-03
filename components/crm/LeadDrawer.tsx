@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Lead, STAGE_LABELS, STAGES, formatRelativeDate } from '@/lib/lead-types'
 import { updateLead, updateLeadStage } from '@/app/actions/leads'
 import LeadResearchTab from './LeadResearch'
+import LeadRecapTab from './LeadRecapTab'
 
 type Props = {
   lead: Lead | null
@@ -36,7 +37,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [drawerTab, setDrawerTab] = useState<'info' | 'research'>('info')
+  const [drawerTab, setDrawerTab] = useState<'info' | 'research' | 'recap'>('info')
 
   function handleSave() {
     if (!lead) return
@@ -127,7 +128,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
           </div>
           {/* Tab bar */}
           <div className="flex px-6 gap-1">
-            {(['info', 'research'] as const).map(tab => (
+            {(['info', 'recap', 'research'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setDrawerTab(tab)}
@@ -137,7 +138,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
                     : 'border-transparent text-neutral-400 hover:text-neutral-600'
                 }`}
               >
-                {tab === 'info' ? 'Fiche' : 'Recherche IA'}
+                {tab === 'info' ? 'Fiche' : tab === 'recap' ? 'Recap call' : 'Recherche IA'}
               </button>
             ))}
           </div>
@@ -148,6 +149,11 @@ export default function LeadDrawer({ lead, onClose }: Props) {
           {/* Research tab */}
           {drawerTab === 'research' && (
             <LeadResearchTab leadId={lead.id} />
+          )}
+
+          {/* Recap tab */}
+          {drawerTab === 'recap' && (
+            <LeadRecapTab leadId={lead.id} onDone={() => setDrawerTab('info')} />
           )}
 
           {/* Info tab */}
