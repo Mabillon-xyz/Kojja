@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Copy, Check, Loader2 } from 'lucide-react'
+import { Copy, Check, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,6 +10,12 @@ import { createClient } from '@/lib/supabase/client'
 
 // ── Types ─────────────────────────────────────────────────────────
 type Lead = { id: string; first_name: string; last_name: string; company_name: string | null }
+type ResearchRecord = {
+  profile_summary: string | null
+  icp_reason: string | null
+  icebreaker: string | null
+  sheets_row: Record<string, string> | null
+}
 type Email = { subject: string; body: string }
 type CampaignKit = {
   icp: string
@@ -114,6 +120,9 @@ export default function CampaignBuilderPage() {
     context: '',
   })
   const [leads, setLeads] = useState<Lead[]>([])
+  const [selectedLeadId, setSelectedLeadId] = useState('')
+  const [researchLoading, setResearchLoading] = useState(false)
+  const [aiPrefilled, setAiPrefilled] = useState(false)
   const [loading, setLoading] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState('')
@@ -124,12 +133,61 @@ export default function CampaignBuilderPage() {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
-  function pickLead(id: string) {
+  function extractFromResearch(r: ResearchRecord) {
+    const summary = r.profile_summary ?? ''
+    const icp = r.icp_reason ?? ''
+    const sheets = r.sheets_row
+
+    // Specialty: sheets summary > first sentence of profile_summary
+    const firstSentence = summary.split(/(?<=[.!?])\s/)[0] ?? ''
+    const coachSpecialty = (sheets?.summary || firstSentence).trim().slice(0, 300)
+
+    // Target audience: extract client types from icp_reason
+    const audienceMatches = icp.match(
+      /(?:ETI|PME|TPE|grands?\s+comptes?|grandes?\s+entreprises?|Comex|dirigeants?[^,;.\n]{0,60}(?:PME|ETI|grande|indépendant)[^,;.\n]{0,40})/gi
+    )
+    const targetAudience = audienceMatches?.slice(0, 3).join(', ').slice(0, 220) ?? ''
+
+    // Pain points: icebreaker is the personalized hook — best proxy for value prop / pain addressed
+    const clientPainPoints = r.icebreaker?.trim() ?? ''
+
+    // Results: extract quantified achievements from profile_summary
+    const metrics = summary.match(/\d+[+]?\s*(?:ans?|dirigeants?|clients?|mois|%|entreprises?)[^,;.\n]{0,60}/gi)
+    const results = metrics?.slice(0, 3).join('; ').trim() ?? ''
+
+    return { coachSpecialty, targetAudience, clientPainPoints, results, context: summary }
+  }
+
+  async function pickLead(id: string) {
+    setSelectedLeadId(id)
     const lead = leads.find((l) => l.id === id)
     if (!lead) return
     const name = [lead.first_name, lead.last_name].filter(Boolean).join(' ')
     const company = lead.company_name ? ` — ${lead.company_name}` : ''
-    set('coachName', `${name}${company}`)
+    setForm((f) => ({ ...f, coachName: `${name}${company}` }))
+    setAiPrefilled(false)
+
+    setResearchLoading(true)
+    try {
+      const res = await fetch(`/api/leads/${id}/research`)
+      if (res.ok) {
+        const records: ResearchRecord[] = await res.json()
+        if (records.length > 0) {
+          const ex = extractFromResearch(records[0])
+          setForm((f) => ({
+            ...f,
+            coachSpecialty: ex.coachSpecialty || f.coachSpecialty,
+            targetAudience: ex.targetAudience || f.targetAudience,
+            clientPainPoints: ex.clientPainPoints || f.clientPainPoints,
+            results: ex.results || f.results,
+            context: ex.context || f.context,
+          }))
+          setAiPrefilled(true)
+        }
+      }
+    } finally {
+      setResearchLoading(false)
+    }
   }
 
   // Fetch leads on mount
@@ -199,10 +257,22 @@ export default function CampaignBuilderPage() {
 
               {leads.length > 0 && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="leadPick">Pick from your leads</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="leadPick">Pick from your leads</Label>
+                    {researchLoading && (
+                      <span className="text-[11px] text-violet-500 flex items-center gap-1">
+                        <Loader2 size={11} className="animate-spin" /> Chargement recherche…
+                      </span>
+                    )}
+                    {!researchLoading && aiPrefilled && (
+                      <span className="text-[11px] text-violet-600 font-medium flex items-center gap-1">
+                        <Sparkles size={11} /> Pré-rempli via IA
+                      </span>
+                    )}
+                  </div>
                   <select
                     id="leadPick"
-                    defaultValue=""
+                    value={selectedLeadId}
                     onChange={(e) => pickLead(e.target.value)}
                     className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm bg-white text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-300"
                   >
