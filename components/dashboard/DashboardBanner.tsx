@@ -3,54 +3,114 @@
 import { useState, useEffect, useRef } from 'react'
 import { ImageIcon, X, Camera } from 'lucide-react'
 import Image from 'next/image'
+import { createClient } from '@/lib/supabase/client'
 
-const BANNER_KEY = 'dashboard_banner'
-const AVATAR_KEY = 'dashboard_avatar'
+const BANNER_CACHE = 'dashboard_banner_url'
+const AVATAR_CACHE = 'dashboard_avatar_url'
 
 export default function DashboardBanner() {
   const [src, setSrc] = useState<string | null>(null)
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null)
   const [hovering, setHovering] = useState(false)
   const [avatarHovering, setAvatarHovering] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const avatarRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const saved = localStorage.getItem(BANNER_KEY)
-    if (saved) setSrc(saved)
-    const savedAvatar = localStorage.getItem(AVATAR_KEY)
-    if (savedAvatar) setAvatarSrc(savedAvatar)
+    // Show cached URLs immediately to avoid flicker on first load
+    const cachedBanner = localStorage.getItem(BANNER_CACHE)
+    const cachedAvatar = localStorage.getItem(AVATAR_CACHE)
+    if (cachedBanner) setSrc(cachedBanner)
+    if (cachedAvatar) setAvatarSrc(cachedAvatar)
+
+    // Sync from Supabase (source of truth across devices)
+    const supabase = createClient()
+    async function sync() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      setUserId(user.id)
+
+      const { data } = await supabase
+        .from('user_settings')
+        .select('banner_url, avatar_url')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      const bannerUrl = data?.banner_url ?? null
+      const avatarUrl = data?.avatar_url ?? null
+
+      setSrc(bannerUrl)
+      setAvatarSrc(avatarUrl)
+
+      if (bannerUrl) localStorage.setItem(BANNER_CACHE, bannerUrl)
+      else localStorage.removeItem(BANNER_CACHE)
+
+      if (avatarUrl) localStorage.setItem(AVATAR_CACHE, avatarUrl)
+      else localStorage.removeItem(AVATAR_CACHE)
+    }
+    sync()
   }, [])
+
+  async function upload(file: File, type: 'banner' | 'avatar') {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const uid = user.id
+
+    const path = `${uid}/${type}`
+    const { error } = await supabase.storage
+      .from('user-assets')
+      .upload(path, file, { upsert: true, contentType: file.type })
+
+    if (error) { console.error('[DashboardBanner]', error); return }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('user-assets')
+      .getPublicUrl(path)
+
+    // Cache-buster since we overwrite the same path
+    const url = `${publicUrl}?t=${Date.now()}`
+
+    await supabase.from('user_settings').upsert(
+      { user_id: uid, [type === 'banner' ? 'banner_url' : 'avatar_url']: url, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    )
+
+    if (type === 'banner') {
+      setSrc(url)
+      localStorage.setItem(BANNER_CACHE, url)
+    } else {
+      setAvatarSrc(url)
+      localStorage.setItem(AVATAR_CACHE, url)
+    }
+  }
+
+  async function removeBanner() {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.storage.from('user-assets').remove([`${user.id}/banner`])
+    await supabase.from('user_settings').upsert(
+      { user_id: user.id, banner_url: null, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    )
+    setSrc(null)
+    localStorage.removeItem(BANNER_CACHE)
+  }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const data = ev.target?.result as string
-      localStorage.setItem(BANNER_KEY, data)
-      setSrc(data)
-    }
-    reader.readAsDataURL(file)
+    upload(file, 'banner')
     e.target.value = ''
   }
 
   function handleAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const data = ev.target?.result as string
-      localStorage.setItem(AVATAR_KEY, data)
-      setAvatarSrc(data)
-    }
-    reader.readAsDataURL(file)
+    upload(file, 'avatar')
     e.target.value = ''
-  }
-
-  function removeBanner() {
-    localStorage.removeItem(BANNER_KEY)
-    setSrc(null)
   }
 
   const avatar = (
@@ -110,7 +170,6 @@ export default function DashboardBanner() {
           className="object-cover"
           unoptimized
         />
-        {/* Hover overlay */}
         <div className={`absolute inset-0 bg-black/20 flex items-end justify-end gap-2 p-3 transition-opacity ${hovering ? 'opacity-100' : 'opacity-0'}`}>
           <button
             onClick={() => inputRef.current?.click()}
