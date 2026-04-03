@@ -27,8 +27,8 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
       }
       setBatchProgress({ done: 0, total: pending.length })
 
-      // Step 2: call each lead's research endpoint sequentially
-      // (parallel would saturate Claude API rate limits)
+      // Step 2: call each lead's research endpoint sequentially with delay
+      // (30k tokens/min rate limit on Anthropic — each call uses ~5-10k tokens)
       let done = 0
       for (const lead of pending) {
         try {
@@ -36,6 +36,8 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
         } catch { /* continue */ }
         done++
         setBatchProgress({ done, total: pending.length })
+        // 70s delay between calls to stay under rate limit
+        if (done < pending.length) await new Promise(r => setTimeout(r, 70_000))
       }
 
       setBatchState('done')
