@@ -10,16 +10,36 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
   const [view, setView] = useState<'queue' | 'pipeline'>('pipeline')
   const [showAdd, setShowAdd] = useState(false)
   const [batchState, setBatchState] = useState<'idle' | 'loading' | 'done'>('idle')
-  const [batchResult, setBatchResult] = useState<{ queued: number; skipped: number } | null>(null)
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null)
 
   async function runBatchResearch() {
     setBatchState('loading')
+    setBatchProgress(null)
     try {
-      const res = await fetch('/api/leads/research/batch', { method: 'POST' })
-      const data = await res.json()
-      setBatchResult(data)
+      // Step 1: get list of leads that need research
+      const res = await fetch('/api/leads/research/batch')
+      const pending: { id: string; name: string }[] = await res.json()
+      if (!pending.length) {
+        setBatchState('done')
+        setBatchProgress({ done: 0, total: 0 })
+        setTimeout(() => setBatchState('idle'), 4000)
+        return
+      }
+      setBatchProgress({ done: 0, total: pending.length })
+
+      // Step 2: call each lead's research endpoint sequentially
+      // (parallel would saturate Claude API rate limits)
+      let done = 0
+      for (const lead of pending) {
+        try {
+          await fetch(`/api/leads/${lead.id}/research`, { method: 'POST' })
+        } catch { /* continue */ }
+        done++
+        setBatchProgress({ done, total: pending.length })
+      }
+
       setBatchState('done')
-      setTimeout(() => setBatchState('idle'), 5000)
+      setTimeout(() => { setBatchState('idle'); setBatchProgress(null) }, 5000)
     } catch {
       setBatchState('idle')
     }
@@ -75,10 +95,12 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
             ) : (
               <BrainCircuit className="w-4 h-4" />
             )}
-            {batchState === 'done' && batchResult
-              ? `${batchResult.queued} queued`
+            {batchState === 'loading' && batchProgress
+              ? `${batchProgress.done}/${batchProgress.total}`
+              : batchState === 'done' && batchProgress
+              ? batchProgress.total === 0 ? 'All done' : `Done (${batchProgress.total})`
               : batchState === 'loading'
-              ? 'Researching…'
+              ? 'Loading…'
               : 'Research all'}
           </button>
 
