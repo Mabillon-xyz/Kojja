@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { ALL_ACCOUNT_IDS, LEMLIST_ACCOUNTS } from '@/lib/lemlist-accounts'
 
+// Allow up to 5 minutes (requires Vercel Pro; capped at 60s on Hobby)
+export const maxDuration = 300
+
 const COACHES_SHEET_URL =
   'https://docs.google.com/spreadsheets/d/19O54kk8km9RJsfemuAK2HNlkU9ze3vahcA-LyrJhp1c/export?format=csv&gid=1823960202'
 
@@ -330,7 +333,7 @@ Effectue des recherches web pour mieux connaître ce coach, puis réponds UNIQUE
   const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userMessage }]
   const tools = [WEB_SEARCH_TOOL, FETCH_URL_TOOL]
   let finalText = ''
-  const MAX_ITER = 8
+  const MAX_ITER = 5
 
   for (let iter = 0; iter < MAX_ITER; iter++) {
     const response = await client.messages.create({
