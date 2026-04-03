@@ -27,13 +27,22 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
 }
 
-function buildHTML(kit: KitRow): string {
+function buildHTML(kit: KitRow, blur = false, autoPrint = false): string {
   const date = new Date(kit.created_at).toLocaleDateString('fr-FR', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
 
   const okrsHtml = kit.okrs
-    .map((okr, i) => `<li><span class="num">${i + 1}</span><span>${escapeHtml(okr)}</span></li>`)
+    .map((okr, i) => {
+      const doBlur = blur && i >= 2
+      if (doBlur) {
+        return `<li class="blurred-item">
+        <div class="blurred-content"><span class="num">${i + 1}</span><span>${escapeHtml(okr)}</span></div>
+        <div class="blur-overlay">🔒 Contenu réservé</div>
+      </li>`
+      }
+      return `<li><span class="num">${i + 1}</span><span>${escapeHtml(okr)}</span></li>`
+    })
     .join('\n      ')
 
   const hooksHtml = kit.hooks
@@ -44,22 +53,54 @@ function buildHTML(kit: KitRow): string {
     .join('\n    ')
 
   const linkedinHtml = kit.linkedin
-    .map((msg, i) => `<div class="card">
+    .map((msg, i) => {
+      const doBlur = blur && i >= 1
+      if (doBlur) {
+        return `<div class="blurred-item card">
+        <div class="blurred-content">
+          <div class="card-header">
+            <span class="card-label">Message ${i + 1}</span>
+            <span class="badge">${msg.length} chars</span>
+          </div>
+          <p class="pre">${escapeHtml(msg)}</p>
+        </div>
+        <div class="blur-overlay">🔒 Contenu réservé</div>
+      </div>`
+      }
+      return `<div class="card">
       <div class="card-header">
         <span class="card-label">Message ${i + 1}</span>
         <span class="badge">${msg.length} chars</span>
       </div>
       <p class="pre">${escapeHtml(msg)}</p>
-    </div>`)
+    </div>`
+    })
     .join('\n    ')
 
   const emailsHtml = kit.emails
-    .map((email, i) => `<div class="card">
+    .map((email, i) => {
+      const doBlur = blur && i >= 1
+      if (doBlur) {
+        return `<div class="blurred-item card">
+        <div class="blurred-content">
+          <div class="card-label">Email ${i + 1}</div>
+          <p class="email-subject">Objet : ${escapeHtml(email.subject)}</p>
+          <p class="pre email-body">${escapeHtml(email.body)}</p>
+        </div>
+        <div class="blur-overlay">🔒 Contenu réservé</div>
+      </div>`
+      }
+      return `<div class="card">
       <div class="card-label">Email ${i + 1}</div>
       <p class="email-subject">Objet : ${escapeHtml(email.subject)}</p>
       <p class="pre email-body">${escapeHtml(email.body)}</p>
-    </div>`)
+    </div>`
+    })
     .join('\n    ')
+
+  const autoPrintScript = autoPrint
+    ? `<script>window.onload = function() { setTimeout(function() { window.print(); }, 400); }</script>`
+    : ''
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -67,6 +108,7 @@ function buildHTML(kit: KitRow): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kit de campagne — ${escapeHtml(kit.coach_name)}</title>
+  ${autoPrintScript}
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -105,7 +147,21 @@ function buildHTML(kit: KitRow): string {
     .email-body { font-size: 13px; color: #374151; }
     .pre { white-space: pre-wrap; }
     .footer { margin-top: 56px; font-size: 12px; color: #9ca3af; border-top: 1px solid #f3f4f6; padding-top: 16px; display: flex; justify-content: space-between; }
-    @media print { body { margin: 0; } @page { margin: 20mm; } }
+    /* ── Blur styles ── */
+    .blurred-item { position: relative; overflow: hidden; border-radius: 8px; }
+    .blurred-content { filter: blur(6px); user-select: none; pointer-events: none; }
+    .blur-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #374151;
+      background: rgba(249,250,251,0.25);
+      pointer-events: none;
+    }
+    @media print {
+      body { margin: 0; }
+      @page { margin: 20mm; }
+      .blurred-content { filter: blur(6px); }
+    }
   </style>
 </head>
 <body>
@@ -154,7 +210,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const format = new URL(req.url).searchParams.get('format') ?? 'html'
+  const url = new URL(req.url)
+  const format = url.searchParams.get('format') ?? 'html'
+  const blur = url.searchParams.get('blur') === '1'
   const supabase = getSupabase()
 
   const { data: kit, error } = await supabase
@@ -167,15 +225,17 @@ export async function GET(
     return NextResponse.json({ error: 'Kit not found' }, { status: 404 })
   }
 
-  const html = buildHTML(kit as KitRow)
+  const isPdf = format === 'pdf'
+  const html = buildHTML(kit as KitRow, blur, isPdf)
   const slug = kit.coach_name.replace(/\s+/g, '-').replace(/[^a-z0-9-]/gi, '').toLowerCase()
 
   return new NextResponse(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      ...(format === 'html'
-        ? { 'Content-Disposition': `attachment; filename="kit-${slug}.html"` }
-        : {}),
+      // HTML → download attachment; PDF → inline so browser can print it
+      ...(isPdf
+        ? {}
+        : { 'Content-Disposition': `attachment; filename="kit-${slug}.html"` }),
     },
   })
 }

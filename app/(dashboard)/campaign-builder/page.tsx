@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Copy, Check, Loader2, Sparkles, Save, FileText, Printer, History } from 'lucide-react'
+import { Copy, Check, Loader2, Sparkles, Save, FileText, Printer, History, EyeOff, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -90,6 +90,17 @@ function GeneratingOverlay({ elapsed }: { elapsed: number }) {
   )
 }
 
+// ── Blur overlay ────────────────────────────────────────────────────
+function BlurOverlay() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+      <span className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm border border-neutral-200 rounded-full px-3 py-1 text-xs font-semibold text-neutral-500 shadow-sm">
+        🔒 Contenu réservé
+      </span>
+    </div>
+  )
+}
+
 // ── Copy button ────────────────────────────────────────────────────
 function CopyBtn({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -137,6 +148,7 @@ export default function CampaignBuilderPage() {
   const [isDirty, setIsDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [history, setHistory] = useState<KitMeta[]>([])
+  const [isBlurred, setIsBlurred] = useState(false)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -217,7 +229,10 @@ export default function CampaignBuilderPage() {
 
   async function exportKit(format: 'html' | 'pdf') {
     const id = savedKitId || await saveKit()
-    if (id) window.open(`/api/campaign-kits/${id}/export?format=${format}`, '_blank')
+    if (!id) return
+    const q = new URLSearchParams({ format })
+    if (isBlurred) q.set('blur', '1')
+    window.open(`/api/campaign-kits/${id}/export?${q}`, '_blank')
   }
 
   async function loadKit(id: string) {
@@ -304,6 +319,7 @@ export default function CampaignBuilderPage() {
     setEditedKit(null)
     setSavedKitId(null)
     setIsDirty(false)
+    setIsBlurred(false)
     setLoading(true)
     try {
       const res = await fetch('/api/campaign-builder', {
@@ -541,6 +557,15 @@ export default function CampaignBuilderPage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Button
+                      size="sm"
+                      variant={isBlurred ? 'default' : 'outline'}
+                      onClick={() => setIsBlurred(!isBlurred)}
+                      className={`h-7 text-xs gap-1 ${isBlurred ? 'bg-amber-500 hover:bg-amber-600 border-amber-500 text-white' : ''}`}
+                    >
+                      {isBlurred ? <Eye size={11} /> : <EyeOff size={11} />}
+                      {isBlurred ? 'Révéler' : 'Flouter'}
+                    </Button>
+                    <Button
                       size="sm" variant="outline" className="h-7 text-xs gap-1"
                       onClick={() => exportKit('html')} disabled={saving}
                     >
@@ -571,20 +596,26 @@ export default function CampaignBuilderPage() {
                 {/* OKRs — editable */}
                 <Section emoji="📈" title="OKRs — Résultats clés">
                   <ul className="space-y-2">
-                    {editedKit.okrs.map((okr, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="mt-0.5 w-5 h-5 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-bold text-neutral-500 flex-shrink-0">
-                          {i + 1}
-                        </span>
-                        <AutoTextarea
-                          value={okr}
-                          onChange={v => updateArray('okrs', i, v)}
-                          className="flex-1"
-                          rows={1}
-                        />
-                        <CopyBtn text={okr} />
-                      </li>
-                    ))}
+                    {editedKit.okrs.map((okr, i) => {
+                      const doBlur = isBlurred && i >= 2
+                      return (
+                        <li key={i} className={doBlur ? 'relative overflow-hidden rounded-xl' : 'flex items-start gap-2'}>
+                          <div className={`flex items-start gap-2 ${doBlur ? 'blur-sm select-none pointer-events-none' : ''}`}>
+                            <span className="mt-0.5 w-5 h-5 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-bold text-neutral-500 flex-shrink-0">
+                              {i + 1}
+                            </span>
+                            <AutoTextarea
+                              value={okr}
+                              onChange={v => updateArray('okrs', i, v)}
+                              className="flex-1"
+                              rows={1}
+                            />
+                            <CopyBtn text={okr} />
+                          </div>
+                          {doBlur && <BlurOverlay />}
+                        </li>
+                      )
+                    })}
                   </ul>
                 </Section>
 
@@ -609,63 +640,75 @@ export default function CampaignBuilderPage() {
                 {/* LinkedIn — editable */}
                 <Section emoji="💼" title="Messages LinkedIn">
                   <div className="space-y-3">
-                    {editedKit.linkedin.map((msg, i) => (
-                      <div key={i} className="border border-neutral-200 rounded-xl p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">
-                            Message {i + 1}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                              msg.length > 280 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'
-                            }`}>
-                              {msg.length} chars
-                            </span>
-                            <CopyBtn text={msg} />
+                    {editedKit.linkedin.map((msg, i) => {
+                      const doBlur = isBlurred && i >= 1
+                      return (
+                        <div key={i} className={`relative overflow-hidden rounded-xl ${doBlur ? '' : 'border border-neutral-200 p-4'}`}>
+                          <div className={`${doBlur ? 'border border-neutral-200 rounded-xl p-4 blur-sm select-none pointer-events-none' : ''}`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">
+                                Message {i + 1}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                                  msg.length > 280 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'
+                                }`}>
+                                  {msg.length} chars
+                                </span>
+                                <CopyBtn text={msg} />
+                              </div>
+                            </div>
+                            <AutoTextarea
+                              value={msg}
+                              onChange={v => updateArray('linkedin', i, v)}
+                              rows={3}
+                            />
                           </div>
+                          {doBlur && <BlurOverlay />}
                         </div>
-                        <AutoTextarea
-                          value={msg}
-                          onChange={v => updateArray('linkedin', i, v)}
-                          rows={3}
-                        />
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </Section>
 
                 {/* Emails — editable */}
                 <Section emoji="📧" title="Séquence email">
                   <div className="space-y-4">
-                    {editedKit.emails.map((email, i) => (
-                      <div key={i} className="border border-neutral-200 rounded-xl overflow-hidden">
-                        <div className="bg-neutral-50 px-4 py-2.5 flex items-center justify-between border-b border-neutral-200">
-                          <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide flex-shrink-0">
-                            Email {i + 1}
-                          </span>
-                          <CopyBtn text={`Objet : ${email.subject}\n\n${email.body}`} />
-                        </div>
-                        <div className="p-4 space-y-3">
-                          <div>
-                            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">Objet</p>
-                            <input
-                              type="text"
-                              value={email.subject}
-                              onChange={e => updateEmail(i, 'subject', e.target.value)}
-                              className="w-full text-sm font-medium text-neutral-800 bg-transparent border-0 outline-none p-0"
-                            />
+                    {editedKit.emails.map((email, i) => {
+                      const doBlur = isBlurred && i >= 1
+                      return (
+                        <div key={i} className={`relative overflow-hidden rounded-xl border border-neutral-200 ${doBlur ? '' : ''}`}>
+                          <div className={doBlur ? 'blur-sm select-none pointer-events-none' : ''}>
+                            <div className="bg-neutral-50 px-4 py-2.5 flex items-center justify-between border-b border-neutral-200">
+                              <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide flex-shrink-0">
+                                Email {i + 1}
+                              </span>
+                              <CopyBtn text={`Objet : ${email.subject}\n\n${email.body}`} />
+                            </div>
+                            <div className="p-4 space-y-3">
+                              <div>
+                                <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">Objet</p>
+                                <input
+                                  type="text"
+                                  value={email.subject}
+                                  onChange={e => updateEmail(i, 'subject', e.target.value)}
+                                  className="w-full text-sm font-medium text-neutral-800 bg-transparent border-0 outline-none p-0"
+                                />
+                              </div>
+                              <div>
+                                <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">Corps</p>
+                                <AutoTextarea
+                                  value={email.body}
+                                  onChange={v => updateEmail(i, 'body', v)}
+                                  rows={6}
+                                />
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">Corps</p>
-                            <AutoTextarea
-                              value={email.body}
-                              onChange={v => updateEmail(i, 'body', v)}
-                              rows={6}
-                            />
-                          </div>
+                          {doBlur && <BlurOverlay />}
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </Section>
               </>
