@@ -117,6 +117,28 @@ export async function updateLead(
   revalidatePath('/crm')
 }
 
+export async function dismissNextAction(id: string) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('leads')
+    .update({ next_action: null, next_action_date: null })
+    .eq('id', id)
+  if (error) throw new Error(`dismissNextAction: ${error.message}`)
+  revalidatePath('/dashboard')
+  revalidatePath('/crm')
+}
+
+export async function markCallDone(id: string) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('leads')
+    .update({ stage: 'call_done' })
+    .eq('id', id)
+  if (error) throw new Error(`markCallDone: ${error.message}`)
+  revalidatePath('/dashboard')
+  revalidatePath('/crm')
+}
+
 export async function deleteLead(id: string): Promise<{ error?: string }> {
   // Use service role to bypass RLS — delete requires elevated permissions
   const supabase = createDirectClient(

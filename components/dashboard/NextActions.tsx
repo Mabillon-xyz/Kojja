@@ -1,6 +1,11 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Lead } from '@/lib/lead-types'
-import { Phone, Send, Zap, CalendarClock, CheckCircle2 } from 'lucide-react'
+import { Phone, Send, Zap, CalendarClock, CheckCircle2, Check } from 'lucide-react'
 import Link from 'next/link'
+import { dismissNextAction, markCallDone } from '@/app/actions/leads'
 
 type Urgency = 'overdue' | 'today' | 'upcoming'
 type ActionType = 'call' | 'follow_up' | 'proposal' | 'next_action'
@@ -104,8 +109,25 @@ const GROUP_LABEL_STYLE: Record<Urgency, string> = {
 }
 
 export default function NextActions({ leads }: { leads: Lead[] }) {
-  const items = buildActions(leads)
+  const router = useRouter()
+  const [dismissed, setDismissed] = useState<string[]>([])
+
+  const allItems = buildActions(leads)
+  const items = allItems.filter((item) => !dismissed.includes(`${item.lead.id}-${item.type}`))
   const groups: Urgency[] = ['overdue', 'today', 'upcoming']
+
+  async function handleDone(item: ActionItem, e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    const key = `${item.lead.id}-${item.type}`
+    setDismissed((prev) => [...prev, key])
+    if (item.type === 'next_action') {
+      await dismissNextAction(item.lead.id)
+    } else if (item.type === 'call' && item.urgency === 'overdue') {
+      await markCallDone(item.lead.id)
+    }
+    router.refresh()
+  }
 
   return (
     <div className="bg-white border border-neutral-200 rounded-xl shadow-sm flex flex-col">
@@ -133,28 +155,36 @@ export default function NextActions({ leads }: { leads: Lead[] }) {
                   {GROUP_LABEL[urgency]} · {group.length}
                 </p>
                 {group.map((item) => (
-                  <Link
+                  <div
                     key={`${item.lead.id}-${item.type}`}
-                    href="/crm"
-                    className="flex items-center gap-3 px-5 py-2.5 hover:bg-neutral-50 transition-colors"
+                    className="flex items-center gap-3 px-5 py-2.5 hover:bg-neutral-50 transition-colors group/row"
                   >
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[item.urgency]}`} />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-neutral-900">
-                        {item.lead.first_name} {item.lead.last_name}
-                      </span>
-                      {item.lead.company_name && (
-                        <span className="text-sm text-neutral-400"> · {item.lead.company_name}</span>
-                      )}
-                      <div className={`flex items-center gap-1 text-xs mt-0.5 ${urgency === 'overdue' ? 'text-neutral-500' : urgency === 'today' ? 'text-blue-600' : 'text-neutral-400'}`}>
-                        {TYPE_ICON[item.type]}
-                        <span>{item.action}</span>
+                    <Link href="/crm" className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[item.urgency]}`} />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-semibold text-neutral-900">
+                          {item.lead.first_name} {item.lead.last_name}
+                        </span>
+                        {item.lead.company_name && (
+                          <span className="text-sm text-neutral-400"> · {item.lead.company_name}</span>
+                        )}
+                        <div className={`flex items-center gap-1 text-xs mt-0.5 ${urgency === 'overdue' ? 'text-neutral-500' : urgency === 'today' ? 'text-blue-600' : 'text-neutral-400'}`}>
+                          {TYPE_ICON[item.type]}
+                          <span>{item.action}</span>
+                        </div>
                       </div>
-                    </div>
-                    <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${WHEN_STYLE[item.urgency]}`}>
-                      {item.when}
-                    </span>
-                  </Link>
+                      <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${WHEN_STYLE[item.urgency]}`}>
+                        {item.when}
+                      </span>
+                    </Link>
+                    <button
+                      onClick={(e) => handleDone(item, e)}
+                      title="Mark as done"
+                      className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full opacity-0 group-hover/row:opacity-100 hover:bg-emerald-100 hover:text-emerald-600 text-neutral-300 transition-all"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 ))}
               </div>
             )
