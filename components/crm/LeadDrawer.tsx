@@ -59,7 +59,7 @@ export default function LeadDrawer({ lead, onClose }: Props) {
         next_action: nextAction,
         next_action_date: nextActionDate,
         contact_means: contactMeans,
-        comment: lead.comment ?? undefined, // preserve existing, no separate UI field
+        comment: lead.comment ?? '',
         linkedin_url: linkedinUrl,
       })
       setSaved(true)
