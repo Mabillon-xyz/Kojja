@@ -25,17 +25,11 @@ Start with { and end with }. Nothing else.
 - Cible : dirigeants et managers de PME/ETI privées
 - Ton : pair-à-pair, humain, jamais vendeur
 
-## STRUCTURE OBLIGATOIRE pour TOUS les messages LinkedIn et emails (dans cet ordre) :
-1. OBJET : "Question pour {{prénom}}" — ne jamais modifier
-2. OPENER (1 phrase) : ancré sur un signal réel et observable lié à {{entreprise}} (recrutement, croissance, restructuration, levée de fonds, prise de poste…)
-3. PROBLEM STATEMENT (1-2 phrases) : nommer la douleur du dirigeant dans cette situation — jamais la solution, jamais le mot "coaching"
-4. VALUE PROP (1 phrase) : un résultat concret avec un délai chiffré, choisi parmi :
-   - restructuration d'équipe → alignement et réduction des frictions en 3 mois
-   - transition de poste → légitimité établie en 4 mois
-   - stratégie IA → gains de productivité de 25-30% en 6 mois
-   - animation de réseau → 15-20 leaders engagés en 6 mois
-   Choisir le KPI le plus cohérent avec le signal détecté.
-5. CTA (1 phrase) : une question ouverte + proposition de call 20 min
+## STRUCTURE OBLIGATOIRE pour le MESSAGE 1 (LinkedIn et email) :
+1. "Bonjour {{prénom}},"
+2. [Accroche de personnalisation — hook[0] mot pour mot, remplacer seulement les {{placeholders}}]
+3. "J'ai accompagné des dirigeants dans des situations comparables : [résultat chiffré issu des proof points du coach] en [délai]."
+4. "Qu'est-ce qui représente votre friction principale en ce moment — un call de 20 min pour en parler ?"
 
 ## RÈGLES ABSOLUES
 - 60-80 mots maximum (hors objet) pour les messages LinkedIn
@@ -84,14 +78,14 @@ Retourne un objet JSON avec EXACTEMENT cette structure :
     "Accroche 4"
   ],
   "linkedin": [
-    "Message LinkedIn 1 — REPREND EXACTEMENT hook[0] comme phrase d'ouverture, puis : PROBLEM STATEMENT (1-2 phrases sur la douleur du dirigeant — jamais 'coaching'), VALUE PROP (1 résultat chiffré parmi les 4 KPIs), CTA question ouverte + call 20 min. 60-80 mots max.",
+    "Bonjour {{prénom}},\\n\\n[hook[0] mot pour mot]\\n\\nJ'ai accompagné des dirigeants dans des situations comparables : [résultat chiffré issu des proof points du coach] en [délai].\\n\\nQu'est-ce qui représente votre friction principale en ce moment — un call de 20 min pour en parler ?",
     "Message LinkedIn 2 (relance J+4) — Structure preuve de résultat : '{{prénom}}, pour être concret : [un client dans une situation similaire] a [résultat chiffré] en [délai]. Ça vous parlerait d'en discuter ? Un call de 30 min suffirait pour que vous repartiez avec 2-3 actions concrètes 😄 Je vous joins mon calendrier, n'hésitez pas à réserver un créneau : {{lien_calendrier}}'",
     "Message LinkedIn 3 (relance J+10) — Structure closing loop : 'Je ferme la boucle {{prénom}} 🙂 Je peux vous envoyer une mini-checklist \"hygiène dirigeant\" (1 page) : priorités, délégation, rituels, prise de recul. Vous préférez \"checklist\" (je l'envoie ici) ou \"call\" (30 min offert) ? Sans réponse, je vous laisse tranquille.'"
   ],
   "emails": [
     {
       "subject": "Question pour {{prénom}}",
-      "body": "Bonjour {{prénom}},\n\n[REPREND EXACTEMENT hook[0] comme phrase d'ouverture — signal observable sur {{entreprise}}]\n\n[PROBLEM STATEMENT : 1-2 phrases sur la douleur du dirigeant dans cette situation — jamais 'coaching']\n\n[VALUE PROP : 1 résultat chiffré parmi les 4 KPIs prédéfinis]\n\n[CTA : question ouverte + proposition call 20 min ?]\n\n[Prénom du coach]"
+      "body": "Bonjour {{prénom}},\n\n[hook[0] mot pour mot]\n\nJ'ai accompagné des dirigeants dans des situations comparables : [résultat chiffré issu des proof points du coach] en [délai].\n\nQu'est-ce qui représente votre friction principale en ce moment — un call de 20 min pour en parler ?\n\n[Prénom du coach]"
     },
     {
       "subject": "Question pour {{prénom}}",
@@ -105,9 +99,9 @@ Retourne un objet JSON avec EXACTEMENT cette structure :
 }
 
 Règles strictes :
-- LinkedIn message 1 : 60-80 mots max, DOIT commencer par hook[0] mot pour mot (remplacer seulement les {{placeholders}})
+- LinkedIn message 1 et email 1 : suivre EXACTEMENT la structure en 4 paragraphes (salutation / hook[0] verbatim / preuve sociale / question CTA)
+- Ne pas ajouter de phrase entre les 4 paragraphes — rien d'autre
 - LinkedIn messages 2 et 3 : suivre EXACTEMENT les structures indiquées (preuve de résultat / closing loop), ton décontracté avec émojis
-- Emails : même logique — email 1 utilise hook[0] comme opener, emails 2 et 3 suivent les structures correspondantes
 - Objet email TOUJOURS "Question pour {{prénom}}" — ne pas modifier
 - Hooks 1 et 2 : accroches ancrées dans des signaux réels, avec {{placeholders}}. Hooks 3 et 4 : variations (signal différent ou angle différent)
 - OKRs : résultats mesurables que le coach délivre (pas des tâches)
