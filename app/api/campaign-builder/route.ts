@@ -78,14 +78,14 @@ Retourne un objet JSON avec EXACTEMENT cette structure :
     "Accroche 4"
   ],
   "linkedin": [
-    "Bonjour {{prénom}},\\n\\n[hook[0] mot pour mot]\\n\\nJ'ai accompagné des dirigeants dans des situations comparables : [résultat chiffré issu des proof points du coach] en [délai].\\n\\nQu'est-ce qui représente votre friction principale en ce moment — un call de 20 min pour en parler ?",
+    "Bonjour {{prénom}},\\n\\n[hook[0] mot pour mot — accroche ancrée dans le signal réel de l'entreprise]\\n\\nJ'ai accompagné des dirigeants dans des situations comparables : [résultat chiffré issu des proof points du coach] en [délai].\\n\\nQu'est-ce qui représente votre friction principale en ce moment — un call de 20 min pour en parler ?",
     "Message LinkedIn 2 (relance J+4) — Structure preuve de résultat : '{{prénom}}, pour être concret : [un client dans une situation similaire] a [résultat chiffré] en [délai]. Ça vous parlerait d'en discuter ? Un call de 30 min suffirait pour que vous repartiez avec 2-3 actions concrètes 😄 Je vous joins mon calendrier, n'hésitez pas à réserver un créneau : {{lien_calendrier}}'",
     "Message LinkedIn 3 (relance J+10) — Structure closing loop : 'Je ferme la boucle {{prénom}} 🙂 Je peux vous envoyer une mini-checklist \"hygiène dirigeant\" (1 page) : priorités, délégation, rituels, prise de recul. Vous préférez \"checklist\" (je l'envoie ici) ou \"call\" (30 min offert) ? Sans réponse, je vous laisse tranquille.'"
   ],
   "emails": [
     {
       "subject": "Question pour {{prénom}}",
-      "body": "Bonjour {{prénom}},\n\n[hook[0] mot pour mot]\n\nJ'ai accompagné des dirigeants dans des situations comparables : [résultat chiffré issu des proof points du coach] en [délai].\n\nQu'est-ce qui représente votre friction principale en ce moment — un call de 20 min pour en parler ?\n\n[Prénom du coach]"
+      "body": "Bonjour {{prénom}},\n\n[hook[1] mot pour mot — accroche différente de hook[0], angle ou signal différent]\n\nJ'ai accompagné des dirigeants dans des situations comparables : [résultat chiffré issu des proof points du coach] en [délai].\n\nQu'est-ce qui représente votre friction principale en ce moment — un call de 20 min pour en parler ?\n\n[Prénom du coach]"
     },
     {
       "subject": "Question pour {{prénom}}",
@@ -99,7 +99,8 @@ Retourne un objet JSON avec EXACTEMENT cette structure :
 }
 
 Règles strictes :
-- LinkedIn message 1 et email 1 : suivre EXACTEMENT la structure en 4 paragraphes (salutation / hook[0] verbatim / preuve sociale / question CTA)
+- LinkedIn message 1 : structure 4 paragraphes avec hook[0] verbatim
+- Email 1 : même structure 4 paragraphes mais avec hook[1] verbatim (angle différent de hook[0])
 - Ne pas ajouter de phrase entre les 4 paragraphes — rien d'autre
 - LinkedIn messages 2 et 3 : suivre EXACTEMENT les structures indiquées (preuve de résultat / closing loop), ton décontracté avec émojis
 - Objet email TOUJOURS "Question pour {{prénom}}" — ne pas modifier
