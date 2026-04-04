@@ -40,20 +40,16 @@ Start with { and end with }. Nothing else.
 - Ton sobre, direct, professionnel — pas d'enthousiasme excessif
 - Vouvoiement systématique`
 
-function buildPrompt(params: {
+function buildCoachPrompt(params: {
   coachName: string
   coachSpecialty: string
   targetAudience: string
   clientPainPoints: string
   results: string
   context: string
-  docs: string
+  strict?: boolean
 }): string {
-  const docsBlock = params.docs
-    ? `Here are the internal best practices and context documents to guide your output:\n---\n${params.docs}\n---\n\n`
-    : ''
-
-  return `${docsBlock}Génère un kit de campagne Lemlist complet pour ce profil de coach business :
+  return `Génère un kit de campagne Lemlist complet pour ce profil de coach business :
 
 - Coach / Cabinet : ${params.coachName}
 - Spécialité : ${params.coachSpecialty}
@@ -125,16 +121,29 @@ Règles strictes :
 - Objet email TOUJOURS "Question pour {{firstName}}" — ne pas modifier
 - Hooks : n'utiliser QUE les {{variables}} listées ci-dessus — aucune autre
 - OKRs : résultats mesurables que le coach délivre (pas des tâches)
-- Jamais "coaching", "coach", "je me permets de", ni formule de politesse creuse`
+- Jamais "coaching", "coach", "je me permets de", ni formule de politesse creuse${params.strict ? '\n\nCRITICAL: Start with { and end with }. Nothing else.' : ''}`
 }
 
-async function attempt(prompt: string): Promise<CampaignKit> {
+async function attempt(docsBlock: string, coachPrompt: string): Promise<CampaignKit> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+
+  const userContent: Anthropic.MessageParam['content'] = [
+    // Docs block — stable across calls, eligible for prompt caching
+    ...(docsBlock ? [{
+      type: 'text' as const,
+      text: `Here are the internal best practices and context documents to guide your output:\n---\n${docsBlock}\n---\n\n`,
+      cache_control: { type: 'ephemeral' as const },
+    }] : []),
+    // Coach-specific params — variable, not cached
+    { type: 'text' as const, text: coachPrompt },
+  ]
+
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: prompt }],
+    // System prompt cached — identical on every call
+    system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: userContent }],
   })
   const text = message.content[0].type === 'text' ? message.content[0].text : ''
   const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
@@ -164,22 +173,14 @@ export async function POST(req: NextRequest) {
       .map((d) => `# ${d.title}\n${d.content}`)
       .join('\n\n')
 
-    const prompt = buildPrompt({
-      coachName,
-      coachSpecialty,
-      targetAudience,
-      clientPainPoints,
-      results,
-      context: context ?? '',
-      docs: docsBlock,
-    })
+    const baseParams = { coachName, coachSpecialty, targetAudience, clientPainPoints, results, context: context ?? '' }
 
     let kit: CampaignKit
     try {
-      kit = await attempt(prompt)
+      kit = await attempt(docsBlock, buildCoachPrompt(baseParams))
     } catch {
-      // Second attempt with stricter instruction
-      kit = await attempt(prompt + '\n\nCRITICAL: Start with { and end with }. Nothing else.')
+      // Second attempt with stricter JSON instruction
+      kit = await attempt(docsBlock, buildCoachPrompt({ ...baseParams, strict: true }))
     }
 
     return NextResponse.json(kit)

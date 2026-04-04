@@ -398,9 +398,13 @@ Be concise, direct, and helpful. Answer in the same language as the user's messa
     }
   }
   let totalTokens = 0
+  let iterations = 0
+  const MAX_ITERATIONS = 8
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
+    if (iterations >= MAX_ITERATIONS) break
+    iterations++
     const response = await client.messages.create({
       model: selectedModel,
       max_tokens: 4096,
