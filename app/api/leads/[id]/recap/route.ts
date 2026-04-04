@@ -54,6 +54,36 @@ async function extract(recap: string, leadName: string): Promise<RecapResult> {
   return RecapSchema.parse(JSON.parse(cleaned))
 }
 
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const supabase = await createServiceClient()
+    const { data, error } = await supabase
+      .from('leads')
+      .select('call_recap')
+      .eq('id', params.id)
+      .single()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    const raw = (data as { call_recap?: string | null } | null)?.call_recap ?? ''
+    // Split entries on separator lines
+    const entries = raw
+      .split(/\n---\n/)
+      .map((block) => block.trim())
+      .filter(Boolean)
+      .map((block) => {
+        const match = block.match(/^\[(\d{4}-\d{2}-\d{2})\]\n?([\s\S]*)$/)
+        if (match) return { date: match[1], text: match[2].trim() }
+        return { date: '', text: block }
+      })
+      .reverse() // most recent first
+
+    return NextResponse.json({ entries })
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 })
+  }
+}
+
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { recap } = await req.json()
