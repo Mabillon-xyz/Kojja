@@ -107,7 +107,7 @@ function buildHTML(kit: KitRow, blur = false, autoPrint = false): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kit de campagne — ${escapeHtml(kit.coach_name)}</title>
+  <title>Kit de prospection — ${escapeHtml(kit.coach_name)}</title>
   ${autoPrintScript}
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -119,15 +119,21 @@ function buildHTML(kit: KitRow, blur = false, autoPrint = false): string {
       color: #111827;
       line-height: 1.6;
     }
-    .header { margin-bottom: 40px; border-bottom: 2px solid #111827; padding-bottom: 20px; }
+    .header { margin-bottom: 32px; border-bottom: 2px solid #111827; padding-bottom: 20px; }
     .brand { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; color: #6b7280; margin-bottom: 10px; }
     .header h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
     .meta { font-size: 13px; color: #6b7280; }
-    .section { margin: 32px 0; }
-    h2 {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.1em; color: #9ca3af; margin-bottom: 12px;
+    .intro {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+      padding: 16px 20px; font-size: 14px; color: #166534; line-height: 1.65;
+      margin-bottom: 36px;
     }
+    .section { margin: 36px 0; }
+    .section-head { margin-bottom: 10px; }
+    h2 {
+      font-size: 15px; font-weight: 700; color: #111827; margin-bottom: 4px;
+    }
+    .section-desc { font-size: 13px; color: #6b7280; margin-bottom: 14px; line-height: 1.55; }
     .block {
       background: #f9fafb; border: 1px solid #e5e7eb;
       border-radius: 8px; padding: 16px 18px; font-size: 14px;
@@ -168,33 +174,54 @@ function buildHTML(kit: KitRow, blur = false, autoPrint = false): string {
   <div class="header">
     <div class="brand">KOJ²A</div>
     <h1>${escapeHtml(kit.coach_name)}</h1>
-    <p class="meta">Kit de campagne Lemlist · Généré le ${date}</p>
+    <p class="meta">Kit de prospection personnalisé · ${date}</p>
+  </div>
+
+  <div class="intro">
+    📋 <strong>Ce document est votre kit de prospection sur-mesure.</strong><br>
+    Il a été construit à partir de votre profil, vos résultats et vos cibles. Chaque élément est prêt à l'emploi : vous pouvez copier-coller les messages directement dans vos outils de contact.<br><br>
+    Parcourez-le de haut en bas — chaque section s'appuie sur la précédente.
   </div>
 
   <div class="section">
-    <h2>Profil client idéal (ICP)</h2>
+    <div class="section-head">
+      <h2>🎯 Votre cible idéale</h2>
+      <p class="section-desc">Avant de contacter qui que ce soit, il faut savoir précisément à qui l'on s'adresse. Ce profil décrit le type de dirigeant ou manager avec qui vous avez le plus d'impact — et qui a le plus intérêt à vous rencontrer.</p>
+    </div>
     <div class="block">${escapeHtml(kit.icp)}</div>
   </div>
 
   <div class="section">
-    <h2>OKRs — Résultats clés</h2>
+    <div class="section-head">
+      <h2>📈 Ce que vous apportez concrètement</h2>
+      <p class="section-desc">Les dirigeants ne répondent pas aux promesses vagues. Ils répondent aux résultats chiffrés. Ces formulations décrivent ce que vos clients obtiennent grâce à votre accompagnement — avec un délai et un indicateur mesurable. Ce sont vos arguments les plus forts.</p>
+    </div>
     <ul class="list">
       ${okrsHtml}
     </ul>
   </div>
 
   <div class="section">
-    <h2>Accroches de personnalisation</h2>
+    <div class="section-head">
+      <h2>✍️ Phrases d'ouverture personnalisées</h2>
+      <p class="section-desc">La règle d'or d'un bon premier contact : parler de l'autre, pas de soi. Ces accroches s'appuient sur un événement réel de l'entreprise (recrutement, croissance, restructuration…). Elles montrent que vous avez fait vos devoirs — et elles donnent envie de lire la suite. Les mots entre <strong>{{accolades}}</strong> sont à remplacer par les informations du prospect.</p>
+    </div>
     ${hooksHtml}
   </div>
 
   <div class="section">
-    <h2>Messages LinkedIn</h2>
+    <div class="section-head">
+      <h2>💬 Messages LinkedIn</h2>
+      <p class="section-desc">LinkedIn est le canal le plus naturel pour contacter un dirigeant. Ces messages courts (moins de 300 caractères, soit environ 3 phrases) arrivent directement dans sa messagerie. Le ton est sobre et pair-à-pair — pas commercial. L'objectif n'est pas de vendre, mais d'obtenir une réponse.</p>
+    </div>
     ${linkedinHtml}
   </div>
 
   <div class="section">
-    <h2>Séquence email (3 emails)</h2>
+    <div class="section-head">
+      <h2>📧 Séquence email</h2>
+      <p class="section-desc">Si LinkedIn reste sans réponse, l'email prend le relais. Trois emails espacés dans le temps, chacun avec un angle différent. Ils suivent tous la même structure : un signal observé sur l'entreprise, la douleur que ça génère, ce que vous apportez, et une question simple pour ouvrir l'échange. Chaque email est autonome — il peut être envoyé seul ou dans une séquence automatisée.</p>
+    </div>
     ${emailsHtml}
   </div>
 
