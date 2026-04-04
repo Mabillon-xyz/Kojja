@@ -32,7 +32,7 @@ Start with { and end with }. Nothing else.
 4. "Qu'est-ce qui représente votre friction principale en ce moment — un call de 20 min pour en parler ?"
 
 ## RÈGLES ABSOLUES
-- 60-80 mots maximum (hors objet) pour les messages LinkedIn
+- Messages LinkedIn : structure courte, 4 phrases maximum, une phrase par paragraphe (alinéa entre chaque)
 - Jamais le mot "coaching" ou "coach"
 - Jamais de formule de politesse creuse ("je me permets de…", "j'espère que vous allez bien…")
 - Jamais de lien, jamais de pièce jointe
@@ -79,8 +79,8 @@ Retourne un objet JSON avec EXACTEMENT cette structure :
   ],
   "linkedin": [
     "Bonjour {{prénom}},\\n\\n[hook[0] mot pour mot — accroche ancrée dans le signal réel de l'entreprise]\\n\\nJ'ai accompagné des dirigeants dans des situations comparables : [résultat chiffré issu des proof points du coach] en [délai].\\n\\nQu'est-ce qui représente votre friction principale en ce moment — un call de 20 min pour en parler ?",
-    "Message LinkedIn 2 (relance J+4) — Structure preuve de résultat : '{{prénom}}, pour être concret : [un client dans une situation similaire] a [résultat chiffré] en [délai]. Ça vous parlerait d'en discuter ? Un call de 30 min suffirait pour que vous repartiez avec 2-3 actions concrètes 😄 Je vous joins mon calendrier, n'hésitez pas à réserver un créneau : {{lien_calendrier}}'",
-    "Message LinkedIn 3 (relance J+10) — Structure closing loop : 'Je ferme la boucle {{prénom}} 🙂 Je peux vous envoyer une mini-checklist \"hygiène dirigeant\" (1 page) : priorités, délégation, rituels, prise de recul. Vous préférez \"checklist\" (je l'envoie ici) ou \"call\" (30 min offert) ? Sans réponse, je vous laisse tranquille.'"
+    "{{prénom}}, pour être concret :\\n\\n[un client dans une situation similaire] a [résultat chiffré] en [délai].\\n\\nÇa vous parlerait d'en discuter ?\\n\\nUn call de 30 min suffirait pour que vous repartiez avec 2-3 actions concrètes 😄 Je vous joins mon calendrier, n'hésitez pas à réserver un créneau : {{lien_calendrier}}",
+    "Je ferme la boucle {{prénom}} 🙂\\n\\nJe peux vous envoyer une mini-checklist \\\"hygiène dirigeant\\\" (1 page) : priorités, délégation, rituels, prise de recul.\\n\\nVous préférez \\\"checklist\\\" (je l'envoie ici) ou \\\"call\\\" (30 min offert) ?\\n\\nSans réponse, je vous laisse tranquille."
   ],
   "emails": [
     {

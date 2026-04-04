@@ -649,14 +649,7 @@ export default function CampaignBuilderPage() {
                               <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">
                                 Message {i + 1}
                               </span>
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                                  msg.length > 280 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'
-                                }`}>
-                                  {msg.length} chars
-                                </span>
-                                <CopyBtn text={msg} />
-                              </div>
+                              <CopyBtn text={msg} />
                             </div>
                             <AutoTextarea
                               value={msg}

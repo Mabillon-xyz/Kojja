@@ -61,20 +61,14 @@ function buildHTML(kit: KitRow, blur = false, autoPrint = false): string {
       if (doBlur) {
         return `<div class="blurred-item card">
         <div class="blurred-content">
-          <div class="card-header">
-            <span class="card-label">Message ${i + 1}</span>
-            <span class="badge">${msg.length} chars</span>
-          </div>
+          <div class="card-label">Message ${i + 1}</div>
           <p class="pre">${escapeHtml(msg)}</p>
         </div>
         <div class="blur-overlay">🔒 Contenu réservé</div>
       </div>`
       }
       return `<div class="card">
-      <div class="card-header">
-        <span class="card-label">Message ${i + 1}</span>
-        <span class="badge">${msg.length} chars</span>
-      </div>
+      <div class="card-label">Message ${i + 1}</div>
       <p class="pre">${escapeHtml(msg)}</p>
     </div>`
     })
@@ -215,7 +209,7 @@ function buildHTML(kit: KitRow, blur = false, autoPrint = false): string {
   <div class="section">
     <div class="section-head">
       <h2>💬 Messages LinkedIn</h2>
-      <p class="section-desc">LinkedIn est le canal le plus naturel pour contacter un dirigeant. Ces messages courts (moins de 300 caractères, soit environ 3 phrases) arrivent directement dans sa messagerie. Le ton est sobre et pair-à-pair — pas commercial. L'objectif n'est pas de vendre, mais d'obtenir une réponse.</p>
+      <p class="section-desc">Ces messages sont envoyés en DM une fois que le dirigeant a accepté votre invitation. Ils sont courts et structurés en 4 phrases — une par paragraphe — pour donner envie de lire jusqu'au bout. Le ton est sobre et pair-à-pair, pas commercial. L'objectif n'est pas de vendre, mais d'obtenir une réponse.</p>
     </div>
     ${linkedinHtml}
   </div>
