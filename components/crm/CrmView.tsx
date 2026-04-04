@@ -4,48 +4,11 @@ import { Lead } from '@/lib/lead-types'
 import LeadQueue from './LeadQueue'
 import LeadKanban from './LeadKanban'
 import AddLeadForm from './AddLeadForm'
-import { Plus, LayoutList, Kanban, BrainCircuit, Loader2 } from 'lucide-react'
+import { Plus, LayoutList, Kanban } from 'lucide-react'
 
 export default function CrmView({ leads }: { leads: Lead[] }) {
   const [view, setView] = useState<'queue' | 'pipeline'>('pipeline')
   const [showAdd, setShowAdd] = useState(false)
-  const [batchState, setBatchState] = useState<'idle' | 'loading' | 'done'>('idle')
-  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null)
-
-  async function runBatchResearch() {
-    setBatchState('loading')
-    setBatchProgress(null)
-    try {
-      // Step 1: get list of leads that need research
-      const res = await fetch('/api/leads/research/batch')
-      const pending: { id: string; name: string }[] = await res.json()
-      if (!pending.length) {
-        setBatchState('done')
-        setBatchProgress({ done: 0, total: 0 })
-        setTimeout(() => setBatchState('idle'), 4000)
-        return
-      }
-      setBatchProgress({ done: 0, total: pending.length })
-
-      // Step 2: call each lead's research endpoint sequentially with delay
-      // (30k tokens/min rate limit on Anthropic — each call uses ~5-10k tokens)
-      let done = 0
-      for (const lead of pending) {
-        try {
-          await fetch(`/api/leads/${lead.id}/research`, { method: 'POST' })
-        } catch { /* continue */ }
-        done++
-        setBatchProgress({ done, total: pending.length })
-        // 70s delay between calls to stay under rate limit
-        if (done < pending.length) await new Promise(r => setTimeout(r, 70_000))
-      }
-
-      setBatchState('done')
-      setTimeout(() => { setBatchState('idle'); setBatchProgress(null) }, 5000)
-    } catch {
-      setBatchState('idle')
-    }
-  }
 
   return (
     <div>
@@ -84,27 +47,6 @@ export default function CrmView({ leads }: { leads: Lead[] }) {
               Pipeline
             </button>
           </div>
-
-          {/* Batch research button */}
-          <button
-            onClick={runBatchResearch}
-            disabled={batchState === 'loading'}
-            title="Run AI research for all leads without a research record"
-            className="flex items-center gap-1.5 text-sm font-semibold bg-neutral-900 text-white px-4 py-2 rounded-lg hover:bg-neutral-700 disabled:opacity-60 transition-colors shadow-sm"
-          >
-            {batchState === 'loading' ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <BrainCircuit className="w-4 h-4" />
-            )}
-            {batchState === 'loading' && batchProgress
-              ? `${batchProgress.done}/${batchProgress.total}`
-              : batchState === 'done' && batchProgress
-              ? batchProgress.total === 0 ? 'All done' : `Done (${batchProgress.total})`
-              : batchState === 'loading'
-              ? 'Loading…'
-              : 'Research all'}
-          </button>
 
           {/* Add lead button */}
           <button
