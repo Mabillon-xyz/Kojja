@@ -593,47 +593,47 @@ export default function CampaignBuilderPage() {
                   </div>
                 </Section>
 
-                {/* OKRs — editable */}
+                {/* OKRs — editable, never blurred */}
                 <Section emoji="📈" title="OKRs — Résultats clés">
                   <ul className="space-y-2">
-                    {editedKit.okrs.map((okr, i) => {
-                      const doBlur = isBlurred && i >= 2
-                      return (
-                        <li key={i} className={doBlur ? 'relative overflow-hidden rounded-xl' : 'flex items-start gap-2'}>
-                          <div className={`flex items-start gap-2 ${doBlur ? 'blur-sm select-none pointer-events-none' : ''}`}>
-                            <span className="mt-0.5 w-5 h-5 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-bold text-neutral-500 flex-shrink-0">
-                              {i + 1}
-                            </span>
-                            <AutoTextarea
-                              value={okr}
-                              onChange={v => updateArray('okrs', i, v)}
-                              className="flex-1"
-                              rows={1}
-                            />
-                            <CopyBtn text={okr} />
-                          </div>
-                          {doBlur && <BlurOverlay />}
-                        </li>
-                      )
-                    })}
+                    {editedKit.okrs.map((okr, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="mt-0.5 w-5 h-5 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-bold text-neutral-500 flex-shrink-0">
+                          {i + 1}
+                        </span>
+                        <AutoTextarea
+                          value={okr}
+                          onChange={v => updateArray('okrs', i, v)}
+                          className="flex-1"
+                          rows={1}
+                        />
+                        <CopyBtn text={okr} />
+                      </li>
+                    ))}
                   </ul>
                 </Section>
 
-                {/* Hooks — editable */}
+                {/* Hooks — editable, hooks 3 & 4 blurred */}
                 <Section emoji="🪝" title="Accroches de personnalisation">
                   <div className="space-y-3">
-                    {editedKit.hooks.map((hook, i) => (
-                      <div key={i} className="flex items-start gap-2 bg-neutral-50 rounded-xl px-4 py-3">
-                        <span className="text-xs font-bold text-neutral-400 mt-0.5 w-4 flex-shrink-0">{i + 1}</span>
-                        <AutoTextarea
-                          value={hook}
-                          onChange={v => updateArray('hooks', i, v)}
-                          className="flex-1"
-                          rows={2}
-                        />
-                        <CopyBtn text={hook} />
-                      </div>
-                    ))}
+                    {editedKit.hooks.map((hook, i) => {
+                      const doBlur = isBlurred && i >= 2
+                      return (
+                        <div key={i} className={`relative overflow-hidden rounded-xl ${doBlur ? '' : 'flex items-start gap-2 bg-neutral-50 px-4 py-3'}`}>
+                          <div className={`${doBlur ? 'flex items-start gap-2 bg-neutral-50 rounded-xl px-4 py-3 blur-sm select-none pointer-events-none' : 'flex items-start gap-2 w-full'}`}>
+                            <span className="text-xs font-bold text-neutral-400 mt-0.5 w-4 flex-shrink-0">{i + 1}</span>
+                            <AutoTextarea
+                              value={hook}
+                              onChange={v => updateArray('hooks', i, v)}
+                              className="flex-1"
+                              rows={2}
+                            />
+                            <CopyBtn text={hook} />
+                          </div>
+                          {doBlur && <BlurOverlay />}
+                        </div>
+                      )
+                    })}
                   </div>
                 </Section>
 

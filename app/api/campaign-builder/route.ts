@@ -84,34 +84,34 @@ Retourne un objet JSON avec EXACTEMENT cette structure :
     "Accroche 4"
   ],
   "linkedin": [
-    "Message LinkedIn 1 — STRUCTURE OBLIGATOIRE : OPENER (1 phrase sur signal observable de {{entreprise}}) + PROBLEM STATEMENT (1-2 phrases sur la douleur, sans jamais dire 'coaching') + VALUE PROP (1 résultat chiffré parmi les 4 KPIs) + CTA (question ouverte + call 20 min). 60-80 mots max.",
-    "Message LinkedIn 2 — même structure, signal différent (ex: prise de poste si le 1er utilisait recrutement)",
-    "Message LinkedIn 3 — même structure, angle VALUE PROP différent"
+    "Message LinkedIn 1 — REPREND EXACTEMENT hook[0] comme phrase d'ouverture, puis : PROBLEM STATEMENT (1-2 phrases sur la douleur du dirigeant — jamais 'coaching'), VALUE PROP (1 résultat chiffré parmi les 4 KPIs), CTA question ouverte + call 20 min. 60-80 mots max.",
+    "Message LinkedIn 2 (relance J+4) — Structure preuve de résultat : '{{prénom}}, pour être concret : [un client dans une situation similaire] a [résultat chiffré] en [délai]. Ça vous parlerait d'en discuter ? Un call de 30 min suffirait pour que vous repartiez avec 2-3 actions concrètes 😄 Je vous joins mon calendrier, n'hésitez pas à réserver un créneau : {{lien_calendrier}}'",
+    "Message LinkedIn 3 (relance J+10) — Structure closing loop : 'Je ferme la boucle {{prénom}} 🙂 Je peux vous envoyer une mini-checklist \"hygiène dirigeant\" (1 page) : priorités, délégation, rituels, prise de recul. Vous préférez \"checklist\" (je l'envoie ici) ou \"call\" (30 min offert) ? Sans réponse, je vous laisse tranquille.'"
   ],
   "emails": [
     {
       "subject": "Question pour {{prénom}}",
-      "body": "Bonjour {{prénom}},\n\n[OPENER : 1 phrase ancrée sur un signal observable de {{entreprise}}]\n\n[PROBLEM STATEMENT : 1-2 phrases sur la douleur du dirigeant dans cette situation — jamais 'coaching']\n\n[VALUE PROP : 1 résultat concret avec délai chiffré]\n\n[CTA : question ouverte + call 20 min ?]\n\n[Prénom du coach]"
+      "body": "Bonjour {{prénom}},\n\n[REPREND EXACTEMENT hook[0] comme phrase d'ouverture — signal observable sur {{entreprise}}]\n\n[PROBLEM STATEMENT : 1-2 phrases sur la douleur du dirigeant dans cette situation — jamais 'coaching']\n\n[VALUE PROP : 1 résultat chiffré parmi les 4 KPIs prédéfinis]\n\n[CTA : question ouverte + proposition call 20 min ?]\n\n[Prénom du coach]"
     },
     {
       "subject": "Question pour {{prénom}}",
-      "body": "Corps email 2 — même structure OPENER/PROBLEM/VALUE PROP/CTA, signal ou angle différent. Relance J+5."
+      "body": "Bonjour {{prénom}},\n\nPour être concret : [un client dans une situation similaire] a [résultat chiffré] en [délai].\n\nÇa vous parlerait d'en discuter ?\n\nUn call de 30 min suffirait pour que vous repartiez avec 2-3 actions concrètes 😄\n\nJe vous joins mon calendrier, n'hésitez pas à réserver un créneau : {{lien_calendrier}}\n\n[Prénom du coach]"
     },
     {
       "subject": "Question pour {{prénom}}",
-      "body": "Corps email 3 — même structure, dernier contact. Relance J+12. Toujours finir par une question."
+      "body": "Bonjour {{prénom}},\n\nJe ferme la boucle 🙂\n\nJe peux vous envoyer une mini-checklist \"hygiène dirigeant\" (1 page) : priorités, délégation, rituels, prise de recul.\n\nVous préférez \"checklist\" (je l'envoie ici) ou \"call\" (30 min offert) ?\n\nSans réponse, je vous laisse tranquille.\n\n[Prénom du coach]"
     }
   ]
 }
 
 Règles strictes :
-- LinkedIn : 60-80 mots max (hors objet), vouvoiement, structure OPENER → PROBLEM → VALUE PROP → CTA
-- Emails : 5-7 lignes max, vouvoiement, même structure, jamais "coaching" ni "je me permets de"
+- LinkedIn message 1 : 60-80 mots max, DOIT commencer par hook[0] mot pour mot (remplacer seulement les {{placeholders}})
+- LinkedIn messages 2 et 3 : suivre EXACTEMENT les structures indiquées (preuve de résultat / closing loop), ton décontracté avec émojis
+- Emails : même logique — email 1 utilise hook[0] comme opener, emails 2 et 3 suivent les structures correspondantes
 - Objet email TOUJOURS "Question pour {{prénom}}" — ne pas modifier
-- Hooks : accroches de personnalisation réalistes avec {{placeholder}} pour les variables
+- Hooks 1 et 2 : accroches ancrées dans des signaux réels, avec {{placeholders}}. Hooks 3 et 4 : variations (signal différent ou angle différent)
 - OKRs : résultats mesurables que le coach délivre (pas des tâches)
-- VALUE PROP : choisir parmi les 4 KPIs prédéfinis celui qui colle le mieux au signal
-- Toujours finir les messages par une question, jamais une affirmation`
+- Jamais "coaching", "coach", "je me permets de", ni formule de politesse creuse`
 }
 
 async function attempt(prompt: string): Promise<CampaignKit> {

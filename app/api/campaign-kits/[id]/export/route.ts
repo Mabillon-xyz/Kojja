@@ -33,23 +33,26 @@ function buildHTML(kit: KitRow, blur = false, autoPrint = false): string {
   })
 
   const okrsHtml = kit.okrs
-    .map((okr, i) => {
-      const doBlur = blur && i >= 2
-      if (doBlur) {
-        return `<li class="blurred-item">
-        <div class="blurred-content"><span class="num">${i + 1}</span><span>${escapeHtml(okr)}</span></div>
-        <div class="blur-overlay">🔒 Contenu réservé</div>
-      </li>`
-      }
-      return `<li><span class="num">${i + 1}</span><span>${escapeHtml(okr)}</span></li>`
-    })
+    .map((okr, i) => `<li><span class="num">${i + 1}</span><span>${escapeHtml(okr)}</span></li>`)
     .join('\n      ')
 
   const hooksHtml = kit.hooks
-    .map((hook, i) => `<div class="card">
+    .map((hook, i) => {
+      const doBlur = blur && i >= 2
+      if (doBlur) {
+        return `<div class="blurred-item card">
+        <div class="blurred-content">
+          <div class="card-label">Accroche ${i + 1}</div>
+          <p>${escapeHtml(hook)}</p>
+        </div>
+        <div class="blur-overlay">🔒 Contenu réservé</div>
+      </div>`
+      }
+      return `<div class="card">
       <div class="card-label">Accroche ${i + 1}</div>
       <p>${escapeHtml(hook)}</p>
-    </div>`)
+    </div>`
+    })
     .join('\n    ')
 
   const linkedinHtml = kit.linkedin
