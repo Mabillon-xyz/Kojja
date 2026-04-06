@@ -128,12 +128,30 @@ export async function POST(req: NextRequest) {
 
     // Update CRM lead notes if the lead exists (does NOT change stage or call_date)
     const normalizedEmail = email.toLowerCase();
-    // Use ilike for case-insensitive email match (handles manually-added leads)
-    const { data: lead } = await getSupabase()
+    // Try email match first, then fallback to full name match
+    let { data: lead } = await getSupabase()
       .from("leads")
-      .select("id, notes, first_name, last_name")
+      .select("id, notes, first_name, last_name, email")
       .ilike("email", normalizedEmail)
       .maybeSingle();
+
+    if (!lead) {
+      const nameParts = name.trim().split(" ")
+      const firstName = nameParts[0] ?? ""
+      const lastName = nameParts.slice(1).join(" ")
+      if (firstName && lastName) {
+        const { data: nameMatch } = await getSupabase()
+          .from("leads")
+          .select("id, notes, first_name, last_name, email")
+          .ilike("first_name", firstName)
+          .ilike("last_name", lastName)
+          .maybeSingle()
+        if (nameMatch) {
+          lead = nameMatch
+          console.log(`[followup] Matched lead by name (${firstName} ${lastName}), CRM email: ${nameMatch.email}`)
+        }
+      }
+    }
 
     if (lead) {
       const marker = `[FOLLOWUP|${startDT.toISOString()}|${meetLink ?? ""}]`;
@@ -155,6 +173,12 @@ export async function POST(req: NextRequest) {
     } else {
       console.warn(`[followup] No CRM lead found for email: ${normalizedEmail}`);
     }
+
+    // If the CRM lead has a different email than the booking email, collect both
+    const crmEmail = lead?.email ?? null
+    const reminderEmails = crmEmail && crmEmail.toLowerCase() !== normalizedEmail
+      ? [email, crmEmail]
+      : [email]
 
     // Send confirmation emails
     if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
@@ -212,14 +236,16 @@ export async function POST(req: NextRequest) {
     for (const step of reminderSteps) {
       const sendAt = new Date(startDT.getTime() - step.offsetMs);
       if (sendAt <= now) continue;
-      const { error: reminderError } = await getSupabase().from("scheduled_emails").insert({
-        send_at: sendAt.toISOString(),
-        to_email: email,
-        subject: step.subject,
-        body_html: buildEmailHtml(step.body, reminderCtx),
-        sent: false,
-      });
-      if (reminderError) console.error("[followup] reminder insert failed:", reminderError.message);
+      for (const toEmail of reminderEmails) {
+        const { error: reminderError } = await getSupabase().from("scheduled_emails").insert({
+          send_at: sendAt.toISOString(),
+          to_email: toEmail,
+          subject: step.subject,
+          body_html: buildEmailHtml(step.body, reminderCtx),
+          sent: false,
+        });
+        if (reminderError) console.error("[followup] reminder insert failed:", reminderError.message);
+      }
     }
 
     return NextResponse.json({ eventId: ev?.id, calLink: ev?.htmlLink, meetLink });
