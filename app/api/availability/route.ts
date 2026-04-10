@@ -124,9 +124,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ slots: availableSlots });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : String(err) },
-      { status: 500 }
-    );
+    // Composio / Google Calendar unavailable — fall back to config slots without conflict checking
+    console.error("[availability] Calendar check failed, returning unfiltered slots:", err instanceof Error ? err.message : String(err));
+    return NextResponse.json({ slots: allSlots, fallback: true });
   }
 }

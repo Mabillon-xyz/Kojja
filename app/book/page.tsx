@@ -60,7 +60,10 @@ export default function BookPage() {
     setSlots([])
     fetch(`/api/availability?date=${selectedDate}`)
       .then(r => r.json())
-      .then(d => setSlots(d.slots ?? []))
+      .then(d => {
+        if (d.error) console.error('[availability]', d.error)
+        setSlots(d.slots ?? [])
+      })
       .catch(() => setSlots([]))
       .finally(() => setLoadingSlots(false))
   }, [selectedDate])
