@@ -22,11 +22,8 @@ function formatDateFR(dateStr: string, time: string): string {
 }
 
 export default function BookPage() {
-  const [today, setToday] = useState(() => {
-    const d = new Date()
-    d.setHours(0, 0, 0, 0)
-    return d
-  })
+  // null during SSR to avoid hydration mismatch (server=UTC, client=local time)
+  const [today, setToday] = useState<Date | null>(null)
 
   const [step, setStep] = useState<Step>('date')
   const [month, setMonth] = useState(() => {
@@ -45,8 +42,7 @@ export default function BookPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  // Fix SSR timezone mismatch: server renders in UTC, browser uses local time.
-  // Force today/month to correct client-side values after hydration.
+  // Set today only on the client, after hydration, to avoid SSR mismatch
   useEffect(() => {
     const d = new Date()
     d.setHours(0, 0, 0, 0)
@@ -110,7 +106,7 @@ export default function BookPage() {
   }
 
   const cells = buildCalendar()
-  const prevMonthDisabled =
+  const prevMonthDisabled = today !== null &&
     month.getFullYear() === today.getFullYear() && month.getMonth() <= today.getMonth()
 
   const LeftPanel = (
@@ -203,9 +199,9 @@ export default function BookPage() {
                 {cells.map((date, i) => {
                   if (!date) return <div key={i} />
                   const dateStr = toDateStr(date)
-                  const isPast = date < today
+                  const isPast = today !== null && date < today
                   const isSelected = selectedDate === dateStr
-                  const isToday = dateStr === toDateStr(today)
+                  const isToday = today !== null && dateStr === toDateStr(today)
                   return (
                     <div key={i} className="flex items-center justify-center py-0.5">
                       <button
