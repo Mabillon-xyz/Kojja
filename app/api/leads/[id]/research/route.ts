@@ -58,8 +58,15 @@ async function fetchUrl(url: string): Promise<string> {
       signal: AbortSignal.timeout(15_000),
     })
     if (!res.ok) return `HTTP ${res.status} ${res.statusText}`
-    const text = await res.text()
-    const MAX = 20_000
+    const raw = await res.text()
+    // Strip script/style blocks and collapse whitespace for a cleaner, smaller payload
+    const text = raw
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s{3,}/g, '\n')
+      .trim()
+    const MAX = 4_000
     return text.length > MAX ? text.slice(0, MAX) + '\n[truncated]' : text
   } catch (e) {
     return `Fetch error: ${e instanceof Error ? e.message : 'unknown'}`
