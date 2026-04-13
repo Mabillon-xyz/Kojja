@@ -343,13 +343,16 @@ Effectue des recherches web pour mieux connaître ce coach, puis réponds UNIQUE
   const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userMessage }]
   const tools = [WEB_SEARCH_TOOL, FETCH_URL_TOOL]
   let finalText = ''
-  const MAX_ITER = 8
+  const MAX_ITER = 6
   let endedNaturally = false
 
   for (let iter = 0; iter < MAX_ITER; iter++) {
+    // Keep max_tokens low for intermediate tool-use iterations to stay under 30k/min rate limit.
+    // The final synthesis call uses a higher budget.
+    const isLastIter = iter === MAX_ITER - 1
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
+      max_tokens: isLastIter ? 2048 : 1024,
       system: SYSTEM,
       tools,
       messages,
