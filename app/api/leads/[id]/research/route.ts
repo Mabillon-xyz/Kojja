@@ -343,7 +343,8 @@ Effectue des recherches web pour mieux connaître ce coach, puis réponds UNIQUE
   const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userMessage }]
   const tools = [WEB_SEARCH_TOOL, FETCH_URL_TOOL]
   let finalText = ''
-  const MAX_ITER = 5
+  const MAX_ITER = 8
+  let endedNaturally = false
 
   for (let iter = 0; iter < MAX_ITER; iter++) {
     const response = await client.messages.create({
@@ -358,7 +359,10 @@ Effectue des recherches web pour mieux connaître ce coach, puis réponds UNIQUE
       if (block.type === 'text') finalText = block.text
     }
 
-    if (response.stop_reason === 'end_turn') break
+    if (response.stop_reason === 'end_turn') {
+      endedNaturally = true
+      break
+    }
 
     if (response.stop_reason === 'tool_use') {
       messages.push({ role: 'assistant', content: response.content })
@@ -378,6 +382,24 @@ Effectue des recherches web pour mieux connaître ce coach, puis réponds UNIQUE
       }
 
       messages.push({ role: 'user', content: toolResults })
+    }
+  }
+
+  // If the loop hit MAX_ITER without end_turn, the last text is intermediate reasoning.
+  // Force one final call (no tools) to get the JSON summary from what was gathered.
+  if (!endedNaturally) {
+    messages.push({
+      role: 'user',
+      content: 'Synthétise maintenant tout ce que tu as trouvé et réponds UNIQUEMENT avec le JSON demandé. Si une information est introuvable, mets une chaîne vide.',
+    })
+    const finalResponse = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2048,
+      system: SYSTEM,
+      messages,
+    })
+    for (const block of finalResponse.content) {
+      if (block.type === 'text') finalText = block.text
     }
   }
 
