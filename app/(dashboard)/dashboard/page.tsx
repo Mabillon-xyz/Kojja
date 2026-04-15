@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { readLeads } from '@/lib/read-leads'
 import DashboardBanner from '@/components/dashboard/DashboardBanner'
 import HomeClient from '@/components/dashboard/HomeClient'
