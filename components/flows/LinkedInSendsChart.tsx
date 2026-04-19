@@ -73,8 +73,9 @@ export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }
   }
 
   const todayRow = data[data.length - 1];
-  const avgInvite = data.length > 0 ? Math.round(data.reduce((s, r) => s + r.invite_count, 0) / data.length) : 0;
-  const avgSent = data.length > 0 ? Math.round(data.reduce((s, r) => s + r.sent_count, 0) / data.length) : 0;
+  const workdays = data.filter((r) => new Date(r.date + "T12:00:00").getDay() !== 0);
+  const avgInvite = workdays.length > 0 ? Math.round(workdays.reduce((s, r) => s + r.invite_count, 0) / workdays.length) : 0;
+  const avgSent = workdays.length > 0 ? Math.round(workdays.reduce((s, r) => s + r.sent_count, 0) / workdays.length) : 0;
 
   return (
     <div className="bg-white rounded-xl border border-neutral-200 shadow-sm px-6 pt-5 pb-4">
