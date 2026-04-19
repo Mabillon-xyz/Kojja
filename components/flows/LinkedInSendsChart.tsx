@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   Legend,
+  ReferenceLine,
 } from "recharts";
 import type { LinkedInDaySend } from "@/lib/lemlist-linkedin";
 
@@ -72,6 +73,8 @@ export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }
   }
 
   const todayRow = data[data.length - 1];
+  const avgInvite = data.length > 0 ? Math.round(data.reduce((s, r) => s + r.invite_count, 0) / data.length) : 0;
+  const avgSent = data.length > 0 ? Math.round(data.reduce((s, r) => s + r.sent_count, 0) / data.length) : 0;
 
   return (
     <div className="bg-white rounded-xl border border-neutral-200 shadow-sm px-6 pt-5 pb-4">
@@ -132,6 +135,20 @@ export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }
                 {value === "invite_count" ? "Invites" : "First messages"}
               </span>
             )}
+          />
+          <ReferenceLine
+            y={avgInvite}
+            stroke="#8b5cf6"
+            strokeDasharray="4 3"
+            strokeOpacity={0.6}
+            label={{ value: `avg ${avgInvite}`, position: "insideTopRight", fontSize: 10, fill: "#8b5cf6" }}
+          />
+          <ReferenceLine
+            y={avgSent}
+            stroke="#3b82f6"
+            strokeDasharray="4 3"
+            strokeOpacity={0.6}
+            label={{ value: `avg ${avgSent}`, position: "insideBottomRight", fontSize: 10, fill: "#3b82f6" }}
           />
           <Bar dataKey="invite_count" name="invite_count" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
           <Bar dataKey="sent_count" name="sent_count" fill="#3b82f6" radius={[3, 3, 0, 0]} />
