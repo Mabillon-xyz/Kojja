@@ -193,11 +193,11 @@ export default async function DashboardPage() {
         <ConversionChart snapshots={snapshots} />
       </div>
 
-      {/* LinkedIn outreach volume */}
-      <LinkedInSendsChart rows={linkedInSends as LinkedInDaySend[]} />
-
-      {/* Flows per day chart */}
-      <FlowsDailyChart chartData={flowsChartData} />
+      {/* Outreach volume side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FlowsDailyChart chartData={flowsChartData} />
+        <LinkedInSendsChart rows={linkedInSends as LinkedInDaySend[]} />
+      </div>
 
       {/* Next actions + tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
