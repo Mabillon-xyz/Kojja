@@ -9,7 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  ReferenceLine,
+  Legend,
 } from "recharts";
 import type { LinkedInDaySend } from "@/lib/lemlist-linkedin";
 
@@ -21,11 +21,17 @@ function fmtDate(iso: string) {
 
 function buildDemoData() {
   const today = new Date();
-  const counts = [3, 5, 0, 8, 6, 4, 0, 7, 9, 5, 3, 6, 8, 4];
-  return counts.map((sent_count, i) => {
+  const rows = [
+    { sent: 3, invite: 18 }, { sent: 5, invite: 20 }, { sent: 0, invite: 0 },
+    { sent: 8, invite: 20 }, { sent: 6, invite: 16 }, { sent: 4, invite: 20 },
+    { sent: 0, invite: 0 }, { sent: 7, invite: 20 }, { sent: 9, invite: 20 },
+    { sent: 5, invite: 18 }, { sent: 3, invite: 20 }, { sent: 6, invite: 20 },
+    { sent: 8, invite: 20 }, { sent: 4, invite: 16 },
+  ];
+  return rows.map(({ sent, invite }, i) => {
     const d = new Date(today);
-    d.setDate(d.getDate() - (counts.length - 1 - i));
-    return { date: d.toISOString().slice(0, 10), sent_count, cumulative_total: 0 };
+    d.setDate(d.getDate() - (rows.length - 1 - i));
+    return { date: d.toISOString().slice(0, 10), sent_count: sent, invite_count: invite, cumulative_total: 0 };
   });
 }
 
@@ -49,7 +55,7 @@ export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }
     return (
       <div className="bg-white rounded-xl border border-neutral-200 shadow-sm px-6 py-10 text-center">
         <p className="text-sm text-neutral-400">
-          No data yet — sync will run automatically tonight via cron, or{" "}
+          No data yet —{" "}
           <button
             className="underline text-blue-500 hover:text-blue-700"
             onClick={() =>
@@ -60,37 +66,38 @@ export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }
           >
             sync now
           </button>
-          .
         </p>
       </div>
     );
   }
 
   const todayRow = data[data.length - 1];
-  const avgSent =
-    data.length > 1
-      ? Math.round(data.slice(0, -1).reduce((s, r) => s + r.sent_count, 0) / (data.length - 1))
-      : null;
 
   return (
     <div className="bg-white rounded-xl border border-neutral-200 shadow-sm px-6 pt-5 pb-4">
       <div className="flex items-start justify-between mb-4">
         <div>
           <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-            LinkedIn first messages / day
+            LinkedIn outreach / day
           </p>
           <p className="text-xs text-neutral-400 mt-0.5">
-            New people contacted each day (step 1, Coach campaign)
+            Invites sent &amp; first messages (Coach campaign)
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold text-neutral-900">{todayRow.sent_count}</p>
-          <p className="text-xs text-neutral-400 mt-0.5">today</p>
+        <div className="text-right flex gap-4">
+          <div>
+            <p className="text-lg font-bold text-violet-600">{todayRow.invite_count}</p>
+            <p className="text-xs text-neutral-400">invites today</p>
+          </div>
+          <div>
+            <p className="text-lg font-bold text-blue-600">{todayRow.sent_count}</p>
+            <p className="text-xs text-neutral-400">messages today</p>
+          </div>
         </div>
       </div>
 
       <ResponsiveContainer width="100%" height={160}>
-        <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barSize={14}>
+        <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barSize={6} barGap={2}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
           <XAxis
             dataKey="date"
@@ -106,30 +113,28 @@ export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }
             tickLine={false}
             allowDecimals={false}
           />
-          {avgSent !== null && (
-            <ReferenceLine
-              y={avgSent}
-              stroke="#94a3b8"
-              strokeDasharray="4 3"
-              label={{ value: `avg ${avgSent}`, position: "right", fontSize: 10, fill: "#94a3b8" }}
-            />
-          )}
           <Tooltip
             content={({ active, payload, label }) =>
               active && payload?.length ? (
                 <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-xs shadow-sm space-y-0.5">
                   <p className="font-semibold text-neutral-700">{fmtDate(String(label))}</p>
-                  <p className="text-blue-600 font-bold">
-                    {Number(payload[0].value)} message{Number(payload[0].value) !== 1 ? "s" : ""} sent
-                  </p>
-                  <p className="text-neutral-400">
-                    {(payload[0].payload as LinkedInDaySend).cumulative_total} total since launch
-                  </p>
+                  <p className="text-violet-600 font-medium">{(payload[0]?.payload as LinkedInDaySend).invite_count} invites</p>
+                  <p className="text-blue-600 font-medium">{(payload[0]?.payload as LinkedInDaySend).sent_count} first messages</p>
                 </div>
               ) : null
             }
           />
-          <Bar dataKey="sent_count" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+          <Legend
+            iconType="square"
+            iconSize={8}
+            formatter={(value) => (
+              <span className="text-xs text-neutral-500">
+                {value === "invite_count" ? "Invites" : "First messages"}
+              </span>
+            )}
+          />
+          <Bar dataKey="invite_count" name="invite_count" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
+          <Bar dataKey="sent_count" name="sent_count" fill="#3b82f6" radius={[3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
