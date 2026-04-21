@@ -9,7 +9,6 @@ import FlowsDailyChart from '@/components/flows/FlowsDailyChart'
 import ConversionChart from '@/components/flows/ConversionChart'
 import LinkedInSendsChart from '@/components/flows/LinkedInSendsChart'
 import { getLinkedInDailySends, type LinkedInDaySend } from '@/lib/lemlist-linkedin'
-import { getLemlistDailyEmailSends } from '@/lib/lemlist-email-sends'
 import DashboardKPIs from '@/components/dashboard/DashboardKPIs'
 import { createClient } from '@/lib/supabase/server'
 import type { DailyCount } from '@/components/flows/FlowsList'
@@ -125,12 +124,11 @@ async function buildFlowsChartData(): Promise<DailyCount[]> {
 }
 
 export default async function DashboardPage() {
-  const [leads, flowsChartData, snapshots, linkedInSends, emailSends] = await Promise.all([
+  const [leads, flowsChartData, snapshots, linkedInSends] = await Promise.all([
     readLeads(),
     buildFlowsChartData(),
     fetchClementSnapshots(),
     getLinkedInDailySends(),
-    getLemlistDailyEmailSends(),
   ])
 
   const totalLeads = leads.length
@@ -198,7 +196,7 @@ export default async function DashboardPage() {
       {/* Outreach volume side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <FlowsDailyChart chartData={flowsChartData} />
-        <LinkedInSendsChart rows={linkedInSends as LinkedInDaySend[]} emailRows={emailSends} />
+        <LinkedInSendsChart rows={linkedInSends as LinkedInDaySend[]} />
       </div>
 
       {/* Next actions + tasks */}

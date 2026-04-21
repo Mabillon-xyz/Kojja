@@ -88,7 +88,56 @@ export type LinkedInDaySend = {
   cumulative_total: number;
 };
 
+async function backfillMissingDays(apiKey: string, campaignId: string): Promise<void> {
+  const supabase = getServiceClient();
+  const today = new Date();
+
+  // Build the list of the last 7 days (excluding today, already handled by syncLinkedInDailySends)
+  const dates: string[] = [];
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+
+  const { data: existing } = await supabase
+    .from("linkedin_daily_sends")
+    .select("date")
+    .in("date", dates);
+
+  const existingDates = new Set((existing ?? []).map((r: { date: string }) => r.date));
+  const missing = dates.filter((d) => !existingDates.has(d));
+  if (missing.length === 0) return;
+
+  await Promise.all(
+    missing.map(async (date) => {
+      const startDate = new Date(date + "T00:00:00.000Z").toISOString();
+      const end = new Date(date + "T00:00:00.000Z");
+      end.setUTCDate(end.getUTCDate() + 1);
+      const steps = await fetchStepStats(apiKey, campaignId, startDate, end.toISOString());
+      const sentCount = extractFirstMessageSent(steps);
+      const inviteCount = extractInviteSent(steps);
+      await supabase.from("linkedin_daily_sends").upsert({
+        date,
+        sent_count: sentCount,
+        invite_count: inviteCount,
+        cumulative_total: 0,
+        synced_at: new Date().toISOString(),
+      });
+    })
+  );
+}
+
 export async function getLinkedInDailySends(): Promise<LinkedInDaySend[]> {
+  const account = getAccount("clement");
+  if (account) {
+    const apiKey = account.apiKey();
+    const campaignId = account.coachCampaignId() || account.campaignId();
+    if (apiKey && campaignId) {
+      await backfillMissingDays(apiKey, campaignId);
+    }
+  }
+
   const supabase = getServiceClient();
   const { data } = await supabase
     .from("linkedin_daily_sends")
