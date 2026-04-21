@@ -49,6 +49,30 @@ function extractInviteSent(steps: StepStats[]): number {
     .reduce((sum, s) => sum + (s.invited ?? 0), 0);
 }
 
+async function syncDay(
+  apiKey: string,
+  campaignId: string,
+  date: string
+): Promise<{ sentCount: number; inviteCount: number }> {
+  const startDate = new Date(date + "T00:00:00.000Z").toISOString();
+  const end = new Date(date + "T00:00:00.000Z");
+  end.setUTCDate(end.getUTCDate() + 1);
+  const steps = await fetchStepStats(apiKey, campaignId, startDate, end.toISOString());
+  const sentCount = extractFirstMessageSent(steps);
+  const inviteCount = extractInviteSent(steps);
+
+  const supabase = getServiceClient();
+  await supabase.from("linkedin_daily_sends").upsert({
+    date,
+    sent_count: sentCount,
+    invite_count: inviteCount,
+    cumulative_total: 0,
+    synced_at: new Date().toISOString(),
+  });
+
+  return { sentCount, inviteCount };
+}
+
 export async function syncLinkedInDailySends(): Promise<{ date: string; sentCount: number; inviteCount: number }> {
   const account = getAccount("clement");
   if (!account) throw new Error("Account clement not found");
@@ -57,28 +81,18 @@ export async function syncLinkedInDailySends(): Promise<{ date: string; sentCoun
   const campaignId = account.coachCampaignId() || account.campaignId();
   if (!apiKey) throw new Error("LEMLIST_API_KEY not configured");
 
-  const supabase = getServiceClient();
   const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
 
-  // Use date-filtered query (same day range) for accurate daily counts
-  const todayStart = new Date(today).toISOString();
-  const steps = await fetchStepStats(apiKey, campaignId, todayStart, tomorrow.toISOString());
+  // Sync today + yesterday in parallel (yesterday is now complete)
+  const [todayResult] = await Promise.all([
+    syncDay(apiKey, campaignId, today),
+    syncDay(apiKey, campaignId, yesterdayStr),
+  ]);
 
-  const sentCount = extractFirstMessageSent(steps);
-  const inviteCount = extractInviteSent(steps);
-
-  await supabase.from("linkedin_daily_sends").upsert({
-    date: today,
-    sent_count: sentCount,
-    invite_count: inviteCount,
-    cumulative_total: 0,
-    synced_at: new Date().toISOString(),
-  });
-
-  return { date: today, sentCount, inviteCount };
+  return { date: today, ...todayResult };
 }
 
 export type LinkedInDaySend = {
@@ -92,7 +106,6 @@ async function backfillMissingDays(apiKey: string, campaignId: string): Promise<
   const supabase = getServiceClient();
   const today = new Date();
 
-  // Build the list of the last 7 days (excluding today, already handled by syncLinkedInDailySends)
   const dates: string[] = [];
   for (let i = 1; i <= 7; i++) {
     const d = new Date(today);
@@ -100,17 +113,20 @@ async function backfillMissingDays(apiKey: string, campaignId: string): Promise<
     dates.push(d.toISOString().slice(0, 10));
   }
 
+  // Always re-fetch the last 2 days (may have 0 in DB due to a bad sync)
+  const forceRefresh = new Set(dates.slice(0, 2));
+
   const { data: existing } = await supabase
     .from("linkedin_daily_sends")
     .select("date")
     .in("date", dates);
 
   const existingDates = new Set((existing ?? []).map((r: { date: string }) => r.date));
-  const missing = dates.filter((d) => !existingDates.has(d));
-  if (missing.length === 0) return;
+  const toFetch = dates.filter((d) => forceRefresh.has(d) || !existingDates.has(d));
+  if (toFetch.length === 0) return;
 
   await Promise.all(
-    missing.map(async (date) => {
+    toFetch.map(async (date) => {
       const startDate = new Date(date + "T00:00:00.000Z").toISOString();
       const end = new Date(date + "T00:00:00.000Z");
       end.setUTCDate(end.getUTCDate() + 1);
