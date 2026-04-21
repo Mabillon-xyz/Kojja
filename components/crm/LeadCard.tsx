@@ -81,29 +81,27 @@ export default function LeadCard({ lead, onOpen, onStageChange, draggable = fals
       onDragStart={draggable && onDragStart ? (e) => onDragStart(e, lead.id) : undefined}
       onClick={() => onOpen(lead)}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 min-w-0">
-          <Initials name={fullName} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-0.5">
-              <div className={`flex-shrink-0 w-2 h-2 rounded-full ${PRIORITY_DOT[priority]}`} />
-              <p className="text-sm font-semibold text-neutral-900 truncate">{fullName}</p>
-            </div>
-            {lead.company_name && (
-              <p className="text-xs text-neutral-500 truncate">
-                {lead.company_name}{lead.city ? ` · ${lead.city}` : ''}
-              </p>
-            )}
-            <p className="text-xs text-neutral-400 mt-0.5 truncate">{subtitle}</p>
+      <div className="flex items-start gap-3">
+        <Initials name={fullName} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <div className={`flex-shrink-0 w-2 h-2 rounded-full ${PRIORITY_DOT[priority]}`} />
+            <p className="text-sm font-semibold text-neutral-900 truncate">{fullName}</p>
           </div>
-        </div>
-        <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
-          <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap ${STAGE_BADGE[lead.stage]}`}>
-            {STAGE_LABELS[lead.stage]}
-          </span>
-          <span className="text-xs text-neutral-400">
-            {formatRelativeDate(lead.call_booked_at)}
-          </span>
+          {lead.company_name && (
+            <p className="text-xs text-neutral-500 truncate">
+              {lead.company_name}{lead.city ? ` · ${lead.city}` : ''}
+            </p>
+          )}
+          <p className="text-xs text-neutral-400 mt-0.5 truncate">{subtitle}</p>
+          <div className="flex items-center justify-between mt-2">
+            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${STAGE_BADGE[lead.stage]}`}>
+              {STAGE_LABELS[lead.stage]}
+            </span>
+            <span className="text-xs text-neutral-400">
+              {formatRelativeDate(lead.call_booked_at)}
+            </span>
+          </div>
         </div>
       </div>
 

@@ -63,7 +63,7 @@ export default function LeadKanban({ leads }: Props) {
           return (
             <div
               key={stage}
-              className="flex-1 min-w-[200px]"
+              className="flex-1 min-w-[240px]"
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, stage)}
             >
