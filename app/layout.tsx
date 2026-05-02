@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Koj²a",
   description: "Smart prospecting for business coaches",
   icons: {
-    icon: "https://share.google/i4g54WTIDBkMFnyHb",
+    icon: "https://i.imgur.com/fFfn12g.png",
   },
 };
 
