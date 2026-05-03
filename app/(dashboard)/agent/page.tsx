@@ -138,9 +138,9 @@ const mdComponents: Components = {
 }
 
 const MODELS = [
-  { id: 'claude-sonnet-4-6',        label: 'Sonnet 4.6', speed: '⭐⭐⭐⭐',  depth: '⭐⭐⭐⭐',  cost: '⭐⭐⭐' },
-  { id: 'claude-opus-4-6',          label: 'Opus 4.6',   speed: '⭐⭐',      depth: '⭐⭐⭐⭐⭐', cost: '⭐⭐⭐⭐⭐' },
-  { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', speed: '⭐⭐⭐⭐⭐', depth: '⭐⭐',      cost: '⭐' },
+  { id: 'claude-sonnet-4-6',         label: 'Sonnet 4.6', speed: '⭐⭐⭐⭐',  depth: '⭐⭐⭐⭐⭐', cost: '⭐⭐⭐⭐'  },
+  { id: 'claude-opus-4-6',           label: 'Opus 4.6',   speed: '⭐⭐',      depth: '⭐⭐⭐⭐⭐', cost: '⭐⭐⭐⭐⭐' },
+  { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', speed: '⭐⭐⭐⭐⭐', depth: '⭐⭐⭐',    cost: '⭐'       },
 ]
 
 type Message    = { role: 'user' | 'assistant'; content: string }
