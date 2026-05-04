@@ -5,8 +5,14 @@ export const metadata: Metadata = {
   title: "Koj²a",
   description: "Smart prospecting for business coaches",
   icons: {
-    icon: "https://i.imgur.com/fFfn12g.png",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
