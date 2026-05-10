@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { readLeads } from '@/lib/read-leads'
 import DashboardBanner from '@/components/dashboard/DashboardBanner'
+import CampaignLaunchCard from '@/components/dashboard/CampaignLaunchCard'
 import HomeClient from '@/components/dashboard/HomeClient'
 import NextActions from '@/components/dashboard/NextActions'
 import DailyCallsChart, { type DayData } from '@/components/dashboard/DailyCallsChart'
@@ -204,7 +205,8 @@ export default async function DashboardPage() {
         <div className="lg:col-span-2">
           <NextActions leads={leads} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          <CampaignLaunchCard />
           <HomeClient />
         </div>
       </div>
