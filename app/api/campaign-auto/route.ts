@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createServiceClient } from '@/lib/supabase/server'
 import nodemailer from 'nodemailer'
@@ -230,7 +230,7 @@ function buildSummaryHtml(spec: CampaignSpec, campaignId: string): string {
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
   try {
     const account = getAccount('clement')
     const apiKey = account?.apiKey()

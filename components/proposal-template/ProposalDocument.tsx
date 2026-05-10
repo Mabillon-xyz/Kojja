@@ -249,6 +249,7 @@ export default function ProposalDocument({ proposal }: ProposalDocumentProps) {
             {proposal.signature_data ? (
               <div className="border-b border-neutral-200 pb-2 min-h-[48px] flex items-end">
                 {proposal.signature_data.startsWith('data:image') ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={proposal.signature_data}
                     alt="Client signature"
