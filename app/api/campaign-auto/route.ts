@@ -175,14 +175,18 @@ async function searchLeads(spec: CampaignSpec, apiKey: string): Promise<LemLead[
     const results = Array.isArray(parsed) ? parsed : (parsed as { results?: Record<string, unknown>[] }).results ?? []
 
     return results
-      .map((r) => ({
-        firstName: r.firstName as string | undefined,
-        lastName: r.lastName as string | undefined,
-        email: r.email as string | undefined,
-        linkedinUrl: (r.linkedinUrl ?? r.linkedin_url) as string | undefined,
-        companyName: (r.companyName ?? r.company) as string | undefined,
-        jobTitle: (r.jobTitle ?? r.title ?? r.currentTitle) as string | undefined,
-      }))
+      .map((r) => {
+        const nameParts = ((r.full_name ?? '') as string).trim().split(/\s+/)
+        const slug = r.canonical_shorthand_name as string | undefined
+        return {
+          firstName: nameParts[0] ?? undefined,
+          lastName: nameParts.slice(1).join(' ') || undefined,
+          email: (r.potential_email as string | undefined) ?? undefined,
+          linkedinUrl: slug ? `https://www.linkedin.com/in/${slug}` : undefined,
+          companyName: (r.current_exp_company_name as string | undefined) ?? undefined,
+          jobTitle: (r.headline as string | undefined) ?? undefined,
+        }
+      })
       .filter((l) => l.firstName ?? l.email)
   } finally {
     await mcp.close()
