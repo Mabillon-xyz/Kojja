@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { Client as MCPClient } from '@modelcontextprotocol/sdk/client/index.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { createServiceClient } from '@/lib/supabase/server'
 import nodemailer from 'nodemailer'
 import { getAccount } from '@/lib/lemlist-accounts'
@@ -145,77 +147,46 @@ Génère un JSON avec exactement cette structure :
   return JSON.parse(cleaned) as CampaignSpec
 }
 
-// ── Lead search via Lemlist MCP ───────────────────────────────────────────────
+// ── Lead search via Lemlist MCP (direct SDK call) ─────────────────────────────
 
 const LEMLIST_MCP_URL = 'https://app.lemlist.com/mcp'
 
 async function searchLeads(spec: CampaignSpec, apiKey: string): Promise<LemLead[]> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+  const transport = new StreamableHTTPClientTransport(new URL(LEMLIST_MCP_URL), {
+    requestInit: { headers: { 'X-API-Key': apiKey } },
+  })
 
-  type BetaMsgParam = Parameters<typeof client.beta.messages.create>[0]['messages'][number]
+  const mcp = new MCPClient({ name: 'koja-dashboard', version: '1.0' }, {})
+  await mcp.connect(transport)
 
-  const mcpServer = {
-    name: 'lemlist',
-    type: 'url' as const,
-    url: LEMLIST_MCP_URL,
-    authorization_token: apiKey,
+  try {
+    const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
+      mode: 'people',
+      filters: spec.leadsFilters,
+      size: 40,
+    }})
+
+    const rawText = (result.content as Array<{ type: string; text?: string }>)
+      .filter((c) => c.type === 'text')
+      .map((c) => c.text ?? '')
+      .join('')
+
+    const parsed = JSON.parse(rawText) as { results?: Record<string, unknown>[] } | Record<string, unknown>[]
+    const results = Array.isArray(parsed) ? parsed : (parsed as { results?: Record<string, unknown>[] }).results ?? []
+
+    return results
+      .map((r) => ({
+        firstName: r.firstName as string | undefined,
+        lastName: r.lastName as string | undefined,
+        email: r.email as string | undefined,
+        linkedinUrl: (r.linkedinUrl ?? r.linkedin_url) as string | undefined,
+        companyName: (r.companyName ?? r.company) as string | undefined,
+        jobTitle: (r.jobTitle ?? r.title ?? r.currentTitle) as string | undefined,
+      }))
+      .filter((l) => l.firstName ?? l.email)
+  } finally {
+    await mcp.close()
   }
-
-  const systemPrompt =
-    'Tu es un assistant de recherche de leads. Utilise lemleads_search pour chercher des contacts correspondant aux critères fournis. ' +
-    'Après la recherche, retourne UNIQUEMENT un JSON array avec les leads. ' +
-    'Format : [{"firstName":"...","lastName":"...","email":"...","linkedinUrl":"...","companyName":"...","jobTitle":"..."}] ' +
-    'Si un champ est absent, utilise null. Retourne SEULEMENT le JSON, sans markdown ni commentaire.'
-
-  const userMessage =
-    `Recherche ${spec.icpDescription} en utilisant lemleads_search avec mode="people", size=40 et ces filtres : ` +
-    JSON.stringify(spec.leadsFilters) +
-    '\nRetourne le JSON array des leads trouvés.'
-
-  let messages: BetaMsgParam[] = [{ role: 'user', content: userMessage }]
-
-  for (let i = 0; i < 6; i++) {
-    const response = await client.beta.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 8000,
-      betas: ['mcp-client-2025-04-04'],
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mcp_servers: [mcpServer] as any,
-      system: systemPrompt,
-      messages,
-    })
-
-    const stopReason = (response as { stop_reason?: string }).stop_reason
-    if (stopReason !== 'tool_use') {
-      const text = response.content
-        .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-        .map((b) => b.text)
-        .join('')
-      const start = text.indexOf('[')
-      const end = text.lastIndexOf(']')
-      if (start === -1 || end === -1) return []
-      const raw = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>[]
-      return raw
-        .map((r) => ({
-          firstName: r.firstName as string | undefined ?? undefined,
-          lastName: r.lastName as string | undefined ?? undefined,
-          email: r.email as string | undefined ?? undefined,
-          linkedinUrl: (r.linkedinUrl ?? r.linkedin_url) as string | undefined ?? undefined,
-          companyName: (r.companyName ?? r.company) as string | undefined ?? undefined,
-          jobTitle: (r.jobTitle ?? r.title ?? r.currentTitle) as string | undefined ?? undefined,
-        }))
-        .filter((l) => l.firstName ?? l.email)
-    }
-
-    // Tool use round — append assistant turn and continue
-    messages = [
-      ...messages,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { role: 'assistant', content: response.content as any },
-    ]
-  }
-
-  return []
 }
 
 // ── Deduplication ─────────────────────────────────────────────────────────────
