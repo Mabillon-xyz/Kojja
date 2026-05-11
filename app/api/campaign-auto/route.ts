@@ -1,10 +1,9 @@
-import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createServiceClient } from '@/lib/supabase/server'
 import nodemailer from 'nodemailer'
 import { getAccount } from '@/lib/lemlist-accounts'
 
-export const maxDuration = 90
+export const maxDuration = 300
 
 const LEMLIST_API = 'https://api.lemlist.com/api'
 const SUMMARY_RECIPIENT = 'contact@clementguiraud.fr'
@@ -30,6 +29,15 @@ async function lemlistPost(
   return JSON.parse(text) as Record<string, unknown>
 }
 
+async function lemlistGet(path: string, apiKey: string): Promise<Record<string, unknown>> {
+  const res = await fetch(`${LEMLIST_API}${path}`, {
+    headers: { Authorization: lemlistAuth(apiKey) },
+  })
+  const text = await res.text()
+  if (!res.ok) throw new Error(`Lemlist GET ${path} → ${res.status}: ${text.slice(0, 300)}`)
+  return JSON.parse(text) as Record<string, unknown>
+}
+
 function textToHtml(text: string): string {
   return text
     .trim()
@@ -38,18 +46,13 @@ function textToHtml(text: string): string {
     .join('')
 }
 
-// ── Claude spec generation ────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-const CAMPAIGN_RULES_SUMMARY = `
-Règles campagne Koj²a (résumé) :
-- Séquence : email j0 → linkedinInvite j3 → email j6 → conditional linkedinInviteAccepted j8 (waitUntil) → [YES: linkedinSend j8, break-up email j11] [NO: break-up email j11]
-- Objet email : 2–4 mots, ex : "{{firstName}} — un avis ?" / "Votre pipeline, {{firstName}}" / "{{firstName}}"
-- Corps email 1 : {{icebreaker}} en ouverture + qui-je-suis (1 phrase) + offre avec KPI concret + question ouverte + signature "Clément"
-- Ne pas mentionner d'outil, pas de "automatisation", pas de jargon startup, pas de listes à puces
-- Domaine envoi : clement.guiraudpro@gmail.com
-- Convention nommage campagne : [Persona] | [Secteur/Ville] — [Mois Année]
-- Campagne créée en pause — leads à ajouter manuellement ensuite
-`
+interface LeadsFilter {
+  filterId: string
+  in: string[]
+  out: string[]
+}
 
 interface CampaignSpec {
   campaignName: string
@@ -67,19 +70,44 @@ interface CampaignSpec {
   linkedinStep4Message: string
   emailBreakupSubject: string
   emailBreakupBody: string
+  leadsFilters: LeadsFilter[]
 }
+
+interface LemLead {
+  firstName?: string
+  lastName?: string
+  email?: string
+  linkedinUrl?: string
+  companyName?: string
+  jobTitle?: string
+}
+
+// ── Claude spec generation ────────────────────────────────────────────────────
+
+const CAMPAIGN_RULES_SUMMARY = `
+Règles campagne Koj²a :
+- Séquence : email j0 → linkedinInvite j3 → email j6 → conditional linkedinInviteAccepted j8 (waitUntil) → YES: linkedinSend j8 + break-up email j11 / NO: break-up email j11
+- Objet email : 2–4 mots, ex : "{{firstName}} — un avis ?" / "Votre pipeline, {{firstName}}" / "{{firstName}}"
+- Corps email 1 : {{icebreaker}} en ouverture + qui-je-suis (1 phrase) + offre avec KPI concret + question ouverte + signature "Clément"
+- Ne pas mentionner d'outil, pas de "automatisation", pas de jargon startup, pas de listes à puces
+- Domaine envoi : clement.guiraudpro@gmail.com
+- Convention nommage : [Persona] | [Secteur/Ville] — [Mois Année]
+`
 
 async function generateCampaignSpec(campaignLogContent: string): Promise<CampaignSpec> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 3000,
+    max_tokens: 4000,
     system: `Tu es l'assistant outbound de Koj²a. Tu analyses le journal de campagne et décides quelle est la prochaine expérience à lancer.
 
 Output ONLY valid JSON. No markdown, no commentary. Start with { and end with }.
 
 ${CAMPAIGN_RULES_SUMMARY}
+
+Lemleads filterId valides : "country" | "currentTitle" | "state" | "city" | "seniority" | "companySize"
+Pour les coachs français : country="France", currentTitle contient des variantes de "coach" (coach dirigeant, coach exécutif, business coach, coach professionnel, coach certifié, executive coach).
 
 Génère un JSON avec exactement cette structure :
 {
@@ -97,12 +125,17 @@ Génère un JSON avec exactement cette structure :
   "email2Body": "string — corps email 2 plain text",
   "linkedinStep4Message": "string — message LinkedIn j8 si invite acceptée",
   "emailBreakupSubject": "string — 1-2 mots avec {{firstName}}",
-  "emailBreakupBody": "string — corps email break-up plain text"
+  "emailBreakupBody": "string — corps email break-up plain text",
+  "leadsFilters": [
+    {"filterId": "country", "in": ["France"], "out": []},
+    {"filterId": "currentTitle", "in": ["coach dirigeant", "coach exécutif", "business coach", "coach professionnel", "executive coach"], "out": []},
+    {"filterId": "state", "in": ["...régions selon la zone ciblée"], "out": []}
+  ]
 }`,
     messages: [
       {
         role: 'user',
-        content: `Journal de campagne actuel :\n\n${campaignLogContent}\n\nAnalyse les campagnes existantes et les hypothèses en file d'attente. Choisis la prochaine hypothèse à tester — en priorité quelque chose de structurellement différent de ce qui a déjà été lancé (variation ICP, angle message, type de persona). Génère le JSON complet pour cette nouvelle campagne.`,
+        content: `Journal de campagne actuel :\n\n${campaignLogContent}\n\nAnalyse les campagnes existantes et les hypothèses en file d'attente. Choisis la prochaine hypothèse à tester — en priorité quelque chose de structurellement différent de ce qui a déjà été lancé (variation ICP, angle message, type de persona, zone géographique). Génère le JSON complet.`,
       },
     ],
   })
@@ -112,22 +145,139 @@ Génère un JSON avec exactement cette structure :
   return JSON.parse(cleaned) as CampaignSpec
 }
 
+// ── Lead search ───────────────────────────────────────────────────────────────
+
+async function searchLeads(spec: CampaignSpec, apiKey: string): Promise<LemLead[]> {
+  const res = await fetch(`${LEMLIST_API}/lemleads/search`, {
+    method: 'POST',
+    headers: { Authorization: lemlistAuth(apiKey), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: 'people', filters: spec.leadsFilters, size: 40 }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`lemleads/search → ${res.status}: ${text.slice(0, 200)}`)
+  }
+  const data = await res.json() as { results?: Record<string, unknown>[] } | Record<string, unknown>[]
+  const results = Array.isArray(data) ? data : (data as { results?: Record<string, unknown>[] }).results ?? []
+  return results
+    .map((r) => ({
+      firstName: r.firstName as string | undefined,
+      lastName: r.lastName as string | undefined,
+      email: r.email as string | undefined,
+      linkedinUrl: (r.linkedinUrl ?? r.linkedin_url) as string | undefined,
+      companyName: (r.companyName ?? r.company) as string | undefined,
+      jobTitle: (r.jobTitle ?? r.title ?? r.currentTitle) as string | undefined,
+    }))
+    .filter((l) => l.firstName ?? l.email)
+}
+
+// ── Deduplication ─────────────────────────────────────────────────────────────
+
+async function deduplicateLeads(leads: LemLead[], apiKey: string): Promise<LemLead[]> {
+  const unique: LemLead[] = []
+  for (const lead of leads) {
+    if (!lead.email) { unique.push(lead); continue }
+    try {
+      const res = await fetch(
+        `${LEMLIST_API}/contacts?idsOrEmails=${encodeURIComponent(lead.email)}&limit=1`,
+        { headers: { Authorization: lemlistAuth(apiKey) } },
+      )
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data) && data.length > 0) continue
+      }
+    } catch { /* keep lead on error */ }
+    unique.push(lead)
+  }
+  return unique
+}
+
+// ── Icebreaker generation ─────────────────────────────────────────────────────
+
+async function generateIcebreakers(
+  leads: LemLead[],
+  spec: CampaignSpec,
+): Promise<Array<LemLead & { icebreaker: string }>> {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+
+  const leadList = leads
+    .map((l, i) =>
+      `${i + 1}. ${l.firstName ?? ''} ${l.lastName ?? ''} — ${l.jobTitle ?? 'Coach'} @ ${l.companyName ?? 'Cabinet'}`,
+    )
+    .join('\n')
+
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 4000,
+    system: `Tu génères des icebreakers pour des emails B2B ciblant des coachs business français.
+
+Contexte campagne : ${spec.icpDescription}.
+
+Règles icebreaker :
+- 1–2 phrases naturelles, conversationnelles, ancrées dans un fait CONCRET du parcours
+- ≤30 mots
+- Interdit : commencer par "Je vois que vous êtes coach" / mentionner les followers / inventer des faits
+- Basé sur le titre, l'entreprise, et le contexte ICP
+- Ton : direct et professionnel, pas flatteur
+
+Output : JSON array dans le même ordre que l'input. Format : [{"icebreaker": "..."}, ...]
+Ne retourner que le JSON, rien d'autre.`,
+    messages: [
+      {
+        role: 'user',
+        content: `Génère un icebreaker pour chacun de ces ${leads.length} leads :\n\n${leadList}`,
+      },
+    ],
+  })
+
+  const text = message.content[0].type === 'text' ? message.content[0].text : '[]'
+  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+  const icebreakers = JSON.parse(cleaned) as Array<{ icebreaker: string }>
+
+  return leads.map((lead, i) => ({
+    ...lead,
+    icebreaker: icebreakers[i]?.icebreaker ?? '',
+  }))
+}
+
+// ── Add leads to campaign ─────────────────────────────────────────────────────
+
+async function addLeadsToCampaign(
+  campaignId: string,
+  leads: Array<LemLead & { icebreaker: string }>,
+  apiKey: string,
+): Promise<number> {
+  let added = 0
+  for (const lead of leads) {
+    if (!lead.email) continue
+    try {
+      await lemlistPost(`/campaigns/${campaignId}/leads/${encodeURIComponent(lead.email)}`, apiKey, {
+        firstName: lead.firstName ?? '',
+        lastName: lead.lastName ?? '',
+        companyName: lead.companyName ?? '',
+        linkedinUrl: lead.linkedinUrl ?? '',
+        icebreaker: lead.icebreaker,
+      })
+      added++
+      await new Promise((r) => setTimeout(r, 200))
+    } catch { /* skip failed lead */ }
+  }
+  return added
+}
+
 // ── Campaign log update ───────────────────────────────────────────────────────
 
-function buildCampaignSection(spec: CampaignSpec, campaignId: string): string {
-  const date = new Date().toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+function buildCampaignSection(spec: CampaignSpec, campaignId: string, leadsAdded: number): string {
+  const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
   return `
 ---
 
 ### Campagne #${spec.campaignNumber} — ${spec.campaignName}
 
 **ID Lemlist :** ${campaignId}
-**Statut :** Draft ⏸ (créée automatiquement)
+**Statut :** Live ▶ (créée automatiquement)
 **Créée le :** ${date}
+**Leads ajoutés :** ${leadsAdded}
 
 #### Ciblage
 - **Persona :** ${spec.icpDescription}
@@ -158,10 +308,10 @@ function updateCampaignLogContent(
   content: string,
   spec: CampaignSpec,
   campaignId: string,
+  leadsAdded: number,
 ): string {
   let updated = content
 
-  // Add row to overview table — find last data row (starts with "| N |")
   const overviewIdx = updated.indexOf('## Vue d\'ensemble')
   const nextSeparator = updated.indexOf('\n---\n', overviewIdx)
   if (overviewIdx !== -1 && nextSeparator !== -1) {
@@ -171,14 +321,13 @@ function updateCampaignLogContent(
       const lastRow = rows[rows.length - 1]
       const lastRowPos = updated.lastIndexOf(lastRow, nextSeparator)
       const insertAt = lastRowPos + lastRow.length
-      const newRow = `\n| ${spec.campaignNumber} | ${spec.campaignName} | Draft ⏸ (auto) | — | — | — | — | — |`
+      const newRow = `\n| ${spec.campaignNumber} | ${spec.campaignName} | Live ▶ (auto) | ${leadsAdded} | — | — | — | — |`
       updated = updated.slice(0, insertAt) + newRow + updated.slice(insertAt)
     }
   }
 
-  // Insert new campaign section before "## Learnings cumulés"
   const learningsMarker = '\n## Learnings cumulés'
-  const newSection = buildCampaignSection(spec, campaignId)
+  const newSection = buildCampaignSection(spec, campaignId, leadsAdded)
   if (updated.includes(learningsMarker)) {
     updated = updated.replace(learningsMarker, newSection + '\n## Learnings cumulés')
   } else {
@@ -190,39 +339,26 @@ function updateCampaignLogContent(
 
 // ── Summary email ─────────────────────────────────────────────────────────────
 
-function buildSummaryHtml(spec: CampaignSpec, campaignId: string): string {
-  const date = new Date().toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+function buildSummaryHtml(spec: CampaignSpec, campaignId: string, leadsAdded: number): string {
+  const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
   return `
 <div style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;color:#171717;font-size:15px;line-height:1.6;">
-  <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">Nouvelle campagne créée</h2>
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">Campagne lancée ▶</h2>
   <p style="color:#737373;margin-top:0;font-size:13px;">Koj²a Outbound — ${date}</p>
   <hr style="border:none;border-top:1px solid #e5e5e5;margin:20px 0;">
   <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;">
     <tr><td style="padding:6px 0;color:#737373;width:160px;vertical-align:top;">Campagne</td><td style="padding:6px 0;"><strong>${spec.campaignName}</strong></td></tr>
     <tr><td style="padding:6px 0;color:#737373;vertical-align:top;">ID Lemlist</td><td style="padding:6px 0;"><a href="https://app.lemlist.com/campaign/${campaignId}" style="color:#4f46e5;">${campaignId}</a></td></tr>
+    <tr><td style="padding:6px 0;color:#737373;vertical-align:top;">Leads ajoutés</td><td style="padding:6px 0;"><strong>${leadsAdded}</strong></td></tr>
     <tr><td style="padding:6px 0;color:#737373;vertical-align:top;">Hypothèse</td><td style="padding:6px 0;">${spec.hypothesis}</td></tr>
     <tr><td style="padding:6px 0;color:#737373;vertical-align:top;">ICP ciblé</td><td style="padding:6px 0;">${spec.icpDescription}</td></tr>
     <tr><td style="padding:6px 0;color:#737373;vertical-align:top;">Zone</td><td style="padding:6px 0;">${spec.zone}</td></tr>
     <tr><td style="padding:6px 0;color:#737373;vertical-align:top;">Variation</td><td style="padding:6px 0;">${spec.messageVariation}</td></tr>
   </table>
   <div style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:16px;margin-bottom:20px;">
-    <p style="margin:0 0 8px;font-size:13px;font-weight:600;">Pourquoi cette hypothèse maintenant ?</p>
+    <p style="margin:0 0 8px;font-size:13px;font-weight:600;">Pourquoi cette hypothèse ?</p>
     <p style="margin:0;font-size:14px;color:#404040;">${spec.rationale}</p>
   </div>
-  <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:16px;margin-bottom:16px;">
-    <p style="margin:0 0 8px;font-size:13px;font-weight:600;">Email Step 1 — Objet : ${spec.email1Subject}</p>
-    <pre style="margin:0;font-family:inherit;font-size:13px;color:#404040;white-space:pre-wrap;">${spec.email1Body}</pre>
-  </div>
-  <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:16px;margin-bottom:16px;">
-    <p style="margin:0 0 8px;font-size:13px;font-weight:600;">LinkedIn Invite Note</p>
-    <pre style="margin:0;font-family:inherit;font-size:13px;color:#404040;white-space:pre-wrap;">${spec.linkedinNote}</pre>
-  </div>
-  <hr style="border:none;border-top:1px solid #e5e5e5;margin:20px 0;">
-  <p style="font-size:13px;color:#737373;margin-bottom:12px;">La campagne est créée en draft — pas encore active. Ajoutez vos leads dans Lemlist, relisez les messages, puis lancez manuellement.</p>
   <a href="https://app.lemlist.com/campaign/${campaignId}" style="display:inline-block;padding:10px 20px;background:#171717;color:#fff;text-decoration:none;border-radius:8px;font-size:14px;">Ouvrir dans Lemlist →</a>
 </div>
 `
@@ -231,131 +367,180 @@ function buildSummaryHtml(spec: CampaignSpec, campaignId: string): string {
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 export async function POST() {
-  try {
-    const account = getAccount('clement')
-    const apiKey = account?.apiKey()
-    if (!apiKey) {
-      return NextResponse.json({ error: 'LEMLIST_API_KEY not configured' }, { status: 500 })
-    }
+  const encoder = new TextEncoder()
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>()
+  const writer = writable.getWriter()
 
-    // 1. Read campaign log from Supabase
-    const supabase = await createServiceClient()
-    const { data: doc, error: docErr } = await supabase
-      .from('documents')
-      .select('content')
-      .eq('id', 'campaign-log')
-      .single()
-
-    if (docErr || !doc?.content) {
-      return NextResponse.json({ error: 'Campaign log not found in Supabase' }, { status: 500 })
-    }
-
-    // 2. Generate campaign spec with Claude
-    const spec = await generateCampaignSpec(doc.content)
-
-    // 3. Create campaign in Lemlist (paused by default)
-    const camp = await lemlistPost('/campaigns', apiKey, {
-      name: spec.campaignName,
-      timezone: 'Europe/Paris',
-    })
-    const campaignId = camp._id as string
-    const sequenceId = camp.sequenceId as string
-
-    // 4. Build the sequence — 5 steps
-    // Step 1: Email j0
-    await lemlistPost(`/sequences/${sequenceId}/steps`, apiKey, {
-      type: 'email',
-      delay: 0,
-      subject: spec.email1Subject,
-      message: textToHtml(spec.email1Body),
-    })
-
-    // Step 2: LinkedIn invite j3
-    await lemlistPost(`/sequences/${sequenceId}/steps`, apiKey, {
-      type: 'linkedinInvite',
-      delay: 3,
-      message: spec.linkedinNote,
-    })
-
-    // Step 3: Follow-up email j6 (reply in thread — empty subject)
-    await lemlistPost(`/sequences/${sequenceId}/steps`, apiKey, {
-      type: 'email',
-      delay: 3,
-      subject: spec.email2Subject,
-      message: textToHtml(spec.email2Body),
-    })
-
-    // Step 4: Conditional j8 — waitUntil LinkedIn invite accepted
-    const conditional = await lemlistPost(`/sequences/${sequenceId}/steps`, apiKey, {
-      type: 'conditional',
-      delay: 2,
-      conditionKey: 'linkedinInviteAccepted',
-      delayType: 'waitUntil',
-    })
-
-    type Condition = { sequenceId: string; fallback?: boolean }
-    const conditions = (conditional.conditions as Condition[]) ?? []
-    const yesSeqId = conditions.find((c) => !c.fallback)?.sequenceId
-    const noSeqId = conditions.find((c) => c.fallback)?.sequenceId
-
-    // Step 4a: LinkedIn send in YES branch (j8)
-    if (yesSeqId) {
-      await lemlistPost(`/sequences/${yesSeqId}/steps`, apiKey, {
-        type: 'linkedinSend',
-        delay: 0,
-        message: spec.linkedinStep4Message,
-      })
-      // Break-up email j11 in YES branch
-      await lemlistPost(`/sequences/${yesSeqId}/steps`, apiKey, {
-        type: 'email',
-        delay: 3,
-        subject: spec.emailBreakupSubject,
-        message: textToHtml(spec.emailBreakupBody),
-      })
-    }
-
-    // Break-up email j11 in NO branch
-    if (noSeqId) {
-      await lemlistPost(`/sequences/${noSeqId}/steps`, apiKey, {
-        type: 'email',
-        delay: 3,
-        subject: spec.emailBreakupSubject,
-        message: textToHtml(spec.emailBreakupBody),
-      })
-    }
-
-    // 5. Update campaign log document in Supabase
-    const updatedContent = updateCampaignLogContent(doc.content, spec, campaignId)
-    await supabase
-      .from('documents')
-      .update({ content: updatedContent })
-      .eq('id', 'campaign-log')
-
-    // 6. Send summary email
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
-    })
-    await transporter.sendMail({
-      from: `Koj²a <${process.env.GMAIL_USER}>`,
-      to: SUMMARY_RECIPIENT,
-      subject: `Koj²a — Nouvelle campagne créée : ${spec.campaignName}`,
-      html: buildSummaryHtml(spec, campaignId),
-    })
-
-    return NextResponse.json({
-      ok: true,
-      campaignId,
-      campaignName: spec.campaignName,
-      hypothesis: spec.hypothesis,
-      rationale: spec.rationale,
-      lemlistUrl: `https://app.lemlist.com/campaign/${campaignId}`,
-    })
-  } catch (err) {
-    console.error('[campaign-auto]', err)
-    const msg = err instanceof Error ? err.message : 'Unknown error'
-    return NextResponse.json({ error: msg }, { status: 500 })
+  async function send(data: Record<string, unknown>) {
+    try {
+      await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
+    } catch { /* writer closed */ }
   }
+
+  ;(async () => {
+    try {
+      const account = getAccount('clement')
+      const apiKey = account?.apiKey()
+      if (!apiKey) throw new Error('LEMLIST_API_KEY not configured')
+
+      // 1. Read campaign log
+      await send({ step: 'reading_log', label: 'Lecture du journal de campagne…' })
+      const supabase = await createServiceClient()
+      const { data: doc, error: docErr } = await supabase
+        .from('documents')
+        .select('content')
+        .eq('id', 'campaign-log')
+        .single()
+      if (docErr || !doc?.content) throw new Error('Campaign log not found in Supabase')
+
+      // 2. Generate spec
+      await send({ step: 'generating_spec', label: 'Analyse du journal et génération de la prochaine campagne…' })
+      const spec = await generateCampaignSpec(doc.content)
+      await send({ step: 'spec_done', label: `Campagne #${spec.campaignNumber} : ${spec.campaignName}` })
+
+      // 3. Create campaign in Lemlist
+      await send({ step: 'creating_campaign', label: 'Création de la campagne dans Lemlist…' })
+      const camp = await lemlistPost('/campaigns', apiKey, {
+        name: spec.campaignName,
+        timezone: 'Europe/Paris',
+      })
+      const campaignId = camp._id as string
+
+      // 4. Get sequence ID (not in creation response — must fetch separately)
+      const seqData = await lemlistGet(`/campaigns/${campaignId}/sequences`, apiKey)
+      const sequenceId = Object.keys(seqData)[0]
+      if (!sequenceId) throw new Error('No sequence found for campaign')
+
+      // 5. Build 5-step sequence
+      await lemlistPost(`/sequences/${sequenceId}/steps`, apiKey, {
+        type: 'email', delay: 0,
+        subject: spec.email1Subject,
+        message: textToHtml(spec.email1Body),
+      })
+      await lemlistPost(`/sequences/${sequenceId}/steps`, apiKey, {
+        type: 'linkedinInvite', delay: 3,
+        message: spec.linkedinNote,
+      })
+      await lemlistPost(`/sequences/${sequenceId}/steps`, apiKey, {
+        type: 'email', delay: 3,
+        subject: spec.email2Subject,
+        message: textToHtml(spec.email2Body),
+      })
+      const conditional = await lemlistPost(`/sequences/${sequenceId}/steps`, apiKey, {
+        type: 'conditional', delay: 2,
+        conditionKey: 'linkedinInviteAccepted',
+        delayType: 'waitUntil',
+      })
+
+      type Condition = { sequenceId: string; fallback?: boolean }
+      const conditions = (conditional.conditions as Condition[]) ?? []
+      const yesSeqId = conditions.find((c) => !c.fallback)?.sequenceId
+      const noSeqId = conditions.find((c) => c.fallback)?.sequenceId
+
+      if (yesSeqId) {
+        await lemlistPost(`/sequences/${yesSeqId}/steps`, apiKey, {
+          type: 'linkedinSend', delay: 0, message: spec.linkedinStep4Message,
+        })
+        await lemlistPost(`/sequences/${yesSeqId}/steps`, apiKey, {
+          type: 'email', delay: 3,
+          subject: spec.emailBreakupSubject,
+          message: textToHtml(spec.emailBreakupBody),
+        })
+      }
+      if (noSeqId) {
+        await lemlistPost(`/sequences/${noSeqId}/steps`, apiKey, {
+          type: 'email', delay: 3,
+          subject: spec.emailBreakupSubject,
+          message: textToHtml(spec.emailBreakupBody),
+        })
+      }
+      await send({ step: 'campaign_created', label: 'Structure créée (5 étapes)' })
+
+      // 6. Search leads
+      await send({ step: 'searching_leads', label: `Recherche leads (${spec.icpDescription})…` })
+      let rawLeads: LemLead[] = []
+      try {
+        rawLeads = await searchLeads(spec, apiKey)
+        await send({ step: 'leads_found', label: `${rawLeads.length} leads trouvés` })
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'erreur'
+        await send({ step: 'leads_warning', label: `⚠ Recherche leads échouée : ${msg.slice(0, 120)}` })
+      }
+
+      // 7. Deduplicate
+      let uniqueLeads = rawLeads
+      if (rawLeads.length > 0) {
+        await send({ step: 'deduplicating', label: 'Déduplication…' })
+        uniqueLeads = await deduplicateLeads(rawLeads, apiKey)
+        const excluded = rawLeads.length - uniqueLeads.length
+        await send({
+          step: 'dedup_done',
+          label: `${uniqueLeads.length} leads uniques${excluded > 0 ? ` (${excluded} doublons exclus)` : ''}`,
+        })
+      }
+
+      // 8. Generate icebreakers
+      let leadsWithIcebreakers: Array<LemLead & { icebreaker: string }> = []
+      if (uniqueLeads.length > 0) {
+        await send({ step: 'generating_icebreakers', label: `Génération des icebreakers (${uniqueLeads.length} leads)…` })
+        leadsWithIcebreakers = await generateIcebreakers(uniqueLeads, spec)
+        await send({ step: 'icebreakers_done', label: 'Icebreakers générés' })
+      }
+
+      // 9. Add leads to campaign
+      let leadsAdded = 0
+      if (leadsWithIcebreakers.length > 0) {
+        await send({ step: 'adding_leads', label: `Ajout des leads dans Lemlist…` })
+        leadsAdded = await addLeadsToCampaign(campaignId, leadsWithIcebreakers, apiKey)
+        await send({ step: 'leads_added', label: `${leadsAdded} leads ajoutés à la campagne` })
+      }
+
+      // 10. Activate campaign (live — not paused)
+      await send({ step: 'activating', label: 'Activation de la campagne…' })
+      await lemlistPost(`/campaigns/${campaignId}/resume`, apiKey, {})
+      await send({ step: 'campaign_live', label: '✓ Campagne activée (live)' })
+
+      // 11. Update campaign log in Supabase
+      const updatedContent = updateCampaignLogContent(doc.content, spec, campaignId, leadsAdded)
+      await supabase
+        .from('documents')
+        .update({ content: updatedContent })
+        .eq('id', 'campaign-log')
+
+      // 12. Send summary email
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com', port: 465, secure: true,
+        auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
+      })
+      await transporter.sendMail({
+        from: `Koj²a <${process.env.GMAIL_USER}>`,
+        to: SUMMARY_RECIPIENT,
+        subject: `Koj²a — Campagne lancée : ${spec.campaignName} (${leadsAdded} leads)`,
+        html: buildSummaryHtml(spec, campaignId, leadsAdded),
+      })
+
+      await send({
+        step: 'done', ok: true,
+        campaignId,
+        campaignName: spec.campaignName,
+        hypothesis: spec.hypothesis,
+        rationale: spec.rationale,
+        leadsAdded,
+        lemlistUrl: `https://app.lemlist.com/campaign/${campaignId}`,
+      })
+    } catch (err) {
+      console.error('[campaign-auto]', err)
+      await send({ step: 'error', error: err instanceof Error ? err.message : 'Unknown error' })
+    } finally {
+      await writer.close()
+    }
+  })()
+
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  })
 }
