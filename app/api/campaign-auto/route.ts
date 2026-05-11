@@ -108,7 +108,8 @@ Output ONLY valid JSON. No markdown, no commentary. Start with { and end with }.
 
 ${CAMPAIGN_RULES_SUMMARY}
 
-Lemleads filterId valides : "country" | "currentTitle" | "state" | "city" | "seniority" | "companySize"
+Lemleads filterId valides pour les personnes : "country" | "currentTitle" | "location" | "seniority" | "currentCompanyHeadcount" | "pastTitle" | "keyword"
+IMPORTANT : utiliser "location" (pas "city", pas "state") pour filtrer par ville ou région. "location" accepte des noms de villes françaises (ex: "Toulouse", "Lyon", "Marseille") ou de régions (ex: "Occitanie", "Auvergne-Rhône-Alpes").
 Pour les coachs français : country="France", currentTitle contient des variantes de "coach" (coach dirigeant, coach exécutif, business coach, coach professionnel, coach certifié, executive coach).
 
 Génère un JSON avec exactement cette structure :
@@ -131,7 +132,7 @@ Génère un JSON avec exactement cette structure :
   "leadsFilters": [
     {"filterId": "country", "in": ["France"], "out": []},
     {"filterId": "currentTitle", "in": ["coach dirigeant", "coach exécutif", "business coach", "coach professionnel", "executive coach"], "out": []},
-    {"filterId": "state", "in": ["...régions selon la zone ciblée"], "out": []}
+    {"filterId": "location", "in": ["...villes ou régions selon la zone ciblée"], "out": []}
   ]
 }`,
     messages: [
