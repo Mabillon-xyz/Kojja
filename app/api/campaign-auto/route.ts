@@ -148,14 +148,14 @@ Génère un JSON avec exactement cette structure :
 // ── Lead search ───────────────────────────────────────────────────────────────
 
 async function searchLeads(spec: CampaignSpec, apiKey: string): Promise<LemLead[]> {
-  const res = await fetch(`${LEMLIST_API}/lemleads/search`, {
+  const res = await fetch(`${LEMLIST_API}/lemleads`, {
     method: 'POST',
     headers: { Authorization: lemlistAuth(apiKey), 'Content-Type': 'application/json' },
     body: JSON.stringify({ mode: 'people', filters: spec.leadsFilters, size: 40 }),
   })
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`lemleads/search → ${res.status}: ${text.slice(0, 200)}`)
+    throw new Error(`lemleads → ${res.status}: ${text.slice(0, 200)}`)
   }
   const data = await res.json() as { results?: Record<string, unknown>[] } | Record<string, unknown>[]
   const results = Array.isArray(data) ? data : (data as { results?: Record<string, unknown>[] }).results ?? []
@@ -495,10 +495,14 @@ export async function POST() {
         await send({ step: 'leads_added', label: `${leadsAdded} leads ajoutés à la campagne` })
       }
 
-      // 10. Activate campaign (live — not paused)
-      await send({ step: 'activating', label: 'Activation de la campagne…' })
-      await lemlistPost(`/campaigns/${campaignId}/resume`, apiKey, {})
-      await send({ step: 'campaign_live', label: '✓ Campagne activée (live)' })
+      // 10. Activate campaign (live — only if leads were added)
+      if (leadsAdded > 0) {
+        await send({ step: 'activating', label: 'Activation de la campagne…' })
+        await lemlistPost(`/campaigns/${campaignId}/start`, apiKey, {})
+        await send({ step: 'campaign_live', label: '✓ Campagne activée (live)' })
+      } else {
+        await send({ step: 'campaign_live', label: '⚠ Campagne créée en pause (aucun lead ajouté)' })
+      }
 
       // 11. Update campaign log in Supabase
       const updatedContent = updateCampaignLogContent(doc.content, spec, campaignId, leadsAdded)
