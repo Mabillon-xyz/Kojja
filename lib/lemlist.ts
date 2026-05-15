@@ -104,7 +104,10 @@ export async function getAllCampaigns(apiKey: string): Promise<LemlistCampaignIt
 
 export async function getCampaignStatsV2(campaignId: string, apiKey: string): Promise<LemlistCampaignStatsV2 | null> {
   try {
-    const res = await fetch(`${API_BASE_V2}/campaigns/${campaignId}/stats`, {
+    const startDate = '1970-01-01T00:00:00.000Z'
+    const endDate = new Date().toISOString()
+    const params = new URLSearchParams({ startDate, endDate })
+    const res = await fetch(`${API_BASE_V2}/campaigns/${campaignId}/stats?${params}`, {
       headers: { Authorization: getAuthHeader(apiKey) },
     })
     if (!res.ok) return null
