@@ -6,13 +6,9 @@ import CampaignLaunchCard from '@/components/dashboard/CampaignLaunchCard'
 import HomeClient from '@/components/dashboard/HomeClient'
 import NextActions from '@/components/dashboard/NextActions'
 import DailyCallsChart, { type DayData } from '@/components/dashboard/DailyCallsChart'
-import FlowsDailyChart from '@/components/flows/FlowsDailyChart'
 import ConversionChart from '@/components/flows/ConversionChart'
-import LinkedInSendsChart from '@/components/flows/LinkedInSendsChart'
-import { getLinkedInDailySends, type LinkedInDaySend } from '@/lib/lemlist-linkedin'
 import DashboardKPIs from '@/components/dashboard/DashboardKPIs'
 import { createClient } from '@/lib/supabase/server'
-import type { DailyCount } from '@/components/flows/FlowsList'
 import type { Snapshot } from '@/app/api/lemlist/snapshots/route'
 import { getAccount } from '@/lib/lemlist-accounts'
 
@@ -98,38 +94,11 @@ async function fetchClementSnapshots(): Promise<Snapshot[]> {
   return Array.from(byDay.values()).sort((a, b) => a.snapshotted_at.localeCompare(b.snapshotted_at))
 }
 
-async function buildFlowsChartData(): Promise<DailyCount[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('webhook_events')
-    .select('created_at')
-    .order('created_at', { ascending: true })
-
-  const byDay: Record<string, number> = {}
-  for (const ev of data ?? []) {
-    const day = (ev.created_at as string).slice(0, 10)
-    byDay[day] = (byDay[day] ?? 0) + 1
-  }
-
-  const days = Object.keys(byDay)
-  if (days.length === 0) return []
-
-  const result: DailyCount[] = []
-  const start = new Date(days[0])
-  const end = new Date()
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const key = d.toISOString().slice(0, 10)
-    result.push({ date: key, count: byDay[key] ?? 0 })
-  }
-  return result
-}
 
 export default async function DashboardPage() {
-  const [leads, flowsChartData, snapshots, linkedInSends] = await Promise.all([
+  const [leads, snapshots] = await Promise.all([
     readLeads(),
-    buildFlowsChartData(),
     fetchClementSnapshots(),
-    getLinkedInDailySends(),
   ])
 
   const totalLeads = leads.length
@@ -192,12 +161,6 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <DailyCallsChart data={dailyData} />
         <ConversionChart snapshots={snapshots} />
-      </div>
-
-      {/* Outreach volume side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FlowsDailyChart chartData={flowsChartData} />
-        <LinkedInSendsChart rows={linkedInSends as LinkedInDaySend[]} />
       </div>
 
       {/* Next actions + tasks */}
