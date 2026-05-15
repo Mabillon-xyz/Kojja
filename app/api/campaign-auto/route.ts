@@ -108,17 +108,8 @@ Output ONLY valid JSON. No markdown, no commentary. Start with { and end with }.
 
 ${CAMPAIGN_RULES_SUMMARY}
 
-Lemleads filterId valides pour les personnes : "country" | "currentTitle" | "location" | "seniority" | "currentCompanyHeadcount" | "pastTitle" | "keyword"
-IMPORTANT : le seul filterId géographique valide est "location". Ce filtre accepte uniquement des noms de villes (ex: "Lyon", "Toulouse") — jamais des noms de régions. Mapper chaque zone vers ses villes :
-Mapping zone → villes à utiliser dans "in" :
-- Occitanie/PACA → ["Toulouse", "Montpellier", "Marseille", "Nice", "Aix-en-Provence"]
-- Auvergne-Rhône-Alpes → ["Lyon", "Grenoble", "Clermont-Ferrand", "Saint-Étienne"]
-- Grand Ouest (Bretagne/Pays de Loire/Nouvelle-Aquitaine) → ["Nantes", "Bordeaux", "Rennes", "Brest", "Angers"]
-- Grand Est → ["Strasbourg", "Reims", "Nancy", "Metz"]
-- Hauts-de-France → ["Lille", "Amiens", "Roubaix"]
-- Normandie/Centre → ["Rouen", "Caen", "Tours", "Orléans"]
-- Paris & IDF → ["Paris", "Versailles", "Boulogne-Billancourt", "Neuilly-sur-Seine"]
-- Toute la France (pas de zone précise) → omettre le filtre "location" entièrement
+Lemleads filterId valides pour les personnes : "country" | "currentTitle" | "seniority" | "currentCompanyHeadcount" | "pastTitle" | "keyword"
+IMPORTANT : NE PAS utiliser de filtre géographique par ville ("location", "city", "state") — ils sont rejetés par l'API externe. Le ciblage géographique se fait uniquement via la variation de titre ou de keyword. La zone géographique dans campaignName est indicative uniquement.
 Pour les coachs français : country="France", currentTitle contient des variantes de "coach" (coach dirigeant, coach exécutif, business coach, coach professionnel, coach certifié, executive coach).
 
 Génère un JSON avec exactement cette structure :
@@ -140,8 +131,7 @@ Génère un JSON avec exactement cette structure :
   "emailBreakupBody": "string — corps email break-up plain text",
   "leadsFilters": [
     {"filterId": "country", "in": ["France"], "out": []},
-    {"filterId": "currentTitle", "in": ["coach dirigeant", "coach exécutif", "business coach", "coach professionnel", "executive coach"], "out": []},
-    {"filterId": "location", "in": ["...villes ou régions selon la zone ciblée"], "out": []}
+    {"filterId": "currentTitle", "in": ["coach dirigeant", "coach exécutif", "business coach", "coach professionnel", "executive coach"], "out": []}
   ]
 }`,
     messages: [
@@ -161,8 +151,10 @@ Génère un JSON avec exactement cette structure :
 
 const LEMLIST_MCP_URL = 'https://app.lemlist.com/mcp'
 
+// NOTE: "location" (city/state) and "city" are UI-only filters — rejected by the
+// external Lemlist MCP API endpoint. Strip them before any call.
 const VALID_LEMLEADS_FILTER_IDS = new Set([
-  'country', 'currentTitle', 'currentTitleWithExactMatch', 'location',
+  'country', 'currentTitle', 'currentTitleWithExactMatch',
   'seniority', 'currentCompanyHeadcount', 'pastTitle', 'keyword',
   'department', 'currentPositionTenure', 'yearsOfExperience',
   'currentCompanyType', 'currentCompanyCountry', 'currentCompanyLocation',
@@ -171,9 +163,7 @@ const VALID_LEMLEADS_FILTER_IDS = new Set([
 ])
 
 function sanitizeFilters(filters: LeadsFilter[]): LeadsFilter[] {
-  return filters
-    .map((f) => f.filterId === 'city' ? { ...f, filterId: 'location' } : f)
-    .filter((f) => VALID_LEMLEADS_FILTER_IDS.has(f.filterId))
+  return filters.filter((f) => VALID_LEMLEADS_FILTER_IDS.has(f.filterId))
 }
 
 function parseLeadsResult(result: Awaited<ReturnType<MCPClient['callTool']>>): LemLead[] {
@@ -212,17 +202,10 @@ async function callLemleadsSearch(mcp: MCPClient, filters: LeadsFilter[]): Promi
     return parseLeadsResult(result)
   } catch (err) {
     // If MCP rejects specific filters by name, strip them and retry once.
-    // Lemlist MCP internally uses "city" as an alias for our "location" filter,
-    // so when it rejects, the error says "city" even though we sent "location".
-    const LEMLIST_ERROR_ALIAS: Record<string, string> = { city: 'location', state: 'location' }
     const msg = err instanceof Error ? err.message : ''
     const match = msg.match(/rejected \d+ filter\(s\): ([\w ,]+?)(?:\s*\(unknown\)|\s*\.)/i)
     if (match) {
-      const rawBadIds = match[1].split(/[\s,]+/).map((s) => s.trim()).filter(Boolean)
-      const badIds = new Set([
-        ...rawBadIds,
-        ...rawBadIds.map((id) => LEMLIST_ERROR_ALIAS[id]).filter(Boolean),
-      ])
+      const badIds = new Set(match[1].split(/[\s,]+/).map((s) => s.trim()).filter(Boolean))
       const retryFilters = activeFilters.filter((f) => !badIds.has(f.filterId))
       if (retryFilters.length < activeFilters.length) {
         const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
