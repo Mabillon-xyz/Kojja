@@ -87,10 +87,8 @@ const TABS = [
 
 export default function CampaignTracker({
   campaigns,
-  totalCallsBooked,
 }: {
   campaigns: LemlistCampaignRow[]
-  totalCallsBooked: number
 }) {
   const [tab, setTab] = useState('running')
   const [sortKey, setSortKey] = useState<SortKey>('emails_replied_pct')

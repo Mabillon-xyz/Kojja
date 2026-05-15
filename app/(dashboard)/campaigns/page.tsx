@@ -10,16 +10,12 @@ import EmailSendsChart from '@/components/flows/EmailSendsChart'
 export default async function CampaignsPage() {
   const supabase = await createClient()
 
-  const [{ data: campaigns }, { count: totalCallsBooked }, linkedInSends, emailSends] = await Promise.all([
+  const [{ data: campaigns }, linkedInSends, emailSends] = await Promise.all([
     supabase
       .from('lemlist_campaigns')
       .select('*')
       .neq('status', 'draft')
       .order('emails_replied_pct', { ascending: false }),
-    supabase
-      .from('leads')
-      .select('*', { count: 'exact', head: true })
-      .not('call_booked_at', 'is', null),
     getLinkedInDailySends(),
     getLemlistDailyEmailSends(),
   ])
@@ -30,7 +26,7 @@ export default async function CampaignsPage() {
         <LinkedInSendsChart rows={linkedInSends as LinkedInDaySend[]} />
         <EmailSendsChart rows={emailSends} />
       </div>
-      <CampaignTracker campaigns={campaigns ?? []} totalCallsBooked={totalCallsBooked ?? 0} />
+      <CampaignTracker campaigns={campaigns ?? []} />
     </div>
   )
 }
