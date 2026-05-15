@@ -9,11 +9,14 @@ const nav = [
   { label: 'Home', href: '/dashboard', emoji: '🏠' },
   { label: 'Dashboard', href: '/pipeline', emoji: '📊' },
   { label: 'CRM', href: '/crm', emoji: '👥' },
-  { label: 'Proposals', href: '/proposal-tool', emoji: '📝' },
   { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
-  { label: 'Campaigns', href: '/flows', emoji: '⚡' },
   { label: 'Builder', href: '/campaign-builder', emoji: '🎯' },
   { label: 'Agent', href: '/agent', emoji: '🤖' },
+]
+
+const deprecated = [
+  { label: 'Proposals', href: '/proposal-tool', emoji: '📝' },
+  { label: 'Campaigns', href: '/flows', emoji: '⚡' },
 ]
 
 const mobileNav = [
@@ -64,7 +67,25 @@ export default function Sidebar() {
         {/* Deprecated */}
         <div className="px-3 pb-2">
           <div className="text-[10px] font-semibold text-neutral-300 uppercase tracking-wider px-3 mb-1">Deprecated</div>
-          {/* empty */}
+          <div className="space-y-0.5">
+            {deprecated.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(item.href + '/')
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    active
+                      ? 'bg-blue-50 text-blue-700 font-semibold'
+                      : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600'
+                  }`}
+                >
+                  <span className="text-base leading-none">{item.emoji}</span>
+                  {item.label}
+                </Link>
+              )
+            })}
+          </div>
         </div>
 
         {/* Settings icon at bottom */}
