@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getAccount } from "@/lib/lemlist-accounts";
+import { getCampaignStatsV2, type LemlistCampaignStatsV2 } from "@/lib/lemlist";
 
 export type EmailDaySend = {
   date: string;
@@ -48,8 +49,9 @@ async function fetchEmailCountFromLemlist(
     { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } }
   );
   if (!res.ok) return 0;
-  const data = (await res.json()) as { messagesSent?: number };
-  return data.messagesSent ?? 0;
+  const data = (await res.json()) as LemlistCampaignStatsV2;
+  // Ne compter que les vrais emails (canal email), exclure Lemwarm et autres canaux
+  return data.perChannel?.email?.sent ?? data.messagesSent ?? 0;
 }
 
 async function fetchTotalEmailCountFromAllCampaigns(
@@ -114,7 +116,8 @@ async function backfillMissingDays(apiKey: string, campaignIds: string[]): Promi
     dates.push(d.toISOString().slice(0, 10));
   }
 
-  const forceRefresh = new Set(dates.slice(0, 2));
+  // Force refresh last 7 days to pick up email-only counts (exclude lemwarm)
+  const forceRefresh = new Set(dates.slice(0, 7));
   const { data: existing } = await supabase
     .from("email_daily_sends")
     .select("date")
