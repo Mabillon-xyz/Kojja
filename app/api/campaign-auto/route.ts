@@ -176,13 +176,7 @@ function sanitizeFilters(filters: LeadsFilter[]): LeadsFilter[] {
     .filter((f) => VALID_LEMLEADS_FILTER_IDS.has(f.filterId))
 }
 
-async function callLemleadsSearch(mcp: MCPClient, filters: LeadsFilter[]): Promise<LemLead[]> {
-  const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
-    mode: 'people',
-    filters,
-    size: 40,
-  }})
-
+function parseLeadsResult(result: Awaited<ReturnType<MCPClient['callTool']>>): LemLead[] {
   const rawText = (result.content as Array<{ type: string; text?: string }>)
     .filter((c) => c.type === 'text')
     .map((c) => c.text ?? '')
@@ -205,6 +199,35 @@ async function callLemleadsSearch(mcp: MCPClient, filters: LeadsFilter[]): Promi
       }
     })
     .filter((l) => l.firstName ?? l.email)
+}
+
+async function callLemleadsSearch(mcp: MCPClient, filters: LeadsFilter[]): Promise<LemLead[]> {
+  let activeFilters = filters
+  try {
+    const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
+      mode: 'people',
+      filters: activeFilters,
+      size: 40,
+    }})
+    return parseLeadsResult(result)
+  } catch (err) {
+    // If MCP rejects specific filters by name, strip them and retry once
+    const msg = err instanceof Error ? err.message : ''
+    const match = msg.match(/rejected \d+ filter\(s\): ([\w ,]+?)(?:\s*\(unknown\)|\s*\.)/i)
+    if (match) {
+      const badIds = new Set(match[1].split(/[\s,]+/).map((s) => s.trim()).filter(Boolean))
+      const retryFilters = activeFilters.filter((f) => !badIds.has(f.filterId))
+      if (retryFilters.length < activeFilters.length) {
+        const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
+          mode: 'people',
+          filters: retryFilters,
+          size: 40,
+        }})
+        return parseLeadsResult(result)
+      }
+    }
+    throw err
+  }
 }
 
 async function searchLeads(
