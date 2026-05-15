@@ -211,11 +211,18 @@ async function callLemleadsSearch(mcp: MCPClient, filters: LeadsFilter[]): Promi
     }})
     return parseLeadsResult(result)
   } catch (err) {
-    // If MCP rejects specific filters by name, strip them and retry once
+    // If MCP rejects specific filters by name, strip them and retry once.
+    // Lemlist MCP internally uses "city" as an alias for our "location" filter,
+    // so when it rejects, the error says "city" even though we sent "location".
+    const LEMLIST_ERROR_ALIAS: Record<string, string> = { city: 'location' }
     const msg = err instanceof Error ? err.message : ''
     const match = msg.match(/rejected \d+ filter\(s\): ([\w ,]+?)(?:\s*\(unknown\)|\s*\.)/i)
     if (match) {
-      const badIds = new Set(match[1].split(/[\s,]+/).map((s) => s.trim()).filter(Boolean))
+      const rawBadIds = match[1].split(/[\s,]+/).map((s) => s.trim()).filter(Boolean)
+      const badIds = new Set([
+        ...rawBadIds,
+        ...rawBadIds.map((id) => LEMLIST_ERROR_ALIAS[id]).filter(Boolean),
+      ])
       const retryFilters = activeFilters.filter((f) => !badIds.has(f.filterId))
       if (retryFilters.length < activeFilters.length) {
         const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
