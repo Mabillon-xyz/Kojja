@@ -15,7 +15,7 @@ export default async function CampaignsPage() {
       .from('lemlist_campaigns')
       .select('*')
       .neq('status', 'draft')
-      .order('emails_replied_pct', { ascending: false }),
+      .order('created_at_lemlist', { ascending: false }),
     getLinkedInDailySends(),
     getLemlistDailyEmailSends(),
   ])

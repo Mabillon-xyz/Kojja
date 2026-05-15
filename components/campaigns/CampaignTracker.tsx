@@ -91,7 +91,7 @@ export default function CampaignTracker({
   campaigns: LemlistCampaignRow[]
 }) {
   const [tab, setTab] = useState('running')
-  const [sortKey, setSortKey] = useState<SortKey>('emails_replied_pct')
+  const [sortKey, setSortKey] = useState<SortKey>('created_at_lemlist')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [isPending, startTransition] = useTransition()
   const [syncResult, setSyncResult] = useState<{ synced?: number; timestamp?: string; error?: string } | null>(null)
@@ -288,6 +288,7 @@ export default function CampaignTracker({
               <thead className="bg-neutral-50 border-b border-neutral-200">
                 <tr>
                   <Th col="name" label="Campagne" className="pl-5 min-w-[220px]" />
+                  <Th col="created_at_lemlist" label="Créée le" />
                   <Th col="status" label="Statut" />
                   <Th col="leads_total" label="Leads" />
                   <Th col="emails_sent" label="Envoyés" />
@@ -304,6 +305,9 @@ export default function CampaignTracker({
                       <span className="font-medium text-neutral-900 line-clamp-1 max-w-xs" title={c.name}>
                         {c.name}
                       </span>
+                    </td>
+                    <td className="px-3 py-3 text-neutral-500 text-xs">
+                      {c.created_at_lemlist ? new Date(c.created_at_lemlist).toLocaleDateString('fr-FR') : '—'}
                     </td>
                     <td className="px-3 py-3">
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[c.status] ?? 'bg-neutral-100 text-neutral-400'}`}>
