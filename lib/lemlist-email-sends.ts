@@ -14,6 +14,24 @@ function getServiceClient() {
   );
 }
 
+async function getActiveCampaignIds(apiKey: string): Promise<string[]> {
+  const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
+  const res = await fetch("https://api.lemlist.com/api/campaigns?limit=100", {
+    cache: "no-store",
+    headers: { Authorization: `Basic ${basicAuth}` },
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as Array<{
+    _id: string;
+    status: string;
+    archived?: boolean;
+    name?: string;
+  }>;
+  return data
+    .filter((c) => c.status !== "draft" && !c.archived)
+    .map((c) => c._id);
+}
+
 async function fetchEmailCountFromLemlist(
   apiKey: string,
   campaignId: string,
@@ -34,12 +52,23 @@ async function fetchEmailCountFromLemlist(
   return data.messagesSent ?? 0;
 }
 
-async function syncDay(
+async function fetchTotalEmailCountFromAllCampaigns(
   apiKey: string,
-  campaignId: string,
+  campaignIds: string[],
   date: string
 ): Promise<number> {
-  const emailCount = await fetchEmailCountFromLemlist(apiKey, campaignId, date);
+  const results = await Promise.all(
+    campaignIds.map((id) => fetchEmailCountFromLemlist(apiKey, id, date))
+  );
+  return results.reduce((sum, count) => sum + count, 0);
+}
+
+async function syncDay(
+  apiKey: string,
+  campaignIds: string[],
+  date: string
+): Promise<number> {
+  const emailCount = await fetchTotalEmailCountFromAllCampaigns(apiKey, campaignIds, date);
   const supabase = getServiceClient();
   await supabase.from("email_daily_sends").upsert({
     date,
@@ -54,8 +83,10 @@ export async function syncEmailDailySends(): Promise<{ date: string; emailCount:
   if (!account) throw new Error("Account clement not found");
 
   const apiKey = account.apiKey();
-  const campaignId = account.coachCampaignId() || account.campaignId();
-  if (!apiKey || !campaignId) throw new Error("Lemlist not configured");
+  if (!apiKey) throw new Error("Lemlist API key not configured");
+
+  const campaignIds = await getActiveCampaignIds(apiKey);
+  if (campaignIds.length === 0) throw new Error("No active campaigns found");
 
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date();
@@ -63,19 +94,21 @@ export async function syncEmailDailySends(): Promise<{ date: string; emailCount:
   const yesterdayStr = yesterday.toISOString().slice(0, 10);
 
   const [todayCount] = await Promise.all([
-    syncDay(apiKey, campaignId, today),
-    syncDay(apiKey, campaignId, yesterdayStr),
+    syncDay(apiKey, campaignIds, today),
+    syncDay(apiKey, campaignIds, yesterdayStr),
   ]);
 
   return { date: today, emailCount: todayCount };
 }
 
-async function backfillMissingDays(apiKey: string, campaignId: string): Promise<void> {
+async function backfillMissingDays(apiKey: string, campaignIds: string[]): Promise<void> {
+  if (campaignIds.length === 0) return;
+
   const supabase = getServiceClient();
   const today = new Date();
 
   const dates: string[] = [];
-  for (let i = 1; i <= 7; i++) {
+  for (let i = 1; i <= 21; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     dates.push(d.toISOString().slice(0, 10));
@@ -91,16 +124,18 @@ async function backfillMissingDays(apiKey: string, campaignId: string): Promise<
   const toFetch = dates.filter((d) => forceRefresh.has(d) || !existingDates.has(d));
   if (toFetch.length === 0) return;
 
-  await Promise.all(toFetch.map((date) => syncDay(apiKey, campaignId, date)));
+  await Promise.all(toFetch.map((date) => syncDay(apiKey, campaignIds, date)));
 }
 
 export async function getLemlistDailyEmailSends(): Promise<EmailDaySend[]> {
   const account = getAccount("clement");
   if (account) {
     const apiKey = account.apiKey();
-    const campaignId = account.coachCampaignId() || account.campaignId();
-    if (apiKey && campaignId) {
-      await backfillMissingDays(apiKey, campaignId).catch(() => {});
+    if (apiKey) {
+      const campaignIds = await getActiveCampaignIds(apiKey);
+      if (campaignIds.length > 0) {
+        await backfillMissingDays(apiKey, campaignIds).catch(() => {});
+      }
     }
   }
 
