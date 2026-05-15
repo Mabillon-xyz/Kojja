@@ -10,12 +10,24 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
+  Legend,
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { EmailDaySend } from "@/lib/lemlist-email-sends";
+import type { EmailDaySend, CampaignCount } from "@/lib/lemlist-email-sends";
 
 const WINDOW_SIZE = 21;
 const STORAGE_KEY = "koja2:blur-sensitive";
+
+const PALETTE = [
+  "#10b981", // emerald
+  "#3b82f6", // blue
+  "#8b5cf6", // violet
+  "#f59e0b", // amber
+  "#f43f5e", // rose
+  "#06b6d4", // cyan
+  "#6366f1", // indigo
+  "#84cc16", // lime
+];
 
 function fmtDate(iso: string) {
   return new Date(iso + "T12:00:00").toLocaleDateString("en-GB", {
@@ -29,32 +41,66 @@ function fmtShort(iso: string) {
   return `${d.getDate()} ${d.toLocaleDateString("en-GB", { month: "short" })}`;
 }
 
-function buildFilledData(rows: EmailDaySend[]): EmailDaySend[] {
-  if (rows.length === 0) return [];
-  const map = new Map(rows.map((r) => [r.date, r.email_count]));
+type ChartRow = { date: string; email_count: number; [key: string]: string | number };
+
+function buildFilledData(rows: EmailDaySend[]): { filled: ChartRow[]; campaigns: string[] } {
+  if (rows.length === 0) return { filled: [], campaigns: [] };
+
+  const campaignSet: string[] = [];
+  const seen = new Set<string>();
+  for (const r of rows) {
+    for (const b of r.breakdown ?? []) {
+      if (b.count > 0 && !seen.has(b.name)) {
+        seen.add(b.name);
+        campaignSet.push(b.name);
+      }
+    }
+  }
+  const campaigns = campaignSet;
+  const hasBreakdown = campaigns.length > 0;
+
+  const map = new Map(rows.map((r) => [r.date, r]));
   const today = new Date().toISOString().slice(0, 10);
-  const filled: EmailDaySend[] = [];
+  const filled: ChartRow[] = [];
   const d = new Date(rows[0].date + "T12:00:00");
   const end = new Date(today + "T12:00:00");
+
   while (d <= end) {
     const date = d.toISOString().slice(0, 10);
-    filled.push({ date, email_count: map.get(date) ?? 0 });
+    const row = map.get(date);
+    const base: ChartRow = { date, email_count: row?.email_count ?? 0 };
+
+    if (hasBreakdown) {
+      for (const name of campaigns) {
+        base[name] = row?.breakdown?.find((b: CampaignCount) => b.name === name)?.count ?? 0;
+      }
+    }
+
+    filled.push(base);
     d.setDate(d.getDate() + 1);
   }
-  return filled;
+
+  return { filled, campaigns };
 }
 
-function buildDemoData(): EmailDaySend[] {
+function buildDemoData(): { filled: ChartRow[]; campaigns: string[] } {
   const today = new Date();
-  const counts = [12, 15, 0, 18, 14, 16, 0, 20, 13, 17, 11, 19, 15, 8, 0, 14, 16, 18, 0, 12, 15];
-  return counts.map((email_count, i) => {
+  const campaigns = ["Coach", "Coachs ex-dirigeants", "Coach Cabinet A"];
+  const rawRows = [
+    [5, 5, 2], [6, 7, 2], [0, 0, 0], [7, 8, 3], [5, 7, 2],
+    [6, 8, 2], [0, 0, 0], [7, 9, 4], [4, 7, 2], [6, 8, 3],
+    [4, 5, 2], [7, 8, 4], [6, 7, 2], [3, 4, 1], [0, 0, 0],
+    [5, 7, 2], [6, 8, 2], [7, 8, 3], [0, 0, 0], [5, 5, 2], [6, 7, 2],
+  ];
+  const filled = rawRows.map((counts, i) => {
     const d = new Date(today);
-    d.setDate(d.getDate() - (counts.length - 1 - i));
-    return { date: d.toISOString().slice(0, 10), email_count };
+    d.setDate(d.getDate() - (rawRows.length - 1 - i));
+    const row: ChartRow = { date: d.toISOString().slice(0, 10), email_count: counts.reduce((a, b) => a + b, 0) };
+    campaigns.forEach((name, j) => { row[name] = counts[j]; });
+    return row;
   });
+  return { filled, campaigns };
 }
-
-const DEMO_DATA = buildDemoData();
 
 export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
   const [demo, setDemo] = useState(false);
@@ -69,8 +115,8 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
     return () => window.removeEventListener("koja2:presentation-mode", onToggle);
   }, []);
 
-  const allData = useMemo(
-    () => (demo ? DEMO_DATA : buildFilledData(rows)),
+  const { filled: allData, campaigns } = useMemo(
+    () => (demo ? buildDemoData() : buildFilledData(rows)),
     [demo, rows]
   );
 
@@ -82,13 +128,6 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
   const canGoLeft = currentStart > 0;
   const canGoRight = currentStart < defaultStart;
 
-  function goLeft() {
-    setWindowStart(Math.max(0, currentStart - WINDOW_SIZE));
-  }
-  function goRight() {
-    setWindowStart(Math.min(defaultStart, currentStart + WINDOW_SIZE));
-  }
-
   const workdays = windowData.filter(
     (r) => new Date(r.date + "T12:00:00").getDay() !== 0
   );
@@ -98,6 +137,7 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
       : 0;
 
   const todayCount = allData[total - 1]?.email_count ?? 0;
+  const hasBreakdown = campaigns.length > 0;
 
   const periodLabel =
     windowData.length > 0
@@ -119,7 +159,7 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
           <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
             Emails sent / day
           </p>
-          <p className="text-xs text-neutral-400 mt-0.5">Via Lemlist</p>
+          <p className="text-xs text-neutral-400 mt-0.5">Via Lemlist — by campaign</p>
         </div>
         <div className="text-right">
           <p className="text-lg font-bold text-emerald-600">{todayCount}</p>
@@ -129,7 +169,7 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
 
       <div className="flex items-center justify-between mb-3">
         <button
-          onClick={goLeft}
+          onClick={() => setWindowStart(Math.max(0, currentStart - WINDOW_SIZE))}
           disabled={!canGoLeft}
           className="p-1 rounded hover:bg-neutral-100 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
         >
@@ -137,7 +177,7 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
         </button>
         <span className="text-xs text-neutral-500 font-medium">{periodLabel}</span>
         <button
-          onClick={goRight}
+          onClick={() => setWindowStart(Math.min(defaultStart, currentStart + WINDOW_SIZE))}
           disabled={!canGoRight}
           className="p-1 rounded hover:bg-neutral-100 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
         >
@@ -167,14 +207,27 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
             allowDecimals={false}
           />
           <Tooltip
-            content={({ active, payload, label }) =>
-              active && payload?.length ? (
-                <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-xs shadow-sm">
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const total = (payload[0]?.payload as ChartRow).email_count;
+              return (
+                <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-xs shadow-sm space-y-0.5">
                   <p className="font-semibold text-neutral-700">{fmtDate(String(label))}</p>
-                  <p className="text-emerald-600 font-medium">{payload[0].value} emails sent</p>
+                  <p className="text-neutral-500 font-medium">{total} emails total</p>
+                  {hasBreakdown && (
+                    <div className="pt-1 space-y-0.5 border-t border-neutral-100 mt-1">
+                      {payload
+                        .filter((p) => (p.value as number) > 0)
+                        .map((p, i) => (
+                          <p key={i} style={{ color: p.fill }} className="font-medium">
+                            {p.name}: {p.value}
+                          </p>
+                        ))}
+                    </div>
+                  )}
                 </div>
-              ) : null
-            }
+              );
+            }}
           />
           <ReferenceLine
             y={avg}
@@ -188,7 +241,28 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
               fill: "#10b981",
             }}
           />
-          <Bar dataKey="email_count" fill="#10b981" radius={[3, 3, 0, 0]} />
+          {hasBreakdown ? (
+            <>
+              {campaigns.map((name, i) => (
+                <Bar
+                  key={name}
+                  dataKey={name}
+                  stackId="a"
+                  fill={PALETTE[i % PALETTE.length]}
+                  radius={i === campaigns.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+                />
+              ))}
+              <Legend
+                iconType="square"
+                iconSize={8}
+                formatter={(value) => (
+                  <span className="text-xs text-neutral-500">{value}</span>
+                )}
+              />
+            </>
+          ) : (
+            <Bar dataKey="email_count" fill="#10b981" radius={[3, 3, 0, 0]} />
+          )}
         </BarChart>
       </ResponsiveContainer>
     </div>
