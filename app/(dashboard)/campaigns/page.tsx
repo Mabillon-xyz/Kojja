@@ -4,11 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 import CampaignTracker from '@/components/campaigns/CampaignTracker'
 import { getLinkedInDailySends, type LinkedInDaySend } from '@/lib/lemlist-linkedin'
 import LinkedInSendsChart from '@/components/flows/LinkedInSendsChart'
+import { getLemlistDailyEmailSends } from '@/lib/lemlist-email-sends'
+import EmailSendsChart from '@/components/flows/EmailSendsChart'
 
 export default async function CampaignsPage() {
   const supabase = await createClient()
 
-  const [{ data: campaigns }, { count: totalCallsBooked }, linkedInSends] = await Promise.all([
+  const [{ data: campaigns }, { count: totalCallsBooked }, linkedInSends, emailSends] = await Promise.all([
     supabase
       .from('lemlist_campaigns')
       .select('*')
@@ -19,11 +21,15 @@ export default async function CampaignsPage() {
       .select('*', { count: 'exact', head: true })
       .not('call_booked_at', 'is', null),
     getLinkedInDailySends(),
+    getLemlistDailyEmailSends(),
   ])
 
   return (
     <div className="max-w-7xl space-y-6">
-      <LinkedInSendsChart rows={linkedInSends as LinkedInDaySend[]} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <LinkedInSendsChart rows={linkedInSends as LinkedInDaySend[]} />
+        <EmailSendsChart rows={emailSends} />
+      </div>
       <CampaignTracker campaigns={campaigns ?? []} totalCallsBooked={totalCallsBooked ?? 0} />
     </div>
   )
