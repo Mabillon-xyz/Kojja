@@ -55,35 +55,35 @@ export type LemlistCampaignItem = {
 }
 
 export type LemlistCampaignStatsV2 = {
-  campaignId: string
-  leadMetrics: {
-    total: number
-    reached: number
-    interested: number
-    notInterested: number
-  }
-  messageMetrics: {
-    openedPercentage: number
-    repliedPercentage: number
-    perChannel: {
-      email: {
-        sent: number
-        delivered: number
-        opened: number
-        replied: number
-        bounced: number
-      }
-      linkedin: {
-        sent: number
-        delivered: number
-        invitationAccepted: number
-        replied: number
-      }
+  nbLeads: number
+  nbLeadsLaunched: number
+  nbLeadsReached: number
+  nbLeadsOpened: number
+  nbLeadsAnswered: number
+  nbLeadsInterested: number
+  nbLeadsNotInterested: number
+  messagesSent: number
+  delivered: number
+  opened: number
+  replied: number
+  invitationAccepted: number
+  meetingBooked: number
+  perChannel: {
+    email: {
+      sent: number
+      delivered: number
+      opened: number
+      clicked: number
+      replied: number
+      bounced: number
+      unsubscribed: number
     }
-  }
-  channelMetrics: {
-    linkedinInvitationAccepted: number
-    meetingBooked: number
+    linkedin: {
+      sent: number
+      delivered: number
+      invitationAccepted: number
+      replied: number
+    }
   }
   steps?: {
     taskType?: string

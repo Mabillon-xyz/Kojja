@@ -68,11 +68,11 @@ export async function syncCampaigns(): Promise<{ synced: number; timestamp: stri
 
   const upserts = campaigns.map(campaign => {
     const stats = statsMap.get(campaign._id)
-    const email = stats?.messageMetrics?.perChannel?.email
-    const linkedin = stats?.messageMetrics?.perChannel?.linkedin
+    const email = stats?.perChannel?.email
+    const linkedin = stats?.perChannel?.linkedin
     const emailSent = email?.sent ?? 0
-    const linkedinAccepted = stats?.channelMetrics?.linkedinInvitationAccepted ?? linkedin?.invitationAccepted ?? 0
-    const linkedinInvitesSent = linkedinInvitesSentFromSteps(stats ?? null) || stats?.leadMetrics?.total || 0
+    const linkedinAccepted = stats?.invitationAccepted ?? linkedin?.invitationAccepted ?? 0
+    const linkedinInvitesSent = linkedinInvitesSentFromSteps(stats ?? null) || stats?.nbLeads || 0
 
     return {
       campaign_id: campaign._id,
@@ -94,9 +94,9 @@ export async function syncCampaigns(): Promise<{ synced: number; timestamp: stri
       linkedin_messages_replied: linkedin?.replied ?? 0,
       linkedin_reply_pct: pct(linkedin?.replied ?? 0, linkedin?.sent ?? 0),
 
-      leads_total: stats?.leadMetrics?.total ?? 0,
-      leads_reached: stats?.leadMetrics?.reached ?? 0,
-      leads_interested: stats?.leadMetrics?.interested ?? 0,
+      leads_total: stats?.nbLeads ?? 0,
+      leads_reached: stats?.nbLeadsReached ?? 0,
+      leads_interested: stats?.nbLeadsInterested ?? 0,
 
       discovery_calls_booked: bookedByCampaign.get(campaign._id) ?? 0,
 
