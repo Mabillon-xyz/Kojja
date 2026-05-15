@@ -80,10 +80,8 @@ function timeAgo(iso: string) {
 }
 
 const TABS = [
-  { key: 'all', label: 'Toutes' },
   { key: 'running', label: 'En cours' },
   { key: 'paused', label: 'Pause' },
-  { key: 'draft', label: 'Draft' },
   { key: 'ended', label: 'Terminées' },
 ]
 
@@ -94,7 +92,7 @@ export default function CampaignTracker({
   campaigns: LemlistCampaignRow[]
   totalCallsBooked: number
 }) {
-  const [tab, setTab] = useState('all')
+  const [tab, setTab] = useState('running')
   const [sortKey, setSortKey] = useState<SortKey>('emails_replied_pct')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [isPending, startTransition] = useTransition()
@@ -119,7 +117,7 @@ export default function CampaignTracker({
   }
 
   const filtered = useMemo(() => {
-    const base = tab === 'all' ? campaigns : campaigns.filter(c => c.status === tab)
+    const base = campaigns.filter(c => c.status === tab)
     return [...base].sort((a, b) => {
       const av = a[sortKey]
       const bv = b[sortKey]
@@ -145,7 +143,7 @@ export default function CampaignTracker({
     {
       label: 'Campagnes actives',
       value: String(activeCount),
-      sub: `${campaigns.length} au total`,
+      sub: `${campaigns.filter(c => c.status !== 'draft').length} au total`,
       icon: <BarChart2 className="w-4 h-4 text-blue-600" />,
       iconBg: 'bg-blue-50',
     },

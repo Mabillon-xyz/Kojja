@@ -10,6 +10,7 @@ export default async function CampaignsPage() {
     supabase
       .from('lemlist_campaigns')
       .select('*')
+      .neq('status', 'draft')
       .order('emails_replied_pct', { ascending: false }),
     supabase
       .from('leads')
