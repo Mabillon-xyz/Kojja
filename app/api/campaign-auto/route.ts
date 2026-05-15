@@ -202,7 +202,7 @@ function parseLeadsResult(result: Awaited<ReturnType<MCPClient['callTool']>>): L
 }
 
 async function callLemleadsSearch(mcp: MCPClient, filters: LeadsFilter[]): Promise<LemLead[]> {
-  let activeFilters = filters
+  const activeFilters = filters
   try {
     const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
       mode: 'people',
