@@ -7,6 +7,7 @@ import { Settings, BookOpen, X, SlidersHorizontal } from 'lucide-react'
 
 const nav = [
   { label: 'Home', href: '/dashboard', emoji: '🏠' },
+  { label: 'Dashboard', href: '/pipeline', emoji: '📊' },
   { label: 'CRM', href: '/crm', emoji: '👥' },
   { label: 'Proposals', href: '/proposal-tool', emoji: '📝' },
   { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
