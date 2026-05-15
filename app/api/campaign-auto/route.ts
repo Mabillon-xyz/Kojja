@@ -109,7 +109,7 @@ Output ONLY valid JSON. No markdown, no commentary. Start with { and end with }.
 ${CAMPAIGN_RULES_SUMMARY}
 
 Lemleads filterId valides pour les personnes : "country" | "currentTitle" | "seniority" | "currentCompanyHeadcount" | "pastTitle" | "keyword"
-IMPORTANT : NE PAS utiliser de filtre géographique par ville ("location", "city", "state") — ils sont rejetés par l'API externe. Le ciblage géographique se fait uniquement via la variation de titre ou de keyword. La zone géographique dans campaignName est indicative uniquement.
+IMPORTANT : NE PAS utiliser de filtre géographique ("location", "city", "state", "region") — tous rejetés par l'API externe. Le ciblage géographique se fait uniquement via la variation de titre ou de keyword. La zone géographique dans campaignName est indicative uniquement.
 Pour les coachs français : country="France", currentTitle contient des variantes de "coach" (coach dirigeant, coach exécutif, business coach, coach professionnel, coach certifié, executive coach).
 
 Génère un JSON avec exactement cette structure :
@@ -151,16 +151,18 @@ Génère un JSON avec exactement cette structure :
 
 const LEMLIST_MCP_URL = 'https://app.lemlist.com/mcp'
 
-// NOTE: "location" (city/state) and "city" are UI-only filters — rejected by the
-// external Lemlist MCP API endpoint. Strip them before any call.
+// Geographic filters (location, city, state, region) are UI-only on the external
+// Lemlist MCP API — they get rejected regardless of the filter ID used.
 const VALID_LEMLEADS_FILTER_IDS = new Set([
   'country', 'currentTitle', 'currentTitleWithExactMatch',
   'seniority', 'currentCompanyHeadcount', 'pastTitle', 'keyword',
   'department', 'currentPositionTenure', 'yearsOfExperience',
   'currentCompanyType', 'currentCompanyCountry', 'currentCompanyLocation',
   'currentCompanySubIndustry', 'currentCompanyMarket', 'currentCompany',
-  'region', 'interest', 'skill',
+  'interest', 'skill',
 ])
+
+const SAFE_FALLBACK_FILTER_IDS = new Set(['country', 'currentTitle', 'currentTitleWithExactMatch'])
 
 function sanitizeFilters(filters: LeadsFilter[]): LeadsFilter[] {
   return filters.filter((f) => VALID_LEMLEADS_FILTER_IDS.has(f.filterId))
@@ -201,16 +203,21 @@ async function callLemleadsSearch(mcp: MCPClient, filters: LeadsFilter[]): Promi
     }})
     return parseLeadsResult(result)
   } catch (err) {
-    // If MCP rejects specific filters by name, strip them and retry once.
+    // Lemlist external MCP may reject filters using internal aliases (e.g. "city"
+    // for "location", "state" for "region"). Strip identified bad filters and retry.
+    // If we can't identify which filter to remove, fall back to safe filters only.
     const msg = err instanceof Error ? err.message : ''
     const match = msg.match(/rejected \d+ filter\(s\): ([\w ,]+?)(?:\s*\(unknown\)|\s*\.)/i)
     if (match) {
       const badIds = new Set(match[1].split(/[\s,]+/).map((s) => s.trim()).filter(Boolean))
       const retryFilters = activeFilters.filter((f) => !badIds.has(f.filterId))
-      if (retryFilters.length < activeFilters.length) {
+      const filtersToUse = retryFilters.length < activeFilters.length
+        ? retryFilters
+        : activeFilters.filter((f) => SAFE_FALLBACK_FILTER_IDS.has(f.filterId))
+      if (filtersToUse.length > 0) {
         const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
           mode: 'people',
-          filters: retryFilters,
+          filters: filtersToUse,
           size: 40,
         }})
         return parseLeadsResult(result)
