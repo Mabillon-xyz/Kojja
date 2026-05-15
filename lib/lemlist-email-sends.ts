@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getAccount } from "@/lib/lemlist-accounts";
-import { getCampaignStatsV2, type LemlistCampaignStatsV2 } from "@/lib/lemlist";
+import { type LemlistCampaignStatsV2 } from "@/lib/lemlist";
 
 export type EmailDaySend = {
   date: string;
