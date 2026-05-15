@@ -61,6 +61,12 @@ export default function Sidebar() {
           })}
         </nav>
 
+        {/* Deprecated */}
+        <div className="px-3 pb-2">
+          <div className="text-[10px] font-semibold text-neutral-300 uppercase tracking-wider px-3 mb-1">Deprecated</div>
+          {/* empty */}
+        </div>
+
         {/* Settings icon at bottom */}
         <div className="px-3 pb-4 relative">
           <button
