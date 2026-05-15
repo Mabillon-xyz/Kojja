@@ -72,7 +72,7 @@ export async function syncCampaigns(): Promise<{ synced: number; timestamp: stri
     const linkedin = stats?.messageMetrics?.perChannel?.linkedin
     const emailSent = email?.sent ?? 0
     const linkedinAccepted = stats?.channelMetrics?.linkedinInvitationAccepted ?? linkedin?.invitationAccepted ?? 0
-    const linkedinInvitesSent = linkedinInvitesSentFromSteps(stats) || stats?.leadMetrics?.total || 0
+    const linkedinInvitesSent = linkedinInvitesSentFromSteps(stats ?? null) || stats?.leadMetrics?.total || 0
 
     return {
       campaign_id: campaign._id,
