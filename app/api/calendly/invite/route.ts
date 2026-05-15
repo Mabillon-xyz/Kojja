@@ -4,6 +4,7 @@ import { buildEmailHtml, interpolate } from "@/lib/automations";
 import { logEmail } from "@/lib/email-log";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import { findLeadCampaignByEmail } from "@/lib/lemlist";
 
 const ORGANIZER_EMAIL = "clement.guiraudpro@gmail.com";
 const ORGANIZER_NAME = "Clément Guiraud";
@@ -215,6 +216,21 @@ export async function POST(req: NextRequest) {
           alternatives: [{ contentType: "text/calendar; charset=utf-8; method=REQUEST", content: Buffer.from(icsContent) }],
         }).catch((e) => console.error("Edenred ICS failed:", String(e))),
       ]);
+    }
+
+    // Attribution: find which Lemlist campaign brought this lead (fire-and-forget)
+    const lemlistApiKey = process.env.LEMLIST_API_KEY
+    if (lemlistApiKey) {
+      findLeadCampaignByEmail(normalizedEmail, lemlistApiKey)
+        .then(campaignId => {
+          if (campaignId) {
+            return getSupabase()
+              .from('leads')
+              .update({ lemlist_campaign_id: campaignId })
+              .eq('email', normalizedEmail)
+          }
+        })
+        .catch(err => console.error('[invite] attribution failed:', String(err)))
     }
 
     // Delete ALL scheduled_emails rows for this lead before inserting new reminders.

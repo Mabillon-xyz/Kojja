@@ -530,3 +530,49 @@ CREATE POLICY "Auth users manage campaign_kits"
   ON campaign_kits FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Service role full access on campaign_kits"
   ON campaign_kits FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- Lemlist Campaign Tracker (stats synced from Lemlist API)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS lemlist_campaigns (
+  campaign_id            TEXT PRIMARY KEY,            -- cam_xxx
+  name                   TEXT NOT NULL,
+  status                 TEXT NOT NULL DEFAULT 'draft', -- running|paused|draft|ended|archived|errors
+  created_at_lemlist     TIMESTAMPTZ,
+
+  -- Email channel (perChannel.email from /v2/stats)
+  emails_sent            INTEGER NOT NULL DEFAULT 0,
+  emails_delivered       INTEGER NOT NULL DEFAULT 0,
+  emails_opened          INTEGER NOT NULL DEFAULT 0,
+  emails_opened_pct      NUMERIC(5,1) NOT NULL DEFAULT 0,
+  emails_replied         INTEGER NOT NULL DEFAULT 0,
+  emails_replied_pct     NUMERIC(5,1) NOT NULL DEFAULT 0,
+
+  -- LinkedIn channel
+  linkedin_invites_sent      INTEGER NOT NULL DEFAULT 0,
+  linkedin_invites_accepted  INTEGER NOT NULL DEFAULT 0,
+  linkedin_acceptance_pct    NUMERIC(5,1) NOT NULL DEFAULT 0,
+  linkedin_messages_sent     INTEGER NOT NULL DEFAULT 0,
+  linkedin_messages_replied  INTEGER NOT NULL DEFAULT 0,
+  linkedin_reply_pct         NUMERIC(5,1) NOT NULL DEFAULT 0,
+
+  -- Lead funnel
+  leads_total       INTEGER NOT NULL DEFAULT 0,
+  leads_reached     INTEGER NOT NULL DEFAULT 0,
+  leads_interested  INTEGER NOT NULL DEFAULT 0,
+
+  -- Attribution: discovery calls booked via /book (join on leads.lemlist_campaign_id)
+  discovery_calls_booked INTEGER NOT NULL DEFAULT 0,
+
+  synced_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE lemlist_campaigns ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Auth users read lemlist_campaigns"
+  ON lemlist_campaigns FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Service role full access on lemlist_campaigns"
+  ON lemlist_campaigns FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- Attribution: which Lemlist campaign brought each booked lead
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS lemlist_campaign_id TEXT;

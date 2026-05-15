@@ -9,6 +9,7 @@ const nav = [
   { label: 'Home', href: '/dashboard', emoji: '🏠' },
   { label: 'Dashboard', href: '/pipeline', emoji: '📊' },
   { label: 'CRM', href: '/crm', emoji: '👥' },
+  { label: 'Campaigns', href: '/campaigns', emoji: '📈' },
   { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
   { label: 'Builder', href: '/campaign-builder', emoji: '🎯' },
   { label: 'Agent', href: '/agent', emoji: '🤖' },
@@ -16,7 +17,6 @@ const nav = [
 
 const deprecated = [
   { label: 'Proposals', href: '/proposal-tool', emoji: '📝' },
-  { label: 'Campaigns', href: '/flows', emoji: '⚡' },
 ]
 
 const mobileNav = [
