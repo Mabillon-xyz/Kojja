@@ -110,7 +110,7 @@ async function backfillMissingDays(apiKey: string, campaignIds: string[]): Promi
   const today = new Date();
 
   const dates: string[] = [];
-  for (let i = 1; i <= 21; i++) {
+  for (let i = 0; i <= 21; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     dates.push(d.toISOString().slice(0, 10));
