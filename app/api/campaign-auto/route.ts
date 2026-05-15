@@ -109,7 +109,16 @@ Output ONLY valid JSON. No markdown, no commentary. Start with { and end with }.
 ${CAMPAIGN_RULES_SUMMARY}
 
 Lemleads filterId valides pour les personnes : "country" | "currentTitle" | "location" | "seniority" | "currentCompanyHeadcount" | "pastTitle" | "keyword"
-IMPORTANT : utiliser "location" (pas "city", pas "state") pour filtrer par ville ou région. "location" accepte des noms de villes françaises (ex: "Toulouse", "Lyon", "Marseille") ou de régions (ex: "Occitanie", "Auvergne-Rhône-Alpes").
+IMPORTANT : utiliser filterId "location" (JAMAIS "city", JAMAIS "state" — ces filterId n'existent pas). Le filtre "location" accepte uniquement des noms de villes, jamais des régions ou zones géographiques (pas "Occitanie", pas "PACA", pas "Grand Est"). Toujours mapper une zone vers ses villes principales.
+Mapping zone → villes à utiliser dans "in" :
+- Occitanie/PACA → ["Toulouse", "Montpellier", "Marseille", "Nice", "Aix-en-Provence"]
+- Auvergne-Rhône-Alpes → ["Lyon", "Grenoble", "Clermont-Ferrand", "Saint-Étienne"]
+- Grand Ouest (Bretagne/Pays de Loire/Nouvelle-Aquitaine) → ["Nantes", "Bordeaux", "Rennes", "Brest", "Angers"]
+- Grand Est → ["Strasbourg", "Reims", "Nancy", "Metz"]
+- Hauts-de-France → ["Lille", "Amiens", "Roubaix"]
+- Normandie/Centre → ["Rouen", "Caen", "Tours", "Orléans"]
+- Paris & IDF → ["Paris", "Versailles", "Boulogne-Billancourt", "Neuilly-sur-Seine"]
+- Toute la France (pas de zone précise) → omettre le filtre "location" entièrement
 Pour les coachs français : country="France", currentTitle contient des variantes de "coach" (coach dirigeant, coach exécutif, business coach, coach professionnel, coach certifié, executive coach).
 
 Génère un JSON avec exactement cette structure :
