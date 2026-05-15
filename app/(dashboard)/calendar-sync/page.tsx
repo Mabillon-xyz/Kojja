@@ -35,6 +35,7 @@ const DAYS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const LEAD_KW = ["call", "appel", "discovery", "first", "premier", "lead", "demo", "rendez", "rdv", "intro"];
 const BOOK_URL = "https://kojja.vercel.app/book";
 const FOLLOWUP_BASE_URL = "https://kojja.vercel.app/book/followup";
+const INFORMAL_BASE_URL = "https://kojja.vercel.app/book/informal";
 
 const DAY_LABELS: Record<string, string> = {
   "1": "Monday",
@@ -456,11 +457,17 @@ function AvailabilityTab() {
 function SchedulingTab() {
   const [copied, setCopied] = useState(false);
   const [copiedFollowup, setCopiedFollowup] = useState(false);
+  const [copiedInformal, setCopiedInformal] = useState(false);
   const [followupEmail, setFollowupEmail] = useState("");
+  const [informalEmail, setInformalEmail] = useState("");
 
   const followupUrl = followupEmail.trim()
     ? `${FOLLOWUP_BASE_URL}?email=${encodeURIComponent(followupEmail.trim())}`
     : FOLLOWUP_BASE_URL;
+
+  const informalUrl = informalEmail.trim()
+    ? `${INFORMAL_BASE_URL}?email=${encodeURIComponent(informalEmail.trim())}`
+    : INFORMAL_BASE_URL;
 
   function copyLink() {
     navigator.clipboard.writeText(BOOK_URL).then(() => {
@@ -473,6 +480,13 @@ function SchedulingTab() {
     navigator.clipboard.writeText(followupUrl).then(() => {
       setCopiedFollowup(true);
       setTimeout(() => setCopiedFollowup(false), 2000);
+    });
+  }
+
+  function copyInformalLink() {
+    navigator.clipboard.writeText(informalUrl).then(() => {
+      setCopiedInformal(true);
+      setTimeout(() => setCopiedInformal(false), 2000);
     });
   }
 
@@ -584,6 +598,63 @@ function SchedulingTab() {
         <a href={followupUrl} target="_blank" rel="noopener noreferrer"
           className="mt-2 block text-center text-xs text-violet-600 dark:text-violet-400 hover:underline">
           Open follow-up page →
+        </a>
+      </div>
+
+      {/* ── Informal Call ── */}
+      <div>
+        <div className="border border-emerald-200 dark:border-emerald-800 rounded-2xl overflow-hidden bg-muted shadow-sm">
+          <div className="p-5 border-b border-emerald-100 dark:border-emerald-900">
+            <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-semibold text-sm mb-3 select-none">
+              CG
+            </div>
+            <p className="text-xs text-muted-foreground mb-0.5">Clément Guiraud</p>
+            <h3 className="text-base font-semibold text-foreground">Informal Call</h3>
+          </div>
+          <div className="p-5 space-y-2.5">
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+              <Clock size={14} className="flex-shrink-0" />
+              <span>30 minutes</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+              <Video size={14} className="flex-shrink-0" />
+              <span>Google Meet</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+              <Globe size={14} className="flex-shrink-0" />
+              <span>Europe/Paris</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-xs text-muted-foreground mb-1.5">Lead email (personalizes the link)</label>
+          <input
+            type="email"
+            value={informalEmail}
+            onChange={e => setInformalEmail(e.target.value)}
+            placeholder="jean@entreprise.com"
+            className="w-full px-3 py-2 text-xs border border-border rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          />
+        </div>
+
+        <div className="mt-2 flex items-center gap-2">
+          <div className="flex-1 px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs text-muted-foreground truncate select-all font-mono">
+            {informalUrl}
+          </div>
+          <button
+            onClick={copyInformalLink}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all flex-shrink-0 ${
+              copiedInformal ? "bg-green-900/40 text-green-400" : "bg-emerald-600 hover:bg-emerald-700 text-white"
+            }`}
+          >
+            {copiedInformal ? <Check size={14} /> : <Copy size={14} />}
+            {copiedInformal ? "Copied!" : "Copy"}
+          </button>
+        </div>
+        <a href={informalUrl} target="_blank" rel="noopener noreferrer"
+          className="mt-2 block text-center text-xs text-emerald-600 dark:text-emerald-400 hover:underline">
+          Open informal page →
         </a>
       </div>
 
