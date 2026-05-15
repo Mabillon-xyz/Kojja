@@ -109,7 +109,7 @@ Output ONLY valid JSON. No markdown, no commentary. Start with { and end with }.
 ${CAMPAIGN_RULES_SUMMARY}
 
 Lemleads filterId valides pour les personnes : "country" | "currentTitle" | "location" | "seniority" | "currentCompanyHeadcount" | "pastTitle" | "keyword"
-IMPORTANT : utiliser filterId "location" (JAMAIS "city", JAMAIS "state" — ces filterId n'existent pas). Le filtre "location" accepte uniquement des noms de villes, jamais des régions ou zones géographiques (pas "Occitanie", pas "PACA", pas "Grand Est"). Toujours mapper une zone vers ses villes principales.
+IMPORTANT : le seul filterId géographique valide est "location". Ce filtre accepte uniquement des noms de villes (ex: "Lyon", "Toulouse") — jamais des noms de régions. Mapper chaque zone vers ses villes :
 Mapping zone → villes à utiliser dans "in" :
 - Occitanie/PACA → ["Toulouse", "Montpellier", "Marseille", "Nice", "Aix-en-Provence"]
 - Auvergne-Rhône-Alpes → ["Lyon", "Grenoble", "Clermont-Ferrand", "Saint-Étienne"]
@@ -161,6 +161,21 @@ Génère un JSON avec exactement cette structure :
 
 const LEMLIST_MCP_URL = 'https://app.lemlist.com/mcp'
 
+const VALID_LEMLEADS_FILTER_IDS = new Set([
+  'country', 'currentTitle', 'currentTitleWithExactMatch', 'location',
+  'seniority', 'currentCompanyHeadcount', 'pastTitle', 'keyword',
+  'department', 'currentPositionTenure', 'yearsOfExperience',
+  'currentCompanyType', 'currentCompanyCountry', 'currentCompanyLocation',
+  'currentCompanySubIndustry', 'currentCompanyMarket', 'currentCompany',
+  'region', 'interest', 'skill',
+])
+
+function sanitizeFilters(filters: LeadsFilter[]): LeadsFilter[] {
+  return filters
+    .map((f) => f.filterId === 'city' ? { ...f, filterId: 'location' } : f)
+    .filter((f) => VALID_LEMLEADS_FILTER_IDS.has(f.filterId))
+}
+
 async function searchLeads(spec: CampaignSpec, apiKey: string): Promise<LemLead[]> {
   const transport = new StreamableHTTPClientTransport(new URL(LEMLIST_MCP_URL), {
     requestInit: { headers: { 'X-API-Key': apiKey } },
@@ -172,7 +187,7 @@ async function searchLeads(spec: CampaignSpec, apiKey: string): Promise<LemLead[
   try {
     const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
       mode: 'people',
-      filters: spec.leadsFilters,
+      filters: sanitizeFilters(spec.leadsFilters),
       size: 40,
     }})
 
