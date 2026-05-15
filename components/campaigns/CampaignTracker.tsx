@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { RefreshCw, TrendingUp, Users, BarChart2, Phone, ChevronUp, ChevronDown } from 'lucide-react'
-import { syncCampaignsAction } from '@/app/(dashboard)/campaigns/actions'
+import { syncCampaignsAction, updateDiscoveryCallsAction } from '@/app/(dashboard)/campaigns/actions'
 
 export type LemlistCampaignRow = {
   campaign_id: string
@@ -97,6 +97,7 @@ export default function CampaignTracker({
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [isPending, startTransition] = useTransition()
   const [syncResult, setSyncResult] = useState<{ synced?: number; timestamp?: string; error?: string } | null>(null)
+  const [callOverrides, setCallOverrides] = useState<Record<string, number>>({})
 
   const lastSynced = campaigns[0]?.synced_at ?? null
 
@@ -116,6 +117,16 @@ export default function CampaignTracker({
     })
   }
 
+  function getCallCount(c: LemlistCampaignRow) {
+    return callOverrides[c.campaign_id] ?? c.discovery_calls_booked
+  }
+
+  async function handleCallUpdate(campaignId: string, delta: 1 | -1) {
+    const current = callOverrides[campaignId] ?? (campaigns.find(c => c.campaign_id === campaignId)?.discovery_calls_booked ?? 0)
+    setCallOverrides(prev => ({ ...prev, [campaignId]: Math.max(0, current + delta) }))
+    await updateDiscoveryCallsAction(campaignId, delta)
+  }
+
   const filtered = useMemo(() => {
     const base = campaigns.filter(c => c.status === tab)
     return [...base].sort((a, b) => {
@@ -130,7 +141,8 @@ export default function CampaignTracker({
     })
   }, [campaigns, tab, sortKey, sortDir])
 
-  // Macro KPIs
+  // Macro KPIs — calls computed from manual campaign data
+  const totalCallsBooked = campaigns.reduce((s, c) => s + getCallCount(c), 0)
   const activeCount = campaigns.filter(c => c.status === 'running').length
   const totalReached = campaigns.reduce((s, c) => s + c.leads_reached, 0)
   const totalEmailSent = campaigns.reduce((s, c) => s + c.emails_sent, 0)
@@ -164,7 +176,7 @@ export default function CampaignTracker({
     {
       label: 'Calls bookés',
       value: String(totalCallsBooked),
-      sub: 'via kojja.vercel.app/book',
+      sub: totalCallsBooked > 0 ? `répartis sur ${campaigns.filter(c => getCallCount(c) > 0).length} campagnes` : 'ajoutez manuellement par campagne',
       icon: <Phone className="w-4 h-4 text-emerald-600" />,
       iconBg: 'bg-emerald-50',
     },
@@ -319,11 +331,23 @@ export default function CampaignTracker({
                         {fmtPct(c.linkedin_acceptance_pct, c.linkedin_invites_sent)}
                       </span>
                     </td>
-                    <td className="px-3 py-3 pr-5 font-semibold text-neutral-900">
-                      {c.discovery_calls_booked > 0
-                        ? <span className="text-emerald-600">{c.discovery_calls_booked}</span>
-                        : <span className="text-neutral-300">—</span>
-                      }
+                    <td className="px-3 py-3 pr-5">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-semibold w-5 text-center tabular-nums ${getCallCount(c) > 0 ? 'text-emerald-600' : 'text-neutral-300'}`}>
+                          {getCallCount(c) > 0 ? getCallCount(c) : '—'}
+                        </span>
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            onClick={() => handleCallUpdate(c.campaign_id, -1)}
+                            disabled={getCallCount(c) === 0}
+                            className="w-5 h-5 flex items-center justify-center rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-sm leading-none"
+                          >−</button>
+                          <button
+                            onClick={() => handleCallUpdate(c.campaign_id, 1)}
+                            className="w-5 h-5 flex items-center justify-center rounded text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors text-sm leading-none"
+                          >+</button>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ))}
