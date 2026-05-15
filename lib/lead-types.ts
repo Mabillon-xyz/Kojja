@@ -18,6 +18,7 @@ export type Lead = {
   contact_means: string[] | null
   comment: string | null
   linkedin_url: string | null
+  lemlist_campaign_id: string | null
   // Enrichissement automatique (Annuaire entreprises + Pappers)
   siren: string | null
   forme_juridique: string | null

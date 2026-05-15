@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { RefreshCw, TrendingUp, Users, BarChart2, Phone, ChevronUp, ChevronDown } from 'lucide-react'
-import { syncCampaignsAction, updateDiscoveryCallsAction } from '@/app/(dashboard)/campaigns/actions'
+import { syncCampaignsAction } from '@/app/(dashboard)/campaigns/actions'
 
 export type LemlistCampaignRow = {
   campaign_id: string
@@ -30,24 +30,6 @@ export type LemlistCampaignRow = {
 
 type SortKey = keyof LemlistCampaignRow
 type SortDir = 'asc' | 'desc'
-
-const STATUS_LABELS: Record<string, string> = {
-  running: 'En cours',
-  paused: 'Pause',
-  draft: 'Draft',
-  ended: 'Terminée',
-  archived: 'Archivée',
-  errors: 'Erreur',
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  running: 'bg-emerald-50 text-emerald-700',
-  paused: 'bg-amber-50 text-amber-700',
-  draft: 'bg-neutral-100 text-neutral-500',
-  ended: 'bg-neutral-100 text-neutral-400',
-  archived: 'bg-neutral-100 text-neutral-300',
-  errors: 'bg-red-50 text-red-600',
-}
 
 function replyRateBadge(pct: number, sent: number) {
   if (sent === 0) return 'bg-neutral-100 text-neutral-400'
@@ -87,15 +69,16 @@ const TABS = [
 
 export default function CampaignTracker({
   campaigns,
+  callsByCampaign,
 }: {
   campaigns: LemlistCampaignRow[]
+  callsByCampaign: Record<string, number>
 }) {
   const [tab, setTab] = useState('running')
   const [sortKey, setSortKey] = useState<SortKey>('created_at_lemlist')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [isPending, startTransition] = useTransition()
   const [syncResult, setSyncResult] = useState<{ synced?: number; timestamp?: string; error?: string } | null>(null)
-  const [callOverrides, setCallOverrides] = useState<Record<string, number>>({})
 
   const lastSynced = campaigns[0]?.synced_at ?? null
 
@@ -116,13 +99,7 @@ export default function CampaignTracker({
   }
 
   function getCallCount(c: LemlistCampaignRow) {
-    return callOverrides[c.campaign_id] ?? c.discovery_calls_booked
-  }
-
-  async function handleCallUpdate(campaignId: string, delta: 1 | -1) {
-    const current = callOverrides[campaignId] ?? (campaigns.find(c => c.campaign_id === campaignId)?.discovery_calls_booked ?? 0)
-    setCallOverrides(prev => ({ ...prev, [campaignId]: Math.max(0, current + delta) }))
-    await updateDiscoveryCallsAction(campaignId, delta)
+    return callsByCampaign[c.campaign_id] ?? 0
   }
 
   const filtered = useMemo(() => {
@@ -174,7 +151,7 @@ export default function CampaignTracker({
     {
       label: 'Calls bookés',
       value: String(totalCallsBooked),
-      sub: totalCallsBooked > 0 ? `répartis sur ${campaigns.filter(c => getCallCount(c) > 0).length} campagnes` : 'ajoutez manuellement par campagne',
+      sub: totalCallsBooked > 0 ? `répartis sur ${campaigns.filter(c => getCallCount(c) > 0).length} campagnes` : 'aucun call booké pour l\'instant',
       icon: <Phone className="w-4 h-4 text-emerald-600" />,
       iconBg: 'bg-emerald-50',
     },
@@ -289,7 +266,6 @@ export default function CampaignTracker({
                 <tr>
                   <Th col="name" label="Campagne" className="pl-5 min-w-[220px]" />
                   <Th col="created_at_lemlist" label="Créée le" />
-                  <Th col="status" label="Statut" />
                   <Th col="leads_total" label="Leads" />
                   <Th col="emails_sent" label="Envoyés" />
                   <Th col="emails_opened_pct" label="Ouverture" />
@@ -308,11 +284,6 @@ export default function CampaignTracker({
                     </td>
                     <td className="px-3 py-3 text-neutral-500 text-xs">
                       {c.created_at_lemlist ? new Date(c.created_at_lemlist).toLocaleDateString('fr-FR') : '—'}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[c.status] ?? 'bg-neutral-100 text-neutral-400'}`}>
-                        {STATUS_LABELS[c.status] ?? c.status}
-                      </span>
                     </td>
                     <td className="px-3 py-3 text-neutral-600">
                       {fmt(c.leads_total)}
@@ -334,22 +305,9 @@ export default function CampaignTracker({
                       </span>
                     </td>
                     <td className="px-3 py-3 pr-5">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-semibold w-5 text-center tabular-nums ${getCallCount(c) > 0 ? 'text-emerald-600' : 'text-neutral-300'}`}>
-                          {getCallCount(c) > 0 ? getCallCount(c) : '—'}
-                        </span>
-                        <div className="flex items-center gap-0.5">
-                          <button
-                            onClick={() => handleCallUpdate(c.campaign_id, -1)}
-                            disabled={getCallCount(c) === 0}
-                            className="w-5 h-5 flex items-center justify-center rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-sm leading-none"
-                          >−</button>
-                          <button
-                            onClick={() => handleCallUpdate(c.campaign_id, 1)}
-                            className="w-5 h-5 flex items-center justify-center rounded text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors text-sm leading-none"
-                          >+</button>
-                        </div>
-                      </div>
+                      <span className={`font-semibold tabular-nums ${getCallCount(c) > 0 ? 'text-emerald-600' : 'text-neutral-300'}`}>
+                        {getCallCount(c) > 0 ? getCallCount(c) : '—'}
+                      </span>
                     </td>
                   </tr>
                 ))}

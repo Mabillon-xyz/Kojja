@@ -576,3 +576,6 @@ CREATE POLICY "Service role full access on lemlist_campaigns"
 
 -- Attribution: which Lemlist campaign brought each booked lead
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS lemlist_campaign_id TEXT;
+
+-- Backfill: leads created before campaign tracking → attributed to the historical Coach campaign
+UPDATE leads SET lemlist_campaign_id = 'cam_JC7mjRSoLg4MACxR6' WHERE lemlist_campaign_id IS NULL;
