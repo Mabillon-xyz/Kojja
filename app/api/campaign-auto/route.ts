@@ -176,7 +176,41 @@ function sanitizeFilters(filters: LeadsFilter[]): LeadsFilter[] {
     .filter((f) => VALID_LEMLEADS_FILTER_IDS.has(f.filterId))
 }
 
-async function searchLeads(spec: CampaignSpec, apiKey: string): Promise<LemLead[]> {
+async function callLemleadsSearch(mcp: MCPClient, filters: LeadsFilter[]): Promise<LemLead[]> {
+  const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
+    mode: 'people',
+    filters,
+    size: 40,
+  }})
+
+  const rawText = (result.content as Array<{ type: string; text?: string }>)
+    .filter((c) => c.type === 'text')
+    .map((c) => c.text ?? '')
+    .join('')
+
+  const parsed = JSON.parse(rawText) as { results?: Record<string, unknown>[] } | Record<string, unknown>[]
+  const results = Array.isArray(parsed) ? parsed : (parsed as { results?: Record<string, unknown>[] }).results ?? []
+
+  return results
+    .map((r) => {
+      const nameParts = ((r.full_name ?? '') as string).trim().split(/\s+/)
+      const slug = r.canonical_shorthand_name as string | undefined
+      return {
+        firstName: nameParts[0] ?? undefined,
+        lastName: nameParts.slice(1).join(' ') || undefined,
+        email: (r.potential_email as string | undefined) ?? undefined,
+        linkedinUrl: slug ? `https://www.linkedin.com/in/${slug}` : undefined,
+        companyName: (r.current_exp_company_name as string | undefined) ?? undefined,
+        jobTitle: (r.headline as string | undefined) ?? undefined,
+      }
+    })
+    .filter((l) => l.firstName ?? l.email)
+}
+
+async function searchLeads(
+  spec: CampaignSpec,
+  apiKey: string,
+): Promise<{ leads: LemLead[]; fallbackUsed: boolean; filtersUsed: LeadsFilter[] }> {
   const transport = new StreamableHTTPClientTransport(new URL(LEMLIST_MCP_URL), {
     requestInit: { headers: { 'X-API-Key': apiKey } },
   })
@@ -185,34 +219,19 @@ async function searchLeads(spec: CampaignSpec, apiKey: string): Promise<LemLead[
   await mcp.connect(transport)
 
   try {
-    const result = await mcp.callTool({ name: 'lemleads_search', arguments: {
-      mode: 'people',
-      filters: sanitizeFilters(spec.leadsFilters),
-      size: 40,
-    }})
+    const strictFilters = sanitizeFilters(spec.leadsFilters)
+    const leads = await callLemleadsSearch(mcp, strictFilters)
+    if (leads.length > 0) return { leads, fallbackUsed: false, filtersUsed: strictFilters }
 
-    const rawText = (result.content as Array<{ type: string; text?: string }>)
-      .filter((c) => c.type === 'text')
-      .map((c) => c.text ?? '')
-      .join('')
-
-    const parsed = JSON.parse(rawText) as { results?: Record<string, unknown>[] } | Record<string, unknown>[]
-    const results = Array.isArray(parsed) ? parsed : (parsed as { results?: Record<string, unknown>[] }).results ?? []
-
-    return results
-      .map((r) => {
-        const nameParts = ((r.full_name ?? '') as string).trim().split(/\s+/)
-        const slug = r.canonical_shorthand_name as string | undefined
-        return {
-          firstName: nameParts[0] ?? undefined,
-          lastName: nameParts.slice(1).join(' ') || undefined,
-          email: (r.potential_email as string | undefined) ?? undefined,
-          linkedinUrl: slug ? `https://www.linkedin.com/in/${slug}` : undefined,
-          companyName: (r.current_exp_company_name as string | undefined) ?? undefined,
-          jobTitle: (r.headline as string | undefined) ?? undefined,
-        }
-      })
-      .filter((l) => l.firstName ?? l.email)
+    // Fallback: drop location + any non-essential filter, keep only country + currentTitle
+    const minimalFilters = strictFilters.filter(
+      (f) => f.filterId === 'country' || f.filterId === 'currentTitle',
+    )
+    if (minimalFilters.length === strictFilters.length) {
+      return { leads: [], fallbackUsed: false, filtersUsed: strictFilters }
+    }
+    const fallbackLeads = await callLemleadsSearch(mcp, minimalFilters)
+    return { leads: fallbackLeads, fallbackUsed: true, filtersUsed: minimalFilters }
   } finally {
     await mcp.close()
   }
@@ -507,8 +526,11 @@ export async function POST() {
       await send({ step: 'searching_leads', label: `Recherche leads (${spec.icpDescription})…` })
       let rawLeads: LemLead[] = []
       try {
-        rawLeads = await searchLeads(spec, apiKey)
-        await send({ step: 'leads_found', label: `${rawLeads.length} leads trouvés` })
+        const { leads, fallbackUsed, filtersUsed } = await searchLeads(spec, apiKey)
+        rawLeads = leads
+        const filterSummary = filtersUsed.map((f) => `${f.filterId}:[${f.in.join(',')}]`).join(' ')
+        const fallbackNote = fallbackUsed ? ' (fallback: filtres géo supprimés)' : ''
+        await send({ step: 'leads_found', label: `${rawLeads.length} leads trouvés${fallbackNote} — ${filterSummary}` })
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'erreur'
         await send({ step: 'leads_warning', label: `⚠ Recherche leads échouée : ${msg.slice(0, 120)}` })
