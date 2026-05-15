@@ -491,173 +491,174 @@ function SchedulingTab() {
   }
 
   return (
-    <div className="max-w-sm space-y-8">
+    <div className="space-y-4">
 
-      {/* ── Discovery Call ── */}
       <div>
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold text-foreground mb-0.5">🔗 Booking links</h2>
-          <p className="text-xs text-muted-foreground">Share these links with your leads to let them book a slot.</p>
-        </div>
-
-        <div className="border border-border rounded-2xl overflow-hidden bg-muted shadow-sm">
-          <div className="p-5 border-b border-border">
-            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm mb-3 select-none">
-              CG
-            </div>
-            <p className="text-xs text-muted-foreground mb-0.5">Clément Guiraud</p>
-            <h3 className="text-base font-semibold text-foreground">Discovery Call</h3>
-          </div>
-          <div className="p-5 space-y-2.5">
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <Clock size={14} className="flex-shrink-0" />
-              <span>30 minutes</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <Video size={14} className="flex-shrink-0" />
-              <span>Google Meet</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <Globe size={14} className="flex-shrink-0" />
-              <span>Europe/Paris</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 flex items-center gap-2">
-          <div className="flex-1 px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs text-muted-foreground truncate select-all font-mono">
-            {BOOK_URL}
-          </div>
-          <button
-            onClick={copyLink}
-            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all flex-shrink-0 ${
-              copied ? "bg-green-900/40 text-green-400" : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}
-          >
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? "Copied!" : "Copy"}
-          </button>
-        </div>
-        <a href={BOOK_URL} target="_blank" rel="noopener noreferrer"
-          className="mt-2 block text-center text-xs text-blue-600 dark:text-blue-400 hover:underline">
-          Open booking page →
-        </a>
+        <h2 className="text-sm font-semibold text-foreground mb-0.5">🔗 Booking links</h2>
+        <p className="text-xs text-muted-foreground">Share these links with your leads to let them book a slot.</p>
       </div>
 
-      {/* ── Follow-up Call ── */}
-      <div>
-        <div className="border border-violet-200 dark:border-violet-800 rounded-2xl overflow-hidden bg-muted shadow-sm">
-          <div className="p-5 border-b border-violet-100 dark:border-violet-900">
-            <div className="w-9 h-9 rounded-full bg-violet-600 flex items-center justify-center text-white font-semibold text-sm mb-3 select-none">
-              CG
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+        {/* ── Discovery Call ── */}
+        <div className="flex flex-col">
+          <div className="border border-border rounded-2xl overflow-hidden bg-muted shadow-sm flex-1">
+            <div className="p-5 border-b border-border">
+              <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm mb-3 select-none">
+                CG
+              </div>
+              <p className="text-xs text-muted-foreground mb-0.5">Clément Guiraud</p>
+              <h3 className="text-base font-semibold text-foreground">Discovery Call</h3>
             </div>
-            <p className="text-xs text-muted-foreground mb-0.5">Clément Guiraud</p>
-            <h3 className="text-base font-semibold text-foreground">Follow-up Call</h3>
+            <div className="p-5 space-y-2.5">
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <Clock size={14} className="flex-shrink-0" />
+                <span>30 minutes</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <Video size={14} className="flex-shrink-0" />
+                <span>Google Meet</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <Globe size={14} className="flex-shrink-0" />
+                <span>Europe/Paris</span>
+              </div>
+            </div>
           </div>
-          <div className="p-5 space-y-2.5">
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <Clock size={14} className="flex-shrink-0" />
-              <span>30 minutes</span>
+
+          <div className="mt-4 flex items-center gap-2">
+            <div className="flex-1 px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs text-muted-foreground truncate select-all font-mono min-w-0">
+              {BOOK_URL}
             </div>
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <Video size={14} className="flex-shrink-0" />
-              <span>Google Meet</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <Globe size={14} className="flex-shrink-0" />
-              <span>Europe/Paris</span>
-            </div>
+            <button
+              onClick={copyLink}
+              className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all flex-shrink-0 ${
+                copied ? "bg-green-900/40 text-green-400" : "bg-blue-600 hover:bg-blue-700 text-white"
+              }`}
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+              {copied ? "Copied!" : "Copy"}
+            </button>
           </div>
+          <a href={BOOK_URL} target="_blank" rel="noopener noreferrer"
+            className="mt-2 block text-center text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            Open booking page →
+          </a>
         </div>
 
-        <div className="mt-4">
-          <label className="block text-xs text-muted-foreground mb-1.5">Lead email (personalizes the link)</label>
-          <input
-            type="email"
-            value={followupEmail}
-            onChange={e => setFollowupEmail(e.target.value)}
-            placeholder="jean@entreprise.com"
-            className="w-full px-3 py-2 text-xs border border-border rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-          />
+        {/* ── Follow-up Call ── */}
+        <div className="flex flex-col">
+          <div className="border border-violet-200 dark:border-violet-800 rounded-2xl overflow-hidden bg-muted shadow-sm flex-1">
+            <div className="p-5 border-b border-violet-100 dark:border-violet-900">
+              <div className="w-9 h-9 rounded-full bg-violet-600 flex items-center justify-center text-white font-semibold text-sm mb-3 select-none">
+                CG
+              </div>
+              <p className="text-xs text-muted-foreground mb-0.5">Clément Guiraud</p>
+              <h3 className="text-base font-semibold text-foreground">Follow-up Call</h3>
+            </div>
+            <div className="p-5 space-y-2.5">
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <Clock size={14} className="flex-shrink-0" />
+                <span>30 minutes</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <Video size={14} className="flex-shrink-0" />
+                <span>Google Meet</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <Globe size={14} className="flex-shrink-0" />
+                <span>Europe/Paris</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-xs text-muted-foreground mb-1.5">Lead email (personalizes the link)</label>
+            <input
+              type="email"
+              value={followupEmail}
+              onChange={e => setFollowupEmail(e.target.value)}
+              placeholder="jean@entreprise.com"
+              className="w-full px-3 py-2 text-xs border border-border rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            />
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="flex-1 px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs text-muted-foreground truncate select-all font-mono min-w-0">
+              {followupUrl}
+            </div>
+            <button
+              onClick={copyFollowupLink}
+              className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all flex-shrink-0 ${
+                copiedFollowup ? "bg-green-900/40 text-green-400" : "bg-violet-600 hover:bg-violet-700 text-white"
+              }`}
+            >
+              {copiedFollowup ? <Check size={14} /> : <Copy size={14} />}
+              {copiedFollowup ? "Copied!" : "Copy"}
+            </button>
+          </div>
+          <a href={followupUrl} target="_blank" rel="noopener noreferrer"
+            className="mt-2 block text-center text-xs text-violet-600 dark:text-violet-400 hover:underline">
+            Open follow-up page →
+          </a>
         </div>
 
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs text-muted-foreground truncate select-all font-mono">
-            {followupUrl}
+        {/* ── Informal Call ── */}
+        <div className="flex flex-col">
+          <div className="border border-emerald-200 dark:border-emerald-800 rounded-2xl overflow-hidden bg-muted shadow-sm flex-1">
+            <div className="p-5 border-b border-emerald-100 dark:border-emerald-900">
+              <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-semibold text-sm mb-3 select-none">
+                CG
+              </div>
+              <p className="text-xs text-muted-foreground mb-0.5">Clément Guiraud</p>
+              <h3 className="text-base font-semibold text-foreground">Informal Call</h3>
+            </div>
+            <div className="p-5 space-y-2.5">
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <Clock size={14} className="flex-shrink-0" />
+                <span>30 minutes</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <Video size={14} className="flex-shrink-0" />
+                <span>Google Meet</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <Globe size={14} className="flex-shrink-0" />
+                <span>Europe/Paris</span>
+              </div>
+            </div>
           </div>
-          <button
-            onClick={copyFollowupLink}
-            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all flex-shrink-0 ${
-              copiedFollowup ? "bg-green-900/40 text-green-400" : "bg-violet-600 hover:bg-violet-700 text-white"
-            }`}
-          >
-            {copiedFollowup ? <Check size={14} /> : <Copy size={14} />}
-            {copiedFollowup ? "Copied!" : "Copy"}
-          </button>
+
+          <div className="mt-4">
+            <label className="block text-xs text-muted-foreground mb-1.5">Lead email (personalizes the link)</label>
+            <input
+              type="email"
+              value={informalEmail}
+              onChange={e => setInformalEmail(e.target.value)}
+              placeholder="jean@entreprise.com"
+              className="w-full px-3 py-2 text-xs border border-border rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            />
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="flex-1 px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs text-muted-foreground truncate select-all font-mono min-w-0">
+              {informalUrl}
+            </div>
+            <button
+              onClick={copyInformalLink}
+              className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all flex-shrink-0 ${
+                copiedInformal ? "bg-green-900/40 text-green-400" : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              }`}
+            >
+              {copiedInformal ? <Check size={14} /> : <Copy size={14} />}
+              {copiedInformal ? "Copied!" : "Copy"}
+            </button>
+          </div>
+          <a href={informalUrl} target="_blank" rel="noopener noreferrer"
+            className="mt-2 block text-center text-xs text-emerald-600 dark:text-emerald-400 hover:underline">
+            Open informal page →
+          </a>
         </div>
-        <a href={followupUrl} target="_blank" rel="noopener noreferrer"
-          className="mt-2 block text-center text-xs text-violet-600 dark:text-violet-400 hover:underline">
-          Open follow-up page →
-        </a>
+
       </div>
-
-      {/* ── Informal Call ── */}
-      <div>
-        <div className="border border-emerald-200 dark:border-emerald-800 rounded-2xl overflow-hidden bg-muted shadow-sm">
-          <div className="p-5 border-b border-emerald-100 dark:border-emerald-900">
-            <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-semibold text-sm mb-3 select-none">
-              CG
-            </div>
-            <p className="text-xs text-muted-foreground mb-0.5">Clément Guiraud</p>
-            <h3 className="text-base font-semibold text-foreground">Informal Call</h3>
-          </div>
-          <div className="p-5 space-y-2.5">
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <Clock size={14} className="flex-shrink-0" />
-              <span>30 minutes</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <Video size={14} className="flex-shrink-0" />
-              <span>Google Meet</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <Globe size={14} className="flex-shrink-0" />
-              <span>Europe/Paris</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <label className="block text-xs text-muted-foreground mb-1.5">Lead email (personalizes the link)</label>
-          <input
-            type="email"
-            value={informalEmail}
-            onChange={e => setInformalEmail(e.target.value)}
-            placeholder="jean@entreprise.com"
-            className="w-full px-3 py-2 text-xs border border-border rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-          />
-        </div>
-
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs text-muted-foreground truncate select-all font-mono">
-            {informalUrl}
-          </div>
-          <button
-            onClick={copyInformalLink}
-            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all flex-shrink-0 ${
-              copiedInformal ? "bg-green-900/40 text-green-400" : "bg-emerald-600 hover:bg-emerald-700 text-white"
-            }`}
-          >
-            {copiedInformal ? <Check size={14} /> : <Copy size={14} />}
-            {copiedInformal ? "Copied!" : "Copy"}
-          </button>
-        </div>
-        <a href={informalUrl} target="_blank" rel="noopener noreferrer"
-          className="mt-2 block text-center text-xs text-emerald-600 dark:text-emerald-400 hover:underline">
-          Open informal page →
-        </a>
-      </div>
-
     </div>
   );
 }
