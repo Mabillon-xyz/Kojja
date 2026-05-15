@@ -13,7 +13,7 @@ import {
   Legend,
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { EmailDaySend, CampaignCount } from "@/lib/lemlist-email-sends";
+import type { EmailDaySend, SenderCount } from "@/lib/lemlist-email-sends";
 
 const WINDOW_SIZE = 21;
 const STORAGE_KEY = "koja2:blur-sensitive";
@@ -72,7 +72,7 @@ function buildFilledData(rows: EmailDaySend[]): { filled: ChartRow[]; campaigns:
 
     if (hasBreakdown) {
       for (const name of campaigns) {
-        base[name] = row?.breakdown?.find((b: CampaignCount) => b.name === name)?.count ?? 0;
+        base[name] = row?.breakdown?.find((b: SenderCount) => b.name === name)?.count ?? 0;
       }
     }
 
@@ -159,7 +159,7 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
           <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
             Emails sent / day
           </p>
-          <p className="text-xs text-neutral-400 mt-0.5">Via Lemlist — by campaign</p>
+          <p className="text-xs text-neutral-400 mt-0.5">Via Lemlist — by sender</p>
         </div>
         <div className="text-right">
           <p className="text-lg font-bold text-emerald-600">{todayCount}</p>

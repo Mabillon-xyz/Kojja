@@ -2,12 +2,12 @@ import { createClient } from "@supabase/supabase-js";
 import { getAccount } from "@/lib/lemlist-accounts";
 import { type LemlistCampaignStatsV2 } from "@/lib/lemlist";
 
-export type CampaignCount = { name: string; count: number };
+export type SenderCount = { name: string; count: number };
 
 export type EmailDaySend = {
   date: string;
   email_count: number;
-  breakdown?: CampaignCount[];
+  breakdown?: SenderCount[];
 };
 
 function getServiceClient() {
@@ -18,31 +18,43 @@ function getServiceClient() {
   );
 }
 
-type CampaignInfo = { id: string; name: string };
-
-function shortCampaignName(name: string): string {
-  return name
-    .replace(/\s*[—–]\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Janv?|Févr?|Mars|Avr|Mai|Juin|Juil|Août|Sept?|Oct|Nov|Déc)\w*\.?\s*\d{4}$/i, "")
-    .replace(/\s*\|\s*Variation\s+([A-Z])/i, " ($1)")
-    .trim();
-}
+type CampaignInfo = { id: string; senderEmail: string };
 
 async function getActiveCampaigns(apiKey: string): Promise<CampaignInfo[]> {
   const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
-  const res = await fetch("https://api.lemlist.com/api/campaigns?limit=100", {
+
+  const listRes = await fetch("https://api.lemlist.com/api/campaigns?limit=100", {
     cache: "no-store",
     headers: { Authorization: `Basic ${basicAuth}` },
   });
-  if (!res.ok) return [];
-  const data = (await res.json()) as Array<{
+  if (!listRes.ok) return [];
+
+  const list = (await listRes.json()) as Array<{
     _id: string;
     status: string;
     archived?: boolean;
-    name?: string;
   }>;
-  return data
-    .filter((c) => c.status !== "draft" && !c.archived)
-    .map((c) => ({ id: c._id, name: shortCampaignName(c.name ?? c._id) }));
+
+  const active = list.filter((c) => c.status !== "draft" && !c.archived);
+
+  const details = await Promise.all(
+    active.map(async (c) => {
+      const res = await fetch(`https://api.lemlist.com/api/campaigns/${c._id}`, {
+        cache: "no-store",
+        headers: { Authorization: `Basic ${basicAuth}` },
+      });
+      if (!res.ok) return null;
+      const d = (await res.json()) as {
+        _id: string;
+        senders?: Array<{ email?: string }>;
+      };
+      const senderEmail = d.senders?.find((s) => s.email)?.email ?? null;
+      if (!senderEmail) return null;
+      return { id: c._id, senderEmail };
+    })
+  );
+
+  return details.filter((d): d is CampaignInfo => d !== null);
 }
 
 async function fetchEmailCount(
@@ -73,9 +85,16 @@ async function syncDay(
     campaigns.map((c) => fetchEmailCount(apiKey, c.id, date))
   );
 
-  const breakdown: CampaignCount[] = campaigns
-    .map((c, i) => ({ name: c.name, count: counts[i] }))
-    .filter((b) => b.count > 0);
+  // Group by sender email
+  const senderTotals = new Map<string, number>();
+  for (let i = 0; i < campaigns.length; i++) {
+    const { senderEmail } = campaigns[i];
+    senderTotals.set(senderEmail, (senderTotals.get(senderEmail) ?? 0) + counts[i]);
+  }
+
+  const breakdown: SenderCount[] = Array.from(senderTotals.entries())
+    .filter(([, count]) => count > 0)
+    .map(([name, count]) => ({ name, count }));
 
   const email_count = counts.reduce((sum, n) => sum + n, 0);
 
