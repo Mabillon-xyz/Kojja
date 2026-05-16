@@ -3,13 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Settings, BookOpen, X, SlidersHorizontal } from 'lucide-react'
+import { Settings, BookOpen, X, SlidersHorizontal, Users } from 'lucide-react'
 
 const nav = [
   { label: 'Home', href: '/dashboard', emoji: '🏠' },
   { label: 'CRM', href: '/crm', emoji: '👥' },
   { label: 'Campaigns', href: '/campaigns', emoji: '📈' },
-  { label: 'Clients', href: '/clients', emoji: '🧑‍💼' },
   { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
   { label: 'Builder', href: '/campaign-builder', emoji: '🎯' },
   { label: 'Agent', href: '/agent', emoji: '🤖' },
@@ -31,7 +30,7 @@ export default function Sidebar() {
   const pathname = usePathname()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  const settingsActive = pathname === '/settings' || pathname.startsWith('/settings/')
+  const settingsActive = pathname === '/settings' || pathname.startsWith('/settings/') || pathname === '/clients' || pathname.startsWith('/clients/')
   const docsActive = pathname === '/documentation' || pathname.startsWith('/documentation/')
 
   return (
@@ -112,6 +111,18 @@ export default function Sidebar() {
                 </button>
               </div>
               <div className="p-1.5 space-y-0.5">
+                <Link
+                  href="/clients"
+                  onClick={() => setSettingsOpen(false)}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
+                    pathname === '/clients' || pathname.startsWith('/clients/')
+                      ? 'bg-blue-50 text-blue-700 font-semibold'
+                      : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                  }`}
+                >
+                  <Users className="w-4 h-4 flex-shrink-0" />
+                  Clients
+                </Link>
                 <Link
                   href="/documentation"
                   onClick={() => setSettingsOpen(false)}
