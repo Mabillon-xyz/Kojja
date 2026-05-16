@@ -64,6 +64,17 @@ export async function syncCampaigns(opts?: { apiKey?: string; clientId?: string 
     bookedByCampaign.set(cid, (bookedByCampaign.get(cid) ?? 0) + 1)
   }
 
+  // Fetch existing values so manual overrides are never decreased by sync
+  const campaignIds = campaigns.map(c => c._id)
+  const { data: existingRows } = await supabase
+    .from('lemlist_campaigns')
+    .select('campaign_id, discovery_calls_booked')
+    .in('campaign_id', campaignIds)
+  const existingBooked = new Map<string, number>()
+  for (const row of existingRows ?? []) {
+    existingBooked.set(row.campaign_id, row.discovery_calls_booked ?? 0)
+  }
+
   // 4. Build upsert rows
   const timestamp = new Date().toISOString()
 
@@ -105,7 +116,7 @@ export async function syncCampaigns(opts?: { apiKey?: string; clientId?: string 
       leads_reached: stats?.nbLeadsReached ?? 0,
       leads_interested: stats?.nbLeadsInterested ?? 0,
 
-      discovery_calls_booked: bookedByCampaign.get(campaign._id) ?? 0,
+      discovery_calls_booked: Math.max(bookedByCampaign.get(campaign._id) ?? 0, existingBooked.get(campaign._id) ?? 0),
 
       synced_at: timestamp,
     }

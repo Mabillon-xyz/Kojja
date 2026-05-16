@@ -103,7 +103,7 @@ export default function CampaignTracker({
   }
 
   function getCallCount(c: LemlistCampaignRow) {
-    return callsByCampaign[c.campaign_id] ?? 0
+    return callsByCampaign[c.campaign_id] ?? c.discovery_calls_booked
   }
 
   const filtered = useMemo(() => {
