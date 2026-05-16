@@ -75,10 +75,15 @@ export async function syncCampaigns(opts?: { apiKey?: string; clientId?: string 
     const linkedinAccepted = stats?.invitationAccepted ?? linkedin?.invitationAccepted ?? 0
     const linkedinInvitesSent = linkedinInvitesSentFromSteps(stats ?? null) || stats?.nbLeads || 0
 
+    const rawStatus = campaign.status ?? 'draft'
+    const status = rawStatus === 'active' ? 'running'
+      : rawStatus === 'stopped' ? 'ended'
+      : rawStatus
+
     return {
       campaign_id: campaign._id,
       name: campaign.name,
-      status: campaign.status ?? 'draft',
+      status,
       created_at_lemlist: campaign.createdAt ?? null,
       client_id: clientId,
 
