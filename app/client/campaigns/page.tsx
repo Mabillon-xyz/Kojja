@@ -8,6 +8,7 @@ import LinkedInSendsChart from '@/components/flows/LinkedInSendsChart'
 import EmailSendsChart from '@/components/flows/EmailSendsChart'
 import { getLinkedInDailySends, type LinkedInDaySend } from '@/lib/lemlist-linkedin'
 import { getLemlistDailyEmailSends } from '@/lib/lemlist-email-sends'
+import { type AccountId } from '@/lib/lemlist-accounts'
 import { syncClientCampaignsSelfAction } from './actions'
 
 export default async function ClientCampaignsPage() {
@@ -18,6 +19,8 @@ export default async function ClientCampaignsPage() {
   const client = await getClientByUserId(user.id)
   if (!client) redirect('/login')
 
+  const accountId = (client.lemlist_account_id ?? 'clement') as AccountId
+
   const [{ data: campaigns }, linkedInSends, emailSends] = await Promise.all([
     supabase
       .from('lemlist_campaigns')
@@ -25,8 +28,8 @@ export default async function ClientCampaignsPage() {
       .eq('client_id', client.id)
       .neq('status', 'draft')
       .order('created_at_lemlist', { ascending: false }),
-    getLinkedInDailySends(),
-    getLemlistDailyEmailSends(),
+    getLinkedInDailySends(accountId),
+    getLemlistDailyEmailSends(accountId),
   ])
 
   return (

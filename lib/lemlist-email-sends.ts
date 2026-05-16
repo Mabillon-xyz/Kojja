@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { getAccount } from "@/lib/lemlist-accounts";
+import { getAccount, type AccountId } from "@/lib/lemlist-accounts";
 import { type LemlistCampaignStatsV2 } from "@/lib/lemlist";
 
 export type SenderCount = { name: string; count: number };
@@ -99,7 +99,8 @@ async function fetchEmailCount(
 async function syncDay(
   apiKey: string,
   campaigns: CampaignInfo[],
-  date: string
+  date: string,
+  accountId: string
 ): Promise<number> {
   const counts = await Promise.all(
     campaigns.map((c) => fetchEmailCount(apiKey, c.id, date))
@@ -124,6 +125,7 @@ async function syncDay(
   const supabase = getServiceClient();
   await supabase.from("email_daily_sends").upsert({
     date,
+    account_id: accountId,
     email_count,
     breakdown: breakdown.length > 0 ? breakdown : null,
     synced_at: new Date().toISOString(),
@@ -132,9 +134,9 @@ async function syncDay(
   return email_count;
 }
 
-export async function syncEmailDailySends(): Promise<{ date: string; emailCount: number }> {
-  const account = getAccount("clement");
-  if (!account) throw new Error("Account clement not found");
+export async function syncEmailDailySends(accountId: AccountId = "clement"): Promise<{ date: string; emailCount: number }> {
+  const account = getAccount(accountId);
+  if (!account) throw new Error(`Account ${accountId} not found`);
 
   const apiKey = account.apiKey();
   if (!apiKey) throw new Error("Lemlist API key not configured");
@@ -143,10 +145,10 @@ export async function syncEmailDailySends(): Promise<{ date: string; emailCount:
   if (campaigns.length === 0) throw new Error("No active campaigns found");
 
   // Manual sync: force-refresh all 21 days sequentially to avoid rate limits
-  await backfillMissingDays(apiKey, campaigns, 21);
+  await backfillMissingDays(apiKey, campaigns, accountId, 21);
 
   const today = new Date().toISOString().slice(0, 10);
-  const todayCount = await syncDay(apiKey, campaigns, today);
+  const todayCount = await syncDay(apiKey, campaigns, today, accountId);
 
   return { date: today, emailCount: todayCount };
 }
@@ -154,6 +156,7 @@ export async function syncEmailDailySends(): Promise<{ date: string; emailCount:
 async function backfillMissingDays(
   apiKey: string,
   campaigns: CampaignInfo[],
+  accountId: string,
   forceRefreshDays = 2
 ): Promise<void> {
   if (campaigns.length === 0) return;
@@ -172,6 +175,7 @@ async function backfillMissingDays(
   const { data: existing } = await supabase
     .from("email_daily_sends")
     .select("date")
+    .eq("account_id", accountId)
     .in("date", dates);
 
   const existingDates = new Set((existing ?? []).map((r: { date: string }) => r.date));
@@ -180,19 +184,19 @@ async function backfillMissingDays(
 
   // Process sequentially with delay to avoid Lemlist rate limits
   for (const date of toFetch) {
-    await syncDay(apiKey, campaigns, date);
+    await syncDay(apiKey, campaigns, date, accountId);
     await new Promise((r) => setTimeout(r, 400));
   }
 }
 
-export async function getLemlistDailyEmailSends(): Promise<EmailDaySend[]> {
-  const account = getAccount("clement");
+export async function getLemlistDailyEmailSends(accountId: AccountId = "clement"): Promise<EmailDaySend[]> {
+  const account = getAccount(accountId);
   if (account) {
     const apiKey = account.apiKey();
     if (apiKey) {
       const campaigns = await getActiveCampaigns(apiKey);
       if (campaigns.length > 0) {
-        await backfillMissingDays(apiKey, campaigns).catch(() => {});
+        await backfillMissingDays(apiKey, campaigns, accountId).catch(() => {});
       }
     }
   }
@@ -201,6 +205,7 @@ export async function getLemlistDailyEmailSends(): Promise<EmailDaySend[]> {
   const { data } = await supabase
     .from("email_daily_sends")
     .select("date, email_count, breakdown")
+    .eq("account_id", accountId)
     .order("date", { ascending: true });
 
   return (data ?? []) as EmailDaySend[];

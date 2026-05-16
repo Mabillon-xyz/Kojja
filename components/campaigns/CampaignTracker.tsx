@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo } from 'react'
-import { RefreshCw, TrendingUp, Users, BarChart2, Phone, ChevronUp, ChevronDown, Linkedin, Mail, MessageSquare } from 'lucide-react'
+import { RefreshCw, TrendingUp, Users, BarChart2, Phone, ChevronUp, ChevronDown } from 'lucide-react'
 import { syncCampaignsAction } from '@/app/(dashboard)/campaigns/actions'
 
 export type LemlistCampaignRow = {
@@ -129,9 +129,6 @@ export default function CampaignTracker({
   const globalReplyRate = totalEmailSent > 0
     ? ((totalEmailReplied / totalEmailSent) * 100).toFixed(1)
     : '—'
-  const totalLinkedInInvites = campaigns.reduce((s, c) => s + c.linkedin_invites_sent, 0)
-  const totalLinkedInMessages = campaigns.reduce((s, c) => s + c.linkedin_messages_sent, 0)
-
   const kpis = [
     {
       label: 'Campagnes actives',
@@ -160,30 +157,6 @@ export default function CampaignTracker({
       sub: totalCallsBooked > 0 ? `répartis sur ${campaigns.filter(c => getCallCount(c) > 0).length} campagnes` : 'aucun call booké pour l\'instant',
       icon: <Phone className="w-4 h-4 text-emerald-600" />,
       iconBg: 'bg-emerald-50',
-    },
-  ]
-
-  const outreachKpis = [
-    {
-      label: 'Invitations LinkedIn',
-      value: totalLinkedInInvites.toLocaleString('fr-FR'),
-      sub: 'personnes contactées sur LinkedIn',
-      icon: <Linkedin className="w-4 h-4 text-sky-600" />,
-      iconBg: 'bg-sky-50',
-    },
-    {
-      label: 'Premiers messages LinkedIn',
-      value: totalLinkedInMessages.toLocaleString('fr-FR'),
-      sub: 'messages envoyés après connexion',
-      icon: <MessageSquare className="w-4 h-4 text-indigo-600" />,
-      iconBg: 'bg-indigo-50',
-    },
-    {
-      label: 'Emails envoyés',
-      value: totalEmailSent.toLocaleString('fr-FR'),
-      sub: 'via Lemlist (toutes campagnes)',
-      icon: <Mail className="w-4 h-4 text-rose-600" />,
-      iconBg: 'bg-rose-50',
     },
   ]
 
@@ -245,20 +218,6 @@ export default function CampaignTracker({
       {/* Macro KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(kpi => (
-          <div key={kpi.label} className="bg-white border border-neutral-200 rounded-xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-start justify-between mb-3">
-              <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider">{kpi.label}</p>
-              <div className={`p-1.5 rounded-lg ${kpi.iconBg}`}>{kpi.icon}</div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-neutral-900">{kpi.value}</p>
-            <p className="text-xs text-neutral-400 mt-1.5">{kpi.sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Outreach volume KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {outreachKpis.map(kpi => (
           <div key={kpi.label} className="bg-white border border-neutral-200 rounded-xl p-4 sm:p-5 shadow-sm">
             <div className="flex items-start justify-between mb-3">
               <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider">{kpi.label}</p>
