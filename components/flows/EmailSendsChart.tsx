@@ -12,7 +12,7 @@ import {
   ReferenceLine,
   Legend,
 } from "recharts";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import type { EmailDaySend, SenderCount } from "@/lib/lemlist-email-sends";
 
 const WINDOW_SIZE = 21;
@@ -105,6 +105,13 @@ function buildDemoData(): { filled: ChartRow[]; campaigns: string[] } {
 export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
   const [demo, setDemo] = useState(false);
   const [windowStart, setWindowStart] = useState<number | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  async function handleSync() {
+    setSyncing(true);
+    await fetch("/api/lemlist/email-sends", { method: "POST" });
+    window.location.reload();
+  }
 
   useEffect(() => {
     setDemo(localStorage.getItem(STORAGE_KEY) === "1");
@@ -161,9 +168,19 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
           </p>
           <p className="text-xs text-neutral-400 mt-0.5">Via Lemlist — by sender</p>
         </div>
-        <div className="text-right">
-          <p className="text-lg font-bold text-emerald-600">{todayCount}</p>
-          <p className="text-xs text-neutral-400">today</p>
+        <div className="text-right flex items-start gap-3">
+          <div>
+            <p className="text-lg font-bold text-emerald-600">{todayCount}</p>
+            <p className="text-xs text-neutral-400">today</p>
+          </div>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="mt-0.5 p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-50 transition-colors"
+            title="Resync email data"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-neutral-400 ${syncing ? "animate-spin" : ""}`} />
+          </button>
         </div>
       </div>
 

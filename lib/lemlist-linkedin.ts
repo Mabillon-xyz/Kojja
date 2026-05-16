@@ -124,15 +124,11 @@ export async function syncLinkedInDailySends(): Promise<{ date: string; sentCoun
 
   const campaignIds = await fetchAllCampaignIds(apiKey);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date();
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  // Full 21-day backfill — force-refresh all days
+  await backfillMissingDays(apiKey, campaignIds, true);
 
-  const [todayResult] = await Promise.all([
-    syncDay(apiKey, campaignIds, today),
-    syncDay(apiKey, campaignIds, yesterdayStr),
-  ]);
+  const today = new Date().toISOString().slice(0, 10);
+  const todayResult = await syncDay(apiKey, campaignIds, today);
 
   return { date: today, ...todayResult };
 }
@@ -144,18 +140,20 @@ export type LinkedInDaySend = {
   cumulative_total: number;
 };
 
-async function backfillMissingDays(apiKey: string, campaignIds: string[]): Promise<void> {
+async function backfillMissingDays(apiKey: string, campaignIds: string[], fullRefresh = false): Promise<void> {
   const supabase = getServiceClient();
   const today = new Date();
 
   const dates: string[] = [];
-  for (let i = 0; i <= 7; i++) {
+  for (let i = 0; i <= 21; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     dates.push(d.toISOString().slice(0, 10));
   }
 
-  const forceRefresh = new Set(dates.slice(0, 2));
+  // On full refresh (manual sync button), re-fetch all 21 days
+  // On page-load, only force-refresh last 2 days
+  const forceRefresh = fullRefresh ? new Set(dates) : new Set(dates.slice(0, 2));
 
   const { data: existing } = await supabase
     .from("linkedin_daily_sends")

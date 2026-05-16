@@ -140,20 +140,16 @@ export async function syncEmailDailySends(): Promise<{ date: string; emailCount:
   const campaigns = await getActiveCampaigns(apiKey);
   if (campaigns.length === 0) throw new Error("No active campaigns found");
 
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date();
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  // Full 21-day backfill — force-refresh all days
+  await backfillMissingDays(apiKey, campaigns, true);
 
-  const [todayCount] = await Promise.all([
-    syncDay(apiKey, campaigns, today),
-    syncDay(apiKey, campaigns, yesterdayStr),
-  ]);
+  const today = new Date().toISOString().slice(0, 10);
+  const todayCount = await syncDay(apiKey, campaigns, today);
 
   return { date: today, emailCount: todayCount };
 }
 
-async function backfillMissingDays(apiKey: string, campaigns: CampaignInfo[]): Promise<void> {
+async function backfillMissingDays(apiKey: string, campaigns: CampaignInfo[], fullRefresh = false): Promise<void> {
   if (campaigns.length === 0) return;
 
   const supabase = getServiceClient();
@@ -166,7 +162,7 @@ async function backfillMissingDays(apiKey: string, campaigns: CampaignInfo[]): P
     dates.push(d.toISOString().slice(0, 10));
   }
 
-  const forceRefresh = new Set(dates.slice(0, 7));
+  const forceRefresh = fullRefresh ? new Set(dates) : new Set(dates.slice(0, 7));
   const { data: existing } = await supabase
     .from("email_daily_sends")
     .select("date")

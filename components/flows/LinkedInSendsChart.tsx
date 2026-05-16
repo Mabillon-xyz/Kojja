@@ -12,7 +12,7 @@ import {
   Legend,
   ReferenceLine,
 } from "recharts";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import type { LinkedInDaySend } from "@/lib/lemlist-linkedin";
 
 const WINDOW_SIZE = 21;
@@ -75,6 +75,13 @@ const DEMO_DATA = buildDemoData();
 export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }) {
   const [demo, setDemo] = useState(false);
   const [windowStart, setWindowStart] = useState<number | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  async function handleSync() {
+    setSyncing(true);
+    await fetch("/api/lemlist/linkedin-sends", { method: "POST" });
+    window.location.reload();
+  }
 
   useEffect(() => {
     setDemo(localStorage.getItem(STORAGE_KEY) === "1");
@@ -154,7 +161,7 @@ export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }
             Invites sent &amp; first messages
           </p>
         </div>
-        <div className="text-right flex gap-4">
+        <div className="text-right flex items-start gap-4">
           <div>
             <p className="text-lg font-bold text-violet-600">
               {todayRow?.invite_count ?? 0}
@@ -167,6 +174,14 @@ export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }
             </p>
             <p className="text-xs text-neutral-400">messages today</p>
           </div>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="mt-0.5 p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-50 transition-colors"
+            title="Resync LinkedIn data"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-neutral-400 ${syncing ? "animate-spin" : ""}`} />
+          </button>
         </div>
       </div>
 
