@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getClientByUserId } from '@/lib/clients'
 import CampaignTracker from '@/components/campaigns/CampaignTracker'
+import { syncClientCampaignsSelfAction } from './actions'
 
 export default async function ClientCampaignsPage() {
   const supabase = await createClient()
@@ -22,7 +23,7 @@ export default async function ClientCampaignsPage() {
 
   return (
     <div className="max-w-7xl">
-      <CampaignTracker campaigns={campaigns ?? []} callsByCampaign={{}} readOnly />
+      <CampaignTracker campaigns={campaigns ?? []} callsByCampaign={{}} readOnly onSync={syncClientCampaignsSelfAction} />
     </div>
   )
 }
