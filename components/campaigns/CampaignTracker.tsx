@@ -123,7 +123,7 @@ export default function CampaignTracker({
   // Macro KPIs — calls computed from manual campaign data
   const totalCallsBooked = campaigns.reduce((s, c) => s + getCallCount(c), 0)
   const activeCount = campaigns.filter(c => c.status === 'running').length
-  const totalReached = campaigns.reduce((s, c) => s + c.leads_reached, 0)
+  const totalReached = campaigns.reduce((s, c) => s + c.leads_total, 0)
   const totalEmailSent = campaigns.reduce((s, c) => s + c.emails_sent, 0)
   const totalEmailReplied = campaigns.reduce((s, c) => s + c.emails_replied, 0)
   const globalReplyRate = totalEmailSent > 0
