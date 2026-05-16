@@ -102,7 +102,7 @@ function buildDemoData(): { filled: ChartRow[]; campaigns: string[] } {
   return { filled, campaigns };
 }
 
-export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
+export default function EmailSendsChart({ rows, readOnly = false }: { rows: EmailDaySend[]; readOnly?: boolean }) {
   const [demo, setDemo] = useState(false);
   const [windowStart, setWindowStart] = useState<number | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -173,14 +173,16 @@ export default function EmailSendsChart({ rows }: { rows: EmailDaySend[] }) {
             <p className="text-lg font-bold text-emerald-600">{todayCount}</p>
             <p className="text-xs text-neutral-400">today</p>
           </div>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="mt-0.5 p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-50 transition-colors"
-            title="Resync email data"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-neutral-400 ${syncing ? "animate-spin" : ""}`} />
-          </button>
+          {!readOnly && (
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="mt-0.5 p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-50 transition-colors"
+              title="Resync email data"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-neutral-400 ${syncing ? "animate-spin" : ""}`} />
+            </button>
+          )}
         </div>
       </div>
 

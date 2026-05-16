@@ -72,7 +72,7 @@ function buildDemoData() {
 
 const DEMO_DATA = buildDemoData();
 
-export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }) {
+export default function LinkedInSendsChart({ rows, readOnly = false }: { rows: LinkedInDaySend[]; readOnly?: boolean }) {
   const [demo, setDemo] = useState(false);
   const [windowStart, setWindowStart] = useState<number | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -174,14 +174,16 @@ export default function LinkedInSendsChart({ rows }: { rows: LinkedInDaySend[] }
             </p>
             <p className="text-xs text-neutral-400">messages today</p>
           </div>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="mt-0.5 p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-50 transition-colors"
-            title="Resync LinkedIn data"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-neutral-400 ${syncing ? "animate-spin" : ""}`} />
-          </button>
+          {!readOnly && (
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="mt-0.5 p-1.5 rounded-md hover:bg-neutral-100 disabled:opacity-50 transition-colors"
+              title="Resync LinkedIn data"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-neutral-400 ${syncing ? "animate-spin" : ""}`} />
+            </button>
+          )}
         </div>
       </div>
 
