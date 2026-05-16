@@ -71,10 +71,12 @@ export default function CampaignTracker({
   campaigns,
   callsByCampaign,
   readOnly = false,
+  onSync,
 }: {
   campaigns: LemlistCampaignRow[]
   callsByCampaign: Record<string, number>
   readOnly?: boolean
+  onSync?: () => Promise<{ synced?: number; timestamp?: string; error?: string }>
 }) {
   const [tab, setTab] = useState('running')
   const [sortKey, setSortKey] = useState<SortKey>('created_at_lemlist')
@@ -95,7 +97,7 @@ export default function CampaignTracker({
 
   function handleSync() {
     startTransition(async () => {
-      const result = await syncCampaignsAction()
+      const result = await (onSync ? onSync() : syncCampaignsAction())
       setSyncResult(result)
     })
   }
@@ -191,7 +193,7 @@ export default function CampaignTracker({
             {lastSynced ? `Dernière synchro ${timeAgo(lastSynced)}` : 'Aucun sync — lancez le premier sync'}
           </p>
         </div>
-        {!readOnly && (
+        {(!readOnly || onSync) && (
           <button
             onClick={handleSync}
             disabled={isPending}
