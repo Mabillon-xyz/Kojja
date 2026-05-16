@@ -12,20 +12,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [results, linkedIn, emailSends] = await Promise.allSettled([
-    syncAllAccounts(),
-    syncLinkedInDailySends(),
-    syncEmailDailySends(),
-  ]);
+  // Run sequentially to avoid Lemlist API rate limits from concurrent calls
+  const settled = {
+    results: null as unknown,
+    linkedIn: null as unknown,
+    emailSends: null as unknown,
+  };
+  try { settled.results = await syncAllAccounts(); } catch (e) { settled.results = { error: (e as Error).message }; }
+  try { settled.linkedIn = await syncLinkedInDailySends(); } catch (e) { settled.linkedIn = { error: (e as Error).message }; }
+  try { settled.emailSends = await syncEmailDailySends(); } catch (e) { settled.emailSends = { error: (e as Error).message }; }
 
-  console.log("[lemlist-refresh] cron results:", JSON.stringify(results));
-  console.log("[lemlist-refresh] linkedin sync:", JSON.stringify(linkedIn));
-  console.log("[lemlist-refresh] email sends sync:", JSON.stringify(emailSends));
+  console.log("[lemlist-refresh] cron results:", JSON.stringify(settled));
 
-  return NextResponse.json({
-    ok: true,
-    results: results.status === "fulfilled" ? results.value : { error: results.reason?.message },
-    linkedIn: linkedIn.status === "fulfilled" ? linkedIn.value : { error: linkedIn.reason?.message },
-    emailSends: emailSends.status === "fulfilled" ? emailSends.value : { error: emailSends.reason?.message },
-  });
+  return NextResponse.json({ ok: true, ...settled });
 }

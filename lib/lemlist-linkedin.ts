@@ -88,14 +88,17 @@ async function syncDay(
   const sentCount = extractLinkedInMessages(steps);
   const inviteCount = extractLinkedInInvites(steps);
 
-  const supabase = getServiceClient();
-  await supabase.from("linkedin_daily_sends").upsert({
-    date,
-    sent_count: sentCount,
-    invite_count: inviteCount,
-    cumulative_total: 0,
-    synced_at: new Date().toISOString(),
-  });
+  // Don't overwrite existing good data with rate-limited zeros
+  if (sentCount > 0 || inviteCount > 0) {
+    const supabase = getServiceClient();
+    await supabase.from("linkedin_daily_sends").upsert({
+      date,
+      sent_count: sentCount,
+      invite_count: inviteCount,
+      cumulative_total: 0,
+      synced_at: new Date().toISOString(),
+    });
+  }
 
   return { sentCount, inviteCount };
 }
@@ -151,9 +154,10 @@ async function backfillMissingDays(
   const toFetch = dates.filter((d) => forceRefresh.has(d) || !existingDates.has(d));
   if (toFetch.length === 0) return;
 
-  // Process sequentially to avoid Lemlist rate limits
+  // Process sequentially with delay to avoid Lemlist rate limits
   for (const date of toFetch) {
     await syncDay(apiKey, campaignIds, date);
+    await new Promise((r) => setTimeout(r, 400));
   }
 }
 

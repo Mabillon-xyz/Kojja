@@ -118,6 +118,9 @@ async function syncDay(
 
   const email_count = counts.reduce((sum, n) => sum + n, 0);
 
+  // Don't overwrite existing good data with rate-limited zeros
+  if (email_count === 0) return 0;
+
   const supabase = getServiceClient();
   await supabase.from("email_daily_sends").upsert({
     date,
@@ -151,7 +154,7 @@ export async function syncEmailDailySends(): Promise<{ date: string; emailCount:
 async function backfillMissingDays(
   apiKey: string,
   campaigns: CampaignInfo[],
-  forceRefreshDays = 7
+  forceRefreshDays = 2
 ): Promise<void> {
   if (campaigns.length === 0) return;
 
@@ -175,9 +178,10 @@ async function backfillMissingDays(
   const toFetch = dates.filter((d) => forceRefresh.has(d) || !existingDates.has(d));
   if (toFetch.length === 0) return;
 
-  // Process sequentially to avoid Lemlist rate limits
+  // Process sequentially with delay to avoid Lemlist rate limits
   for (const date of toFetch) {
     await syncDay(apiKey, campaigns, date);
+    await new Promise((r) => setTimeout(r, 400));
   }
 }
 
