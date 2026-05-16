@@ -14,6 +14,7 @@ export default async function CampaignsPage() {
     supabase
       .from('lemlist_campaigns')
       .select('*')
+      .is('client_id', null)
       .neq('status', 'draft')
       .order('created_at_lemlist', { ascending: false }),
     supabase
