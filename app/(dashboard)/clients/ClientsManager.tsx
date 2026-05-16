@@ -243,7 +243,7 @@ export default function ClientsManager({ clients: initial }: { clients: ClientRo
       {/* Clients table */}
       {clients.length === 0 ? (
         <div className="bg-white border border-neutral-200 rounded-xl p-12 text-center">
-          <p className="text-sm text-neutral-400">Aucun client pour l'instant. Ajoutez votre premier client ci-dessus.</p>
+          <p className="text-sm text-neutral-400">{"Aucun client pour l'instant. Ajoutez votre premier client ci-dessus."}</p>
         </div>
       ) : (
         <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
