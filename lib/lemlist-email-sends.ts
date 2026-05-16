@@ -140,8 +140,8 @@ export async function syncEmailDailySends(): Promise<{ date: string; emailCount:
   const campaigns = await getActiveCampaigns(apiKey);
   if (campaigns.length === 0) throw new Error("No active campaigns found");
 
-  // Full 21-day backfill — force-refresh all days
-  await backfillMissingDays(apiKey, campaigns, true);
+  // Manual sync: force-refresh last 14 days sequentially to avoid rate limits
+  await backfillMissingDays(apiKey, campaigns, 14);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayCount = await syncDay(apiKey, campaigns, today);
@@ -149,7 +149,11 @@ export async function syncEmailDailySends(): Promise<{ date: string; emailCount:
   return { date: today, emailCount: todayCount };
 }
 
-async function backfillMissingDays(apiKey: string, campaigns: CampaignInfo[], fullRefresh = false): Promise<void> {
+async function backfillMissingDays(
+  apiKey: string,
+  campaigns: CampaignInfo[],
+  forceRefreshDays = 7
+): Promise<void> {
   if (campaigns.length === 0) return;
 
   const supabase = getServiceClient();
@@ -162,7 +166,7 @@ async function backfillMissingDays(apiKey: string, campaigns: CampaignInfo[], fu
     dates.push(d.toISOString().slice(0, 10));
   }
 
-  const forceRefresh = fullRefresh ? new Set(dates) : new Set(dates.slice(0, 7));
+  const forceRefresh = new Set(dates.slice(0, forceRefreshDays));
   const { data: existing } = await supabase
     .from("email_daily_sends")
     .select("date")
@@ -172,7 +176,10 @@ async function backfillMissingDays(apiKey: string, campaigns: CampaignInfo[], fu
   const toFetch = dates.filter((d) => forceRefresh.has(d) || !existingDates.has(d));
   if (toFetch.length === 0) return;
 
-  await Promise.all(toFetch.map((date) => syncDay(apiKey, campaigns, date)));
+  // Process sequentially to avoid Lemlist rate limits
+  for (const date of toFetch) {
+    await syncDay(apiKey, campaigns, date);
+  }
 }
 
 export async function getLemlistDailyEmailSends(): Promise<EmailDaySend[]> {

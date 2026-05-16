@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getAccount } from "@/lib/lemlist-accounts";
-import { getAllCampaigns, getAuthHeader } from "@/lib/lemlist";
+import { getAuthHeader } from "@/lib/lemlist";
 
 type StepStats = {
   sequenceId: string;
@@ -16,6 +16,16 @@ function getServiceClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { global: { fetch: (url, opts) => fetch(url, { ...opts, cache: "no-store" }) } }
   );
+}
+
+// Read campaign IDs from lemlist_campaigns table (already synced by Campaign Tracker)
+// This includes running, paused, and ended campaigns without extra API calls.
+async function fetchAllCampaignIds(): Promise<string[]> {
+  const supabase = getServiceClient();
+  const { data } = await supabase
+    .from("lemlist_campaigns")
+    .select("campaign_id");
+  return (data ?? []).map((r: { campaign_id: string }) => r.campaign_id);
 }
 
 async function fetchStepStats(
@@ -34,48 +44,23 @@ async function fetchStepStats(
   return data.steps ?? [];
 }
 
-async function fetchAllCampaignIds(apiKey: string): Promise<string[]> {
-  const authHeader = getAuthHeader(apiKey);
-  const statuses = ["running", "paused", "ended"];
-  const ids = new Set<string>();
-
-  await Promise.all(
-    statuses.map(async (status) => {
-      try {
-        const res = await fetch(
-          `https://api.lemlist.com/api/campaigns?limit=100&status=${status}`,
-          { cache: "no-store", headers: { Authorization: authHeader } }
-        );
-        if (!res.ok) return;
-        const data = await res.json() as Array<{ _id: string }>;
-        if (Array.isArray(data)) data.forEach((c) => ids.add(c._id));
-      } catch {
-        // ignore per-status failures
-      }
-    })
-  );
-
-  // fallback: also try the unfiltered endpoint in case the API ignores status param
-  try {
-    const campaigns = await getAllCampaigns(apiKey);
-    campaigns.forEach((c) => ids.add(c._id));
-  } catch {
-    // ignore
-  }
-
-  return Array.from(ids);
-}
-
+// Fetch all steps for a list of campaigns sequentially in batches to avoid rate limits
 async function fetchAllSteps(
   apiKey: string,
   campaignIds: string[],
   startDate: string,
   endDate: string
 ): Promise<StepStats[]> {
-  const results = await Promise.all(
-    campaignIds.map((id) => fetchStepStats(apiKey, id, startDate, endDate))
-  );
-  return results.flat();
+  const BATCH = 5;
+  const all: StepStats[] = [];
+  for (let i = 0; i < campaignIds.length; i += BATCH) {
+    const batch = campaignIds.slice(i, i + BATCH);
+    const results = await Promise.all(
+      batch.map((id) => fetchStepStats(apiKey, id, startDate, endDate))
+    );
+    all.push(...results.flat());
+  }
+  return all;
 }
 
 function extractLinkedInMessages(steps: StepStats[]): number {
@@ -122,15 +107,15 @@ export async function syncLinkedInDailySends(): Promise<{ date: string; sentCoun
   const apiKey = account.apiKey();
   if (!apiKey) throw new Error("LEMLIST_API_KEY not configured");
 
-  const campaignIds = await fetchAllCampaignIds(apiKey);
+  const campaignIds = await fetchAllCampaignIds();
+  if (campaignIds.length === 0) throw new Error("No campaigns found in DB — run Campaign Tracker sync first");
 
-  // Full 21-day backfill — force-refresh all days
-  await backfillMissingDays(apiKey, campaignIds, true);
+  // Manual sync: force-refresh last 14 days sequentially to avoid rate limits
+  await backfillMissingDays(apiKey, campaignIds, 14);
 
   const today = new Date().toISOString().slice(0, 10);
-  const todayResult = await syncDay(apiKey, campaignIds, today);
-
-  return { date: today, ...todayResult };
+  const result = await syncDay(apiKey, campaignIds, today);
+  return { date: today, ...result };
 }
 
 export type LinkedInDaySend = {
@@ -140,7 +125,11 @@ export type LinkedInDaySend = {
   cumulative_total: number;
 };
 
-async function backfillMissingDays(apiKey: string, campaignIds: string[], fullRefresh = false): Promise<void> {
+async function backfillMissingDays(
+  apiKey: string,
+  campaignIds: string[],
+  forceRefreshDays = 2
+): Promise<void> {
   const supabase = getServiceClient();
   const today = new Date();
 
@@ -151,9 +140,7 @@ async function backfillMissingDays(apiKey: string, campaignIds: string[], fullRe
     dates.push(d.toISOString().slice(0, 10));
   }
 
-  // On full refresh (manual sync button), re-fetch all 21 days
-  // On page-load, only force-refresh last 2 days
-  const forceRefresh = fullRefresh ? new Set(dates) : new Set(dates.slice(0, 2));
+  const forceRefresh = new Set(dates.slice(0, forceRefreshDays));
 
   const { data: existing } = await supabase
     .from("linkedin_daily_sends")
@@ -164,7 +151,10 @@ async function backfillMissingDays(apiKey: string, campaignIds: string[], fullRe
   const toFetch = dates.filter((d) => forceRefresh.has(d) || !existingDates.has(d));
   if (toFetch.length === 0) return;
 
-  await Promise.all(toFetch.map((date) => syncDay(apiKey, campaignIds, date)));
+  // Process sequentially to avoid Lemlist rate limits
+  for (const date of toFetch) {
+    await syncDay(apiKey, campaignIds, date);
+  }
 }
 
 export async function getLinkedInDailySends(): Promise<LinkedInDaySend[]> {
@@ -172,8 +162,10 @@ export async function getLinkedInDailySends(): Promise<LinkedInDaySend[]> {
   if (account) {
     const apiKey = account.apiKey();
     if (apiKey) {
-      const campaignIds = await fetchAllCampaignIds(apiKey);
-      await backfillMissingDays(apiKey, campaignIds);
+      const campaignIds = await fetchAllCampaignIds();
+      if (campaignIds.length > 0) {
+        await backfillMissingDays(apiKey, campaignIds, 2).catch(() => {});
+      }
     }
   }
 
