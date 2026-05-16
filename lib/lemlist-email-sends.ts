@@ -69,8 +69,7 @@ async function getActiveCampaigns(apiKey: string): Promise<CampaignInfo[]> {
         _id: string;
         senders?: Array<{ email?: string }>;
       };
-      const senderEmail = d.senders?.find((s) => s.email)?.email ?? null;
-      if (!senderEmail) return null;
+      const senderEmail = d.senders?.find((s) => s.email)?.email ?? "Unknown";
       return { id: c._id, senderEmail };
     })
   );
