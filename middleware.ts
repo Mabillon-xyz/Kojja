@@ -81,7 +81,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/campaign-builder') ||
     pathname.startsWith('/agent')
   )
-  const isClientRoute = pathname.startsWith('/client')
+  const isClientRoute = pathname === '/client' || pathname.startsWith('/client/')
   const isProtected = isAdminRoute || isClientRoute
   const isAuth = pathname.startsWith('/login') || pathname.startsWith('/signup')
 
