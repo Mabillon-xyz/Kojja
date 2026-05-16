@@ -35,12 +35,35 @@ async function fetchStepStats(
 }
 
 async function fetchAllCampaignIds(apiKey: string): Promise<string[]> {
+  const authHeader = getAuthHeader(apiKey);
+  const statuses = ["running", "paused", "ended"];
+  const ids = new Set<string>();
+
+  await Promise.all(
+    statuses.map(async (status) => {
+      try {
+        const res = await fetch(
+          `https://api.lemlist.com/api/campaigns?limit=100&status=${status}`,
+          { cache: "no-store", headers: { Authorization: authHeader } }
+        );
+        if (!res.ok) return;
+        const data = await res.json() as Array<{ _id: string }>;
+        if (Array.isArray(data)) data.forEach((c) => ids.add(c._id));
+      } catch {
+        // ignore per-status failures
+      }
+    })
+  );
+
+  // fallback: also try the unfiltered endpoint in case the API ignores status param
   try {
     const campaigns = await getAllCampaigns(apiKey);
-    return campaigns.map((c) => c._id);
+    campaigns.forEach((c) => ids.add(c._id));
   } catch {
-    return [];
+    // ignore
   }
+
+  return Array.from(ids);
 }
 
 async function fetchAllSteps(

@@ -23,19 +23,40 @@ type CampaignInfo = { id: string; senderEmail: string };
 async function getActiveCampaigns(apiKey: string): Promise<CampaignInfo[]> {
   const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
 
-  const listRes = await fetch("https://api.lemlist.com/api/campaigns?limit=100", {
+  const statuses = ["running", "paused", "ended"];
+  const seen = new Set<string>();
+  const allCampaigns: Array<{ _id: string; status: string; archived?: boolean }> = [];
+
+  await Promise.all(
+    statuses.map(async (status) => {
+      const res = await fetch(
+        `https://api.lemlist.com/api/campaigns?limit=100&status=${status}`,
+        { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } }
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as Array<{ _id: string; status: string; archived?: boolean }>;
+      if (!Array.isArray(data)) return;
+      data.forEach((c) => {
+        if (!seen.has(c._id)) { seen.add(c._id); allCampaigns.push(c); }
+      });
+    })
+  );
+
+  // fallback: unfiltered endpoint
+  const fallbackRes = await fetch("https://api.lemlist.com/api/campaigns?limit=100", {
     cache: "no-store",
     headers: { Authorization: `Basic ${basicAuth}` },
   });
-  if (!listRes.ok) return [];
+  if (fallbackRes.ok) {
+    const data = (await fallbackRes.json()) as Array<{ _id: string; status: string; archived?: boolean }>;
+    if (Array.isArray(data)) {
+      data.forEach((c) => {
+        if (!seen.has(c._id)) { seen.add(c._id); allCampaigns.push(c); }
+      });
+    }
+  }
 
-  const list = (await listRes.json()) as Array<{
-    _id: string;
-    status: string;
-    archived?: boolean;
-  }>;
-
-  const active = list.filter((c) => c.status !== "draft" && !c.archived);
+  const active = allCampaigns.filter((c) => c.status !== "draft" && !c.archived);
 
   const details = await Promise.all(
     active.map(async (c) => {
