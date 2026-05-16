@@ -110,8 +110,8 @@ export async function syncLinkedInDailySends(): Promise<{ date: string; sentCoun
   const campaignIds = await fetchAllCampaignIds();
   if (campaignIds.length === 0) throw new Error("No campaigns found in DB — run Campaign Tracker sync first");
 
-  // Manual sync: force-refresh last 14 days sequentially to avoid rate limits
-  await backfillMissingDays(apiKey, campaignIds, 14);
+  // Manual sync: force-refresh all 21 days sequentially to avoid rate limits
+  await backfillMissingDays(apiKey, campaignIds, 21);
 
   const today = new Date().toISOString().slice(0, 10);
   const result = await syncDay(apiKey, campaignIds, today);

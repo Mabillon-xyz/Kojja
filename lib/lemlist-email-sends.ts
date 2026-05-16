@@ -140,8 +140,8 @@ export async function syncEmailDailySends(): Promise<{ date: string; emailCount:
   const campaigns = await getActiveCampaigns(apiKey);
   if (campaigns.length === 0) throw new Error("No active campaigns found");
 
-  // Manual sync: force-refresh last 14 days sequentially to avoid rate limits
-  await backfillMissingDays(apiKey, campaigns, 14);
+  // Manual sync: force-refresh all 21 days sequentially to avoid rate limits
+  await backfillMissingDays(apiKey, campaigns, 21);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayCount = await syncDay(apiKey, campaigns, today);
