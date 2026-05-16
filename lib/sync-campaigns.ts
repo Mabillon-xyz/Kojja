@@ -22,8 +22,9 @@ function linkedinInvitesSentFromSteps(stats: LemlistCampaignStatsV2 | null): num
     .reduce((sum, s) => sum + (s.invited ?? 0), 0)
 }
 
-export async function syncCampaigns(): Promise<{ synced: number; timestamp: string; error?: string }> {
-  const apiKey = process.env.LEMLIST_API_KEY
+export async function syncCampaigns(opts?: { apiKey?: string; clientId?: string }): Promise<{ synced: number; timestamp: string; error?: string }> {
+  const apiKey = opts?.apiKey ?? process.env.LEMLIST_API_KEY
+  const clientId = opts?.clientId ?? null
   if (!apiKey) return { synced: 0, timestamp: new Date().toISOString(), error: 'LEMLIST_API_KEY not set' }
 
   const supabase = getSupabase()
@@ -79,6 +80,7 @@ export async function syncCampaigns(): Promise<{ synced: number; timestamp: stri
       name: campaign.name,
       status: campaign.status ?? 'draft',
       created_at_lemlist: campaign.createdAt ?? null,
+      client_id: clientId,
 
       emails_sent: emailSent,
       emails_delivered: email?.delivered ?? 0,

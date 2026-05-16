@@ -569,8 +569,12 @@ CREATE TABLE IF NOT EXISTS lemlist_campaigns (
 );
 
 ALTER TABLE lemlist_campaigns ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Auth users read lemlist_campaigns"
-  ON lemlist_campaigns FOR SELECT TO authenticated USING (true);
+-- Admin voit tout ; client voit uniquement ses campagnes (voir aussi supabase-migration-clients.sql)
+CREATE POLICY "campaigns_select"
+  ON lemlist_campaigns FOR SELECT TO authenticated USING (
+    (auth.jwt() -> 'user_metadata' ->> 'role') IS DISTINCT FROM 'client'
+    OR client_id = (SELECT id FROM clients WHERE user_id = auth.uid())
+  );
 CREATE POLICY "Service role full access on lemlist_campaigns"
   ON lemlist_campaigns FOR ALL TO service_role USING (true) WITH CHECK (true);
 
@@ -579,3 +583,33 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS lemlist_campaign_id TEXT;
 
 -- Backfill: leads created before campaign tracking → attributed to the historical Coach campaign
 UPDATE leads SET lemlist_campaign_id = 'cam_JC7mjRSoLg4MACxR6' WHERE lemlist_campaign_id IS NULL;
+
+-- ============================================================
+-- Portail client — run supabase-migration-clients.sql first
+-- ============================================================
+
+-- clients table (stores per-client Lemlist credentials)
+CREATE TABLE IF NOT EXISTS clients (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  name            TEXT NOT NULL,
+  email           TEXT NOT NULL,
+  lemlist_api_key TEXT NOT NULL,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "clients_select" ON clients FOR SELECT TO authenticated USING (
+  user_id = auth.uid()
+  OR (auth.jwt() -> 'user_metadata' ->> 'role') IS DISTINCT FROM 'client'
+);
+CREATE POLICY "clients_insert" ON clients FOR INSERT TO authenticated WITH CHECK (
+  (auth.jwt() -> 'user_metadata' ->> 'role') IS DISTINCT FROM 'client'
+);
+CREATE POLICY "clients_delete" ON clients FOR DELETE TO authenticated USING (
+  (auth.jwt() -> 'user_metadata' ->> 'role') IS DISTINCT FROM 'client'
+);
+CREATE POLICY "clients_service_role" ON clients FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- client_id column on lemlist_campaigns (NULL = Clément's campaigns)
+ALTER TABLE lemlist_campaigns ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES clients(id) ON DELETE CASCADE;

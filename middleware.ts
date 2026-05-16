@@ -70,7 +70,19 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/settings') || pathname.startsWith('/documentation') || pathname.startsWith('/crm') || pathname.startsWith('/campaigns')
+  const isAdminRoute = (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/settings') ||
+    pathname.startsWith('/documentation') ||
+    pathname.startsWith('/crm') ||
+    pathname.startsWith('/campaigns') ||
+    pathname.startsWith('/clients') ||
+    pathname.startsWith('/calendar-sync') ||
+    pathname.startsWith('/campaign-builder') ||
+    pathname.startsWith('/agent')
+  )
+  const isClientRoute = pathname.startsWith('/client')
+  const isProtected = isAdminRoute || isClientRoute
   const isAuth = pathname.startsWith('/login') || pathname.startsWith('/signup')
 
   if (isProtected && !user) {
@@ -80,10 +92,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (isAuth && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+  if (user) {
+    const role = user.user_metadata?.role as string | undefined
+
+    // Clients cannot access admin routes
+    if (role === 'client' && isAdminRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/client/campaigns'
+      return NextResponse.redirect(url)
+    }
+
+    // Admins cannot access client routes
+    if (role !== 'client' && isClientRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+
+    // Redirect authenticated users away from auth pages
+    if (isAuth) {
+      const url = request.nextUrl.clone()
+      url.pathname = role === 'client' ? '/client/campaigns' : '/dashboard'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

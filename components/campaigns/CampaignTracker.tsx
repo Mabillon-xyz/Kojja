@@ -70,9 +70,11 @@ const TABS = [
 export default function CampaignTracker({
   campaigns,
   callsByCampaign,
+  readOnly = false,
 }: {
   campaigns: LemlistCampaignRow[]
   callsByCampaign: Record<string, number>
+  readOnly?: boolean
 }) {
   const [tab, setTab] = useState('running')
   const [sortKey, setSortKey] = useState<SortKey>('created_at_lemlist')
@@ -189,14 +191,16 @@ export default function CampaignTracker({
             {lastSynced ? `Dernière synchro ${timeAgo(lastSynced)}` : 'Aucun sync — lancez le premier sync'}
           </p>
         </div>
-        <button
-          onClick={handleSync}
-          disabled={isPending}
-          className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium bg-white border border-neutral-200 rounded-lg shadow-sm hover:bg-neutral-50 disabled:opacity-60 transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-neutral-500 ${isPending ? 'animate-spin' : ''}`} />
-          {isPending ? 'Synchro…' : 'Sync'}
-        </button>
+        {!readOnly && (
+          <button
+            onClick={handleSync}
+            disabled={isPending}
+            className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium bg-white border border-neutral-200 rounded-lg shadow-sm hover:bg-neutral-50 disabled:opacity-60 transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-neutral-500 ${isPending ? 'animate-spin' : ''}`} />
+            {isPending ? 'Synchro…' : 'Sync'}
+          </button>
+        )}
       </div>
 
       {syncResult?.error && (

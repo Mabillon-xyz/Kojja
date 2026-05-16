@@ -9,6 +9,7 @@ const nav = [
   { label: 'Home', href: '/dashboard', emoji: '🏠' },
   { label: 'CRM', href: '/crm', emoji: '👥' },
   { label: 'Campaigns', href: '/campaigns', emoji: '📈' },
+  { label: 'Clients', href: '/clients', emoji: '🧑‍💼' },
   { label: 'Calendar', href: '/calendar-sync', emoji: '📅' },
   { label: 'Builder', href: '/campaign-builder', emoji: '🎯' },
   { label: 'Agent', href: '/agent', emoji: '🤖' },
