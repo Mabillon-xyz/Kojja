@@ -85,7 +85,7 @@ export async function syncCampaigns(opts?: { apiKey?: string; clientId?: string 
       name: campaign.name,
       status,
       created_at_lemlist: campaign.createdAt ?? null,
-      client_id: clientId,
+      ...(clientId !== null && { client_id: clientId }),
 
       emails_sent: emailSent,
       emails_delivered: email?.delivered ?? 0,
