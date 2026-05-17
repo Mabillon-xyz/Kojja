@@ -10,20 +10,6 @@ function getServiceClient() {
   );
 }
 
-async function fetchCoachLeadCount(apiKey: string, campaignId: string): Promise<number> {
-  if (!campaignId) return 0;
-  const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
-  const startDate = "2020-01-01T00:00:00.000Z";
-  const endDate = new Date().toISOString();
-  const params = new URLSearchParams({ startDate, endDate });
-  const res = await fetch(
-    `https://api.lemlist.com/api/v2/campaigns/${campaignId}/stats?${params}`,
-    { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } }
-  );
-  if (!res.ok) return 0;
-  const data = await res.json() as { nbLeads?: number; nbLeadsLaunched?: number };
-  return data.nbLeadsLaunched ?? data.nbLeads ?? 0;
-}
 
 async function fetchAllLemlistLeads(apiKey: string, campaignId: string): Promise<LemlistLead[]> {
   const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
@@ -101,13 +87,11 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
 
   const supabase = getServiceClient();
 
-  const coachCampaignId = account.coachCampaignId();
-
-  // Fetch Lemlist leads + CRM leads + Coach campaign count in parallel
-  const [lemlistLeads, { data: crmLeads, error }, coachTotal] = await Promise.all([
+  // Fetch Lemlist leads + CRM leads + campaign totals from DB (same source as Campaigns > Leads contactés)
+  const [lemlistLeads, { data: crmLeads, error }, { data: campaignTotals }] = await Promise.all([
     fetchAllLemlistLeads(apiKey, campaignId),
     supabase.from("leads").select("email, linkedin_url, stage"),
-    fetchCoachLeadCount(apiKey, coachCampaignId),
+    supabase.from("lemlist_campaigns").select("leads_total").is("client_id", null).neq("status", "draft"),
   ]);
 
   if (error) throw new Error(`Supabase error: ${error.message}`);
@@ -182,6 +166,7 @@ export async function syncLemlistConversion(accountId: AccountId): Promise<Conve
     }
   }
 
+  const coachTotal = (campaignTotals ?? []).reduce((s, c) => s + (c.leads_total ?? 0), 0);
   const total = coachTotal > 0 ? coachTotal : enriched.length;
   const updatedAt = new Date().toISOString();
 
