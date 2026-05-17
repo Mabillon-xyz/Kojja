@@ -93,12 +93,33 @@ async function fetchClementSnapshots(): Promise<Snapshot[]> {
   return Array.from(byDay.values()).sort((a, b) => a.snapshotted_at.localeCompare(b.snapshotted_at))
 }
 
+async function fetchLiveTotalLeads(): Promise<number> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('lemlist_campaigns')
+    .select('leads_total')
+    .is('client_id', null)
+    .neq('status', 'draft')
+  return (data ?? []).reduce((s: number, c: { leads_total: number }) => s + (c.leads_total ?? 0), 0)
+}
 
 export default async function DashboardPage() {
-  const [leads, snapshots] = await Promise.all([
+  const [leads, snapshots, liveTotalLeads] = await Promise.all([
     readLeads(),
     fetchClementSnapshots(),
+    fetchLiveTotalLeads(),
   ])
+
+  // Override the latest snapshot's total with the live sum from lemlist_campaigns
+  // so the graph matches exactly what Campaigns > "Leads contactés" shows
+  if (snapshots.length > 0 && liveTotalLeads > 0) {
+    const last = snapshots[snapshots.length - 1]
+    snapshots[snapshots.length - 1] = {
+      ...last,
+      total_leads: liveTotalLeads,
+      conversion_rate: Math.round((last.booked_leads / liveTotalLeads) * 100 * 100) / 100,
+    }
+  }
 
   const totalLeads = leads.length
   const customers = leads.filter((l) => l.stage === 'customer').length
