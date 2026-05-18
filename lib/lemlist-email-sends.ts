@@ -93,7 +93,9 @@ async function fetchEmailCount(
   );
   if (!res.ok) return 0;
   const data = (await res.json()) as LemlistCampaignStatsV2;
-  return data.perChannel?.email?.sent ?? data.messagesSent ?? 0;
+  console.log(`[fetchEmailCount] ${campaignId} ${date} → nbLeadsLaunched=${data.nbLeadsLaunched} perChannel.email.sent=${data.perChannel?.email?.sent}`);
+  // nbLeadsLaunched = leads who entered the sequence on this date = first emails sent
+  return data.nbLeadsLaunched ?? 0;
 }
 
 async function syncDay(
@@ -118,9 +120,6 @@ async function syncDay(
     .map(([name, count]) => ({ name, count }));
 
   const email_count = counts.reduce((sum, n) => sum + n, 0);
-
-  // Don't overwrite existing good data with rate-limited zeros
-  if (email_count === 0) return 0;
 
   const supabase = getServiceClient();
   await supabase.from("email_daily_sends").upsert({
