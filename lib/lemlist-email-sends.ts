@@ -93,9 +93,7 @@ async function fetchEmailCount(
   );
   if (!res.ok) return 0;
   const data = (await res.json()) as LemlistCampaignStatsV2;
-  console.log(`[fetchEmailCount] ${campaignId} ${date} → nbLeadsLaunched=${data.nbLeadsLaunched} perChannel.email.sent=${data.perChannel?.email?.sent}`);
-  // nbLeadsLaunched = leads who entered the sequence on this date = first emails sent
-  return data.nbLeadsLaunched ?? 0;
+  return data.perChannel?.email?.sent ?? 0;
 }
 
 async function syncDay(
