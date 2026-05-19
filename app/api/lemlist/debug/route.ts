@@ -13,6 +13,42 @@ export async function GET(req: NextRequest) {
   const accountId = req.nextUrl.searchParams.get("account") ?? "clement";
   const account = getAccount(accountId);
 
+  // --- Option B: test email stats sources ---
+  if (req.nextUrl.searchParams.get("stats") === "1") {
+    if (!account) return NextResponse.json({ error: "Unknown account" }, { status: 400 });
+    const apiKey = account.apiKey();
+    const basicAuth = Buffer.from(`:${apiKey}`).toString("base64");
+    const today = new Date().toISOString().slice(0, 10);
+    const startDate = new Date(today + "T00:00:00.000Z").toISOString();
+    const endDate = new Date(today + "T23:59:59.999Z").toISOString();
+
+    // Get all campaigns
+    const camRes = await fetch("https://api.lemlist.com/api/campaigns?limit=100", {
+      cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` },
+    });
+    const campaigns = camRes.ok ? (await camRes.json() as Array<{ _id: string; name: string; status: string }>) : [];
+    const active = campaigns.filter((c) => c.status !== "draft");
+
+    // For each campaign: fetch v2 stats AND activities
+    const results = await Promise.all(active.map(async (c) => {
+      const statsRes = await fetch(
+        `https://api.lemlist.com/api/v2/campaigns/${c._id}/stats?startDate=${startDate}&endDate=${endDate}`,
+        { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } }
+      );
+      const stats = statsRes.ok ? await statsRes.json() : { error: statsRes.status };
+
+      const actRes = await fetch(
+        `https://api.lemlist.com/api/activities?campaignId=${c._id}&type=emailsSent&limit=50`,
+        { cache: "no-store", headers: { Authorization: `Basic ${basicAuth}` } }
+      );
+      const activities = actRes.ok ? await actRes.json() : { error: actRes.status };
+
+      return { id: c._id, name: c.name, status: c.status, stats, activities };
+    }));
+
+    return NextResponse.json({ today, startDate, endDate, campaigns: results });
+  }
+
   // --- Option A: try Composio with connected account ---
   if (req.nextUrl.searchParams.get("composio") === "1") {
     const connectedAccountId = req.nextUrl.searchParams.get("cid") ?? "ca_CyIWe9XIOGTM";
