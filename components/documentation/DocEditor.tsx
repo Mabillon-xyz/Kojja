@@ -1,6 +1,7 @@
 'use client'
 import { useState, useTransition, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { updateDocument, deleteDocument } from '@/app/actions/documents'
 
 // ─── Markdown renderer ───────────────────────────────────────────────────────
@@ -67,6 +68,12 @@ export default function DocEditor({
   const [saved, setSaved] = useState(false)
   const [isPending, startTransition] = useTransition()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const router = useRouter()
+
+  // Sync state with props when they change (e.g., after save & revalidation)
+  useEffect(() => { setTitle(initialTitle) }, [initialTitle])
+  useEffect(() => { setEmoji(initialEmoji) }, [initialEmoji])
+  useEffect(() => { setContent(initialContent) }, [initialContent])
 
   // auto-resize textarea
   useEffect(() => {
@@ -84,6 +91,8 @@ export default function DocEditor({
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
       setEditing(false)
+      // Refresh the router cache so the documentation list shows the updated title
+      router.refresh()
     })
   }
 

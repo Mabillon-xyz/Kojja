@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { readDocs } from '@/lib/read-docs'
 import { createDocument } from '@/app/actions/documents'
 
+// Force dynamic rendering to avoid stale cache after title updates
+export const revalidate = 0
+
 export default async function DocumentationPage() {
   const docs = await readDocs()
 
